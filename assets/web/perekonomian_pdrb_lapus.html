@@ -77,7 +77,7 @@
 				document.write('<p align= "center" style="color:#7F6000; font-weight: bold;#fab;width:370px;word-wrap:break-word;">PDRB ATAS DASAR HARGA BERLAKU DI KOTA MALANG MENURUT LAPANGAN USAHA<br>TAHUN '+ thB[pjThData-1]+'</p>'); 
 			}
 			else{
-				document.write('<p align= "center" style="color:#7F6000; font-weight: bold;#fab;width:370px;word-wrap:break-word;">PDRB ATAS DASAR HARGA BERLAKU DI KOTA MALANG MENURUT LAPANGAN USAHA<br>TAHUN '+ thB[pjThData-1]+'</p>'); 
+				document.write('<p align= "center" style="color:#7F6000; font-weight: bold;#fab;width:370px;word-wrap:break-word;">PDRB ATAS DASAR HARGA BERLAKU DI KOTA MALANG MENURUT LAPANGAN USAHA<br>TAHUN '+ thB[pjThData-1]+'<br>('+ satuanB +')</p>'); 
 			}
 			</script>
             <table border = "0" align ="center" style="background-color:transparent;" cellpadding="10">
@@ -124,7 +124,7 @@
 							colors: ['#000']
 						  },
 						  formatter: function (val, opt) {
-							return opt.w.globals.labels[opt.dataPointIndex].substring(0,3) + " : Rp " + new Intl.NumberFormat('ID',{ minimumFractionDigits: 2 }).format(Number(val).toFixed(2)) + ' milyar'
+							return opt.w.globals.labels[opt.dataPointIndex].substring(0,3) + " : Rp " + new Intl.NumberFormat('ID',{ minimumFractionDigits: 2 }).format(Number(val).toFixed(2)) + ' miliar'
 						  },
 						  offsetX: 0,
 						  dropShadow: {
@@ -142,11 +142,11 @@
 						  labels: {
 							show: true,
 							style: {
-								fontSize: '12px',
+								fontSize: '10px',
 								fontWeight: 600,
 							},
 							formatter: (value) => { 
-								return new Intl.NumberFormat('ID',{ minimumFractionDigits: 2 }).format(Number(value).toFixed(2)) 
+								return new Intl.NumberFormat('ID',{ minimumFractionDigits: 0 }).format(Number(value).toFixed(0))
 							},
 						  }
 						},

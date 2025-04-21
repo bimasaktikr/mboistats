@@ -87,6 +87,7 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
     );
   }
 
+
   Widget buildConnectivityBanner() {
     return Container(
       height: 40,

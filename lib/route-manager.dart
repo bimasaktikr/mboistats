@@ -7,6 +7,7 @@ import 'package:mboistats/pages/ekonomi/perekonomian_deteksi_dini_inflasi.dart';
 import 'package:mboistats/pages/more_pages.dart';
 import 'package:mboistats/pages/publikasi.dart';
 import 'package:mboistats/pages/tentang_pages.dart';
+import 'package:mboistats/pages/informasi_pelayanan_pages.dart';
 import 'package:mboistats/splash-screen.dart';
 import 'package:mboistats/pages/home_page.dart';
 import 'package:mboistats/pages/infografis_pages.dart';
@@ -54,6 +55,7 @@ class RouteManager {
     '/berita': (context) => BeritaPages(),
     '/infografis': (context) => InfografisPages(),
     '/tentang': (context) => TentangPages(),
+    '/informasipelayanan': (context) => InformasiPelayananPages(),
     '/publikasi': (context) => PublikasiPage(),
     '/contact': (context) => Contact(),
     '/kependudukan': (context) => KependudukanPages(),
