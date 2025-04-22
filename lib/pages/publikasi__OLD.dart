@@ -65,7 +65,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Infinite Scrolling Example with Loading and Error States'),
+        title: const Text('Infinite Scrolling Example with Loading and Error States'),
       ),
       body: _error != null
           ? Center(child: Text('Error: $_error'))
@@ -74,7 +74,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
         itemCount: _list.length + (_isLoading ? 1 : 0),
         itemBuilder: (BuildContext context, int index) {
           if (index == _list.length) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else {
             return ListTile(
               title: Text(_list[index]),

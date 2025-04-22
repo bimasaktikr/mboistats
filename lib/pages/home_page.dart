@@ -26,31 +26,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<bool> _onWillPop(BuildContext context) async {
-    return (await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Konfirmasi Keluar', style: TextStyle(color: Colors.blue)),
-            content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
-            actions: <Widget>[
-              OutlinedButton(
-                onPressed: () {
-                  // Close the entire app when 'Ya' is selected
-                  Navigator.of(context).pop(false); // Use this to close dialog
-                },
-                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
-                child: const Text('Tidak',style: TextStyle(color: Colors.blue)),
-              ),
-              OutlinedButton(
-                onPressed: () {
-                  // Close the entire app when 'Ya' is selected
-                  SystemNavigator.pop(); // Use this to exit the app
-                },
-                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
-                child: const Text('Ya',style: TextStyle(color: Colors.blue)),
-              ),
-            ],
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Keluar', style: TextStyle(color: Colors.blue)),
+        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
+        actions: <Widget>[
+          OutlinedButton(
+            onPressed: () {
+              Navigator.of(context).pop(false); // Cancel
+            },
+            child: const Text('Tidak', style: TextStyle(color: Colors.blue)),
           ),
-        )) ??
+          OutlinedButton(
+            onPressed: () {
+              Navigator.of(context).pop(true); // Confirm exit
+            },
+            child: const Text('Ya', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    ) ??
         false;
   }
 
@@ -61,9 +57,9 @@ class _HomePageState extends State<HomePage> {
       canPop: true,  // Or false depending on your logic
       onPopInvokedWithResult: (didPop, result) async {
         if (!didPop) {
-          bool shouldPop = await _onWillPop(context);
-          if (shouldPop) {
-            Navigator.of(context).pop(result);
+          final shouldExit = await _onWillPop(context);
+          if (shouldExit) {
+            SystemNavigator.pop(); // Exit the app
           }
         }
       },

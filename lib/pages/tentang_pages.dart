@@ -3,6 +3,8 @@ import 'package:mboistats/datas/tentang.dart';
 import 'package:mboistats/theme.dart';
 
 class TentangPages extends StatelessWidget {
+  const TentangPages({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

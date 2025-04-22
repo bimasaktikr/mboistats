@@ -6,6 +6,8 @@ import 'package:mboistats/theme.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class Contact extends StatefulWidget {
+  const Contact({Key? key}) : super(key: key);
+
   @override
   _ContactState createState() => _ContactState();
 }

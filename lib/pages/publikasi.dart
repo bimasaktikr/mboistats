@@ -10,6 +10,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 
 class PublikasiPage extends StatefulWidget {
+  const PublikasiPage({Key? key}) : super(key: key);
+
   @override
   _PublikasiPageState createState() => _PublikasiPageState();
 }
@@ -90,7 +92,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
                   ],
                 ),
                 child: ListTile(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
                   leading: Image.asset(
                     'assets/icons/publication.png',
                     width: 40,
@@ -110,7 +112,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
                             Text(
                               "Size: ${dataPublikasi[index]["size"]}",
                               style:
-                                  TextStyle(fontSize: 12, color: Colors.grey),
+                                  const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -139,14 +141,14 @@ class _PublikasiPageState extends State<PublikasiPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Konfirmasi Unduh"),
-          content: Text("Apakah Anda ingin membuka/mengunduh berkas publikasi ini?"),
+          title: const Text("Konfirmasi Unduh"),
+          content: const Text("Apakah Anda ingin membuka/mengunduh berkas publikasi ini?"),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context, false);
               },
-              child: Text("Tidak"),
+              child: const Text("Tidak"),
             ),
             TextButton(
               onPressed: () async {
@@ -155,14 +157,14 @@ class _PublikasiPageState extends State<PublikasiPage> {
                 String fileName = dataPublikasi[index]["title"];
                 await downloadAndShowConfirmation(context, pdfUrl, fileName);
               },
-              child: Text("Unduh"),
+              child: const Text("Unduh"),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 openPdfDirectly(context, pdfUrl);
               },
-              child: Text("Buka PDF"),
+              child: const Text("Buka PDF"),
             ),
           ],
         );
@@ -276,7 +278,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
 class PDFViewer extends StatelessWidget {
   final String pdfUrl;
 
-  PDFViewer({required this.pdfUrl});
+  const PDFViewer({Key? key, required this.pdfUrl}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

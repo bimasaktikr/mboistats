@@ -6,10 +6,12 @@ import 'package:fluttertoast/fluttertoast.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -27,7 +29,7 @@ class MyApp extends StatelessWidget {
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
 
-  ConnectivityWrapper({required this.child});
+  const ConnectivityWrapper({Key? key, required this.child}) : super(key: key);
 
   @override
   _ConnectivityWrapperState createState() => _ConnectivityWrapperState();
@@ -49,7 +51,7 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
         showConnectivityBanner = false;
         showToastMessage(); // Tampilkan pesan toast berdasarkan status koneksi
         // Menutup banner setelah beberapa detik (misalnya, 3 detik)
-        Future.delayed(Duration(seconds: 3), () {
+        Future.delayed(const Duration(seconds: 3), () {
           setState(() {
             showConnectivityBanner = false;
           });
@@ -101,18 +103,18 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
               connectivityResult == ConnectivityResult.none
                   ? "Tidak Terhubung"
                   : "Terkoneksi",
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               connectivityResult == ConnectivityResult.none
                   ? "Tidak terhubung ke internet"
                   : "Terkoneksi ke internet",
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: Colors.white,
               ),
