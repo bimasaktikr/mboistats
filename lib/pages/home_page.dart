@@ -57,8 +57,16 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () => _onWillPop(context),
+    return PopScope(
+      canPop: true,  // Or false depending on your logic
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          bool shouldPop = await _onWillPop(context);
+          if (shouldPop) {
+            Navigator.of(context).pop(result);
+          }
+        }
+      },
       child: Scaffold(
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         appBar: AppBar(
@@ -94,13 +102,14 @@ class _HomePageState extends State<HomePage> {
               ),
               const Menus(),
               ButtonSection(),
-              CarouselPublikasi(),
-              CarouselInfografis(),
+              const CarouselPublikasi(),
+              const CarouselInfografis(),
             ],
           ),
         ),
         bottomNavigationBar: const Footer(),
       ),
     );
+
   }
 }

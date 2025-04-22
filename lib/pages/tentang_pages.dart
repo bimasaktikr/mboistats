@@ -60,7 +60,7 @@ class TentangPages extends StatelessWidget {
                       border: Border.all(color: dark4),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
+                          color: Colors.grey.withAlpha((0.2 * 255).round()),
                           spreadRadius: 2,
                           blurRadius: 4,
                           offset: const Offset(0, 2),

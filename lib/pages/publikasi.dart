@@ -54,7 +54,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Publikasi'),
+        title: const Text('Publikasi'),
         leading: IconButton(
           icon: Image.asset(
             'assets/icons/left-arrow.png',
@@ -82,10 +82,10 @@ class _PublikasiPageState extends State<PublikasiPage> {
                   border: Border.all(color: dark4),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withAlpha((0.2 * 255).round()),
                       spreadRadius: 2,
                       blurRadius: 4,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -282,7 +282,7 @@ class PDFViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('PDF Viewer'),
+        title: const Text('PDF Viewer'),
       ),
       body: SfPdfViewer.network(
         pdfUrl,
