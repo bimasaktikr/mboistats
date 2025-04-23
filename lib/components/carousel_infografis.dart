@@ -44,15 +44,7 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
         throw Exception('Gagal mendapatkan data.');
       }
     } catch (error) {
-      Fluttertoast.showToast(
-        msg: "Terjadi kesalahan $error",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.blue,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
+
     }
   }
 
@@ -146,18 +138,23 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context, false);
-                },
-                child: const Text("Tidak"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context, false);
-                  await downloadAndShowConfirmation(context, tautan, judul);
-                },
-                child: const Text("Ya"),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text("Tutup"),
+                  ),
+                  const SizedBox(width: 16), // spacing between buttons
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context, false);
+                      String imageTitle = judul;
+                      await downloadAndShowConfirmation(context, tautan, tglrilis);
+                    },
+                    child: const Text("Unduh"),
+                  ),
+                ],
               ),
             ],
           );
@@ -168,15 +165,7 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
         downloadAndShowConfirmation(context, tautan, judul);
       }
     } catch (error) {
-        Fluttertoast.showToast(
-          msg: "Terjadi kesalahan $error",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+
     }
   }
 

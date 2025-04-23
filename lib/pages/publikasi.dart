@@ -199,22 +199,32 @@ class _PublikasiPageState extends State<PublikasiPage> {
                 ],
               ),
             ),
-            actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup")),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                String fileName = dataPublikasi[index]["title"];
-                await downloadAndShowConfirmation(context, pdfUrl, fileName);
-              },
-              child: const Text("Unduh"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                openPdfDirectly(context, pdfUrl);
-              },
-              child: const Text("Buka PDF"),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Tutup"),
+                ),
+                const SizedBox(width: 16), // space between buttons
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    String fileName = dataPublikasi[index]["title"];
+                    await downloadAndShowConfirmation(context, pdfUrl, fileName);
+                  },
+                  child: const Text("Unduh"),
+                ),
+                const SizedBox(width: 16), // space between buttons
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    openPdfDirectly(context, pdfUrl);
+                  },
+                  child: const Text("Buka PDF"),
+                ),
+              ],
             ),
           ],
         );

@@ -212,21 +212,31 @@ class _BeritaPageState extends State<BeritaPages> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup")),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                String fileName = dataBRS[index]["title"];
-                await downloadAndShowConfirmation(context, pdfUrl, fileName);
-              },
-              child: const Text("Unduh"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                openPdfDirectly(context, pdfUrl);
-              },
-              child: const Text("Buka PDF"),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Tutup"),
+                ),
+                const SizedBox(width: 16), // space between buttons
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    String fileName = dataBRS[index]["title"];
+                    await downloadAndShowConfirmation(context, pdfUrl, fileName);
+                  },
+                  child: const Text("Unduh"),
+                ),
+                const SizedBox(width: 16), // space between buttons
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    openPdfDirectly(context, pdfUrl);
+                  },
+                  child: const Text("Buka PDF"),
+                ),
+              ],
             ),
           ],
         );

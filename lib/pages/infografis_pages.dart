@@ -107,17 +107,23 @@ class _InfografisPagesState extends State<InfografisPages> {
                 ),
               ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("Tutup"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context, false);
-                  String imageTitle = dataInfografis[index]["title"];
-                  await downloadAndShowConfirmation(context, imageUrl, imageTitle);
-                },
-                child: const Text("Unduh"),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text("Tutup"),
+                  ),
+                  const SizedBox(width: 16), // spacing between buttons
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context, false);
+                      String imageTitle = dataInfografis[index]["title"];
+                      await downloadAndShowConfirmation(context, imageUrl, imageTitle);
+                    },
+                    child: const Text("Unduh"),
+                  ),
+                ],
               ),
             ],
           );
@@ -128,15 +134,7 @@ class _InfografisPagesState extends State<InfografisPages> {
         downloadAndShowConfirmation(context, imageUrl, imageTitle);
       }
     } catch (error) {
-        Fluttertoast.showToast(
-          msg: "Terjadi kesalahan $error",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+
     }
   }
 

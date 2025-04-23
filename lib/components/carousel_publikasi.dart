@@ -45,15 +45,7 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
         throw Exception('Gagal mendapatkan data.');
       }
     } catch (error) {
-        Fluttertoast.showToast(
-          msg: "Terjadi kesalahan $error",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+
     }
   }
 
@@ -167,27 +159,35 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context, false);
-              },
-              child: const Text("Tutup"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await downloadAndShowConfirmation(context, tautan, judul);
-              },
-              child: const Text("Unduh"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                openPdfDirectly(context, tautan);
-              },
-              child: const Text("Buka PDF"),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context, false);
+                  },
+                  child: const Text("Tutup"),
+                ),
+                const SizedBox(width: 16), // space between buttons
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await downloadAndShowConfirmation(context, tautan, judul);
+                  },
+                  child: const Text("Unduh"),
+                ),
+                const SizedBox(width: 16), // space between buttons
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    openPdfDirectly(context, tautan);
+                  },
+                  child: const Text("Buka PDF"),
+                ),
+              ],
             ),
           ],
+
         );
       },
     );
