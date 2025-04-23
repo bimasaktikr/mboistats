@@ -6,5 +6,4 @@ List<MboistatsButton> mboistatsButton = [
   MboistatsButton(button: 'publikasi', title: 'Publikasi', route: '/publikasi'),
   MboistatsButton(button: 'infografis', title: 'Infografis', route: '/infografis'),
   MboistatsButton(button: 'tentang', title: 'Tentang Kami', route: '/tentang'),
-  MboistatsButton(button: 'lainnya', title: 'Lainnya', route: '/more'),
 ];

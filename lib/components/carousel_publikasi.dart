@@ -53,52 +53,71 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
   Widget build(BuildContext context) {
     return dataPublikasi.isEmpty
         ? const Center(
-            child: CircularProgressIndicator(),
-          )
+      child: CircularProgressIndicator(),
+    )
         : Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(
-                  top: 24.0,
-                  bottom: 16.0,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(
+            top: 24.0,
+            bottom: 16.0,
+          ),
+          child: Text(
+            'PUBLIKASI',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        CarouselSlider(
+          options: CarouselOptions(
+            height: 450,
+            enlargeCenterPage: true,
+            autoPlay: true,
+            aspectRatio: 3 / 4,
+          ),
+          items: dataPublikasi.map((item) {
+            return GestureDetector(
+              onTap: () {
+                openDownloadConfirmation(
+                  context,
+                  item['pdf'] ?? '',
+                  item['title'],
+                  item['abstract'] ?? '',
+                  item['rl_date'] ?? '',
+                  item['size'] ?? '',
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      spreadRadius: 2,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  'PUBLIKASI',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Image.network(
+                    item['cover'],
+                    width: MediaQuery.of(context).size.width,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-              CarouselSlider(
-                options: CarouselOptions(
-                  height: 450,
-                  enlargeCenterPage: true,
-                  autoPlay: true,
-                  aspectRatio: 3 / 4,
-                ),
-                items: dataPublikasi.map((item) {
-                  return GestureDetector(
-                    onTap: () async {
-                      setState(() {
-
-                      });
-
-                      openDownloadConfirmation(context, item['pdf'] ?? '', item['title'], item['abstract'] ?? '', item['rl_date'] ?? '', item['size'] ?? '');
-                    },
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      child: Image.network(
-                        item['cover'],
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          );
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
+
   Future<bool> _checkPermission() async {
     if (Platform.isAndroid || Platform.isIOS) {
       var permissionStatus = await Permission.storage.status;
