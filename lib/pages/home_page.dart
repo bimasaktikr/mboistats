@@ -24,16 +24,29 @@ class _HomePageState extends State<HomePage> {
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Keluar', style: TextStyle(color: Colors.blue)),
-        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
+        title: const Text(
+          'Konfirmasi Keluar',
+          style: TextStyle(color: Colors.blue),
+          textAlign: TextAlign.center,
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari aplikasi?',
+          textAlign: TextAlign.justify,
+        ),
         actions: <Widget>[
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Tidak', style: TextStyle(color: Colors.blue)),
-          ),
-          OutlinedButton(
-            onPressed: () => SystemNavigator.pop(),
-            child: const Text('Ya', style: TextStyle(color: Colors.blue)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Tidak', style: TextStyle(color: Colors.blue)),
+              ),
+              const SizedBox(width: 16), // space between buttons
+              OutlinedButton(
+                onPressed: () => SystemNavigator.pop(),
+                child: const Text('Ya', style: TextStyle(color: Colors.blue)),
+              ),
+            ],
           ),
         ],
       ),
