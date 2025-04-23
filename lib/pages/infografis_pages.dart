@@ -84,7 +84,7 @@ class _InfografisPagesState extends State<InfografisPages> {
                   children: [
                     Flexible(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Image.network(
                             dataInfografis[index]['img'],
@@ -94,7 +94,7 @@ class _InfografisPagesState extends State<InfografisPages> {
                           const SizedBox(height: 8),
                           Text(
                             "Tanggal Rilis: ${dataInfografis[index]["date"]}",
-                            textAlign: TextAlign.justify,
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
@@ -127,7 +127,17 @@ class _InfografisPagesState extends State<InfografisPages> {
       if (confirmDownload == true) {
         downloadAndShowConfirmation(context, imageUrl, imageTitle);
       }
-    } catch (error) {}
+    } catch (error) {
+        Fluttertoast.showToast(
+          msg: "Terjadi kesalahan $error",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+    }
   }
 
   Future<void> downloadAndShowConfirmation(BuildContext context, String pdfUrl, String fileName) async {

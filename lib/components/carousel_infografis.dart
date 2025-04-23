@@ -8,6 +8,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:saf/saf.dart';
 
+import '../theme.dart';
+
 class CarouselInfografis extends StatefulWidget {
   const CarouselInfografis({Key? key}) : super(key: key);
 
@@ -18,7 +20,6 @@ class CarouselInfografis extends StatefulWidget {
 class _CarouselInfografisState extends State<CarouselInfografis> {
   late Saf saf;
   List<Map<String, dynamic>> dataInfografis = [];
-  String imageUrl = '';
 
   @override
   void initState() {
@@ -43,7 +44,15 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
         throw Exception('Gagal mendapatkan data.');
       }
     } catch (error) {
-
+      Fluttertoast.showToast(
+        msg: "Terjadi kesalahan $error",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.blue,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
   }
 
@@ -79,10 +88,10 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        imageUrl = item['img'] ?? '';
+
                       });
 
-                      openDownloadConfirmation(context, imageUrl, item['title']);
+                      openDownloadConfirmation(context, item['img'] ?? '', item['title'], item['date']);
                     },
                     child: SizedBox(
                       width: MediaQuery.of(context).size.width,
@@ -98,14 +107,44 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
           );
   }
 
-  void openDownloadConfirmation(BuildContext context, String imageUrl, String imageTitle) async {
+  void openDownloadConfirmation(BuildContext context, String tautan, String judul, String tglrilis) async {
     try {
       bool confirmDownload = await showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text("Konfirmasi Unduh"),
-            content: const Text("Apakah Anda ingin mengunduh berkas infografis ini?"),
+            title: Text(
+              judul,
+              textAlign: TextAlign.center,
+              style: bold16.copyWith(color: dark1),
+            ),
+            content: SingleChildScrollView(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Image.network(
+                          tautan,
+                          fit: BoxFit.fill,
+                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Tanggal Rilis: $tglrilis",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             actions: [
               TextButton(
                 onPressed: () {
@@ -116,7 +155,7 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
               TextButton(
                 onPressed: () async {
                   Navigator.pop(context, false);
-                  await downloadAndShowConfirmation(context, imageUrl, imageTitle);
+                  await downloadAndShowConfirmation(context, tautan, judul);
                 },
                 child: const Text("Ya"),
               ),
@@ -126,10 +165,18 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
       );
 
       if (confirmDownload == true) {
-        downloadAndShowConfirmation(context, imageUrl, imageTitle);
+        downloadAndShowConfirmation(context, tautan, judul);
       }
     } catch (error) {
-
+        Fluttertoast.showToast(
+          msg: "Terjadi kesalahan $error",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
     }
   }
 

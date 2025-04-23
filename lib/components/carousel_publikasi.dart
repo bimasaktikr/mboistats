@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_file_downloader/flutter_file_downloader.dart';
+import 'package:html/parser.dart';
+import 'package:html_unescape/html_unescape.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -9,6 +11,8 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
+import '../theme.dart';
 
 class CarouselPublikasi extends StatefulWidget {
   const CarouselPublikasi({Key? key}) : super(key: key);
@@ -20,7 +24,6 @@ class CarouselPublikasi extends StatefulWidget {
 class _CarouselPublikasiState extends State<CarouselPublikasi> {
   late Saf saf;
   List<Map<String, dynamic>> dataPublikasi = [];
-  String pdfUrl = '';
 
   @override
   void initState() {
@@ -42,7 +45,15 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
         throw Exception('Gagal mendapatkan data.');
       }
     } catch (error) {
-
+        Fluttertoast.showToast(
+          msg: "Terjadi kesalahan $error",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
     }
   }
 
@@ -78,10 +89,10 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
                   return GestureDetector(
                     onTap: () async {
                       setState(() {
-                        pdfUrl = item['pdf'] ?? '';
+
                       });
 
-                      openDownloadConfirmation(context, pdfUrl, item['title']);
+                      openDownloadConfirmation(context, item['pdf'] ?? '', item['title'], item['abstract'] ?? '', item['rl_date'] ?? '', item['size'] ?? '');
                     },
                     child: SizedBox(
                       width: MediaQuery.of(context).size.width,
@@ -112,32 +123,67 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
     return true;
   }
 
-  void openDownloadConfirmation(BuildContext context, String pdfUrl, String pdfTitle) {
-
+  void openDownloadConfirmation(BuildContext context, String tautan, String judul, String deskripsi, String tglrilis, String ukuran) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Konfirmasi Unduh"),
-          content: const Text("Apakah Anda ingin membuka/mengunduh berkas publikasi ini?"),
+          title: Text(
+            judul,
+            textAlign: TextAlign.center,
+            style: bold16.copyWith(color: dark1),
+          ),
+          content: SingleChildScrollView(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        parse(HtmlUnescape().convert(deskripsi)).body?.text ?? '',
+                        style: TextStyle(fontSize: 13, color: dark1),
+                        textAlign: TextAlign.justify,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Ukuran Berkas: ${ukuran.replaceAll('.', ',')}",
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey
+                        ),
+                      ),
+                      Text(
+                        "Tanggal Rilis: $tglrilis",
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context, false);
               },
-              child: const Text("Tidak"),
+              child: const Text("Tutup"),
             ),
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
-                await downloadAndShowConfirmation(context, pdfUrl, pdfTitle);
+                await downloadAndShowConfirmation(context, tautan, judul);
               },
               child: const Text("Unduh"),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                openPdfDirectly(context, pdfUrl);
+                openPdfDirectly(context, tautan);
               },
               child: const Text("Buka PDF"),
             ),
