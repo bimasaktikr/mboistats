@@ -18,51 +18,33 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _checkAndRequestStoragePermission();
   }
 
-  Future<void> _checkAndRequestStoragePermission() async {
-
-  }
-
-  Future<bool> _onWillPop(BuildContext context) async {
-    return await showDialog<bool>(
+  Future<bool> _onWillPop() async {
+    final shouldExit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Konfirmasi Keluar', style: TextStyle(color: Colors.blue)),
         content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
         actions: <Widget>[
           OutlinedButton(
-            onPressed: () {
-              Navigator.of(context).pop(false); // Cancel
-            },
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Tidak', style: TextStyle(color: Colors.blue)),
           ),
           OutlinedButton(
-            onPressed: () {
-              Navigator.of(context).pop(true); // Confirm exit
-            },
+            onPressed: () => SystemNavigator.pop(),
             child: const Text('Ya', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),
-    ) ??
-        false;
+    );
+    return shouldExit ?? false;
   }
-
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,  // Or false depending on your logic
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) {
-          final shouldExit = await _onWillPop(context);
-          if (shouldExit) {
-            SystemNavigator.pop(); // Exit the app
-          }
-        }
-      },
+    return WillPopScope(
+      onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         appBar: AppBar(
@@ -106,6 +88,5 @@ class _HomePageState extends State<HomePage> {
         bottomNavigationBar: const Footer(),
       ),
     );
-
   }
 }
