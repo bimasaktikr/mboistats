@@ -8,6 +8,8 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_file_downloader/flutter_file_downloader.dart';
+import 'package:html_unescape/html_unescape.dart';
+import 'package:html/parser.dart' show parse;
 
 class PublikasiPage extends StatefulWidget {
   const PublikasiPage({Key? key}) : super(key: key);
@@ -172,7 +174,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          Uri.decodeFull(dataPublikasi[index]["abstract"]),
+                          parse(HtmlUnescape().convert(dataPublikasi[index]["abstract"])).body?.text ?? '',
                           style: TextStyle(fontSize: 13, color: dark1),
                           textAlign: TextAlign.justify,
                         ),

@@ -9,7 +9,8 @@ import 'dart:convert';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
-//import 'package:html_unescape/html_unescape.dart';
+import 'package:html_unescape/html_unescape.dart';
+import 'package:html/parser.dart' show parse;
 
 class BeritaPages extends StatefulWidget {
   const BeritaPages({Key? key}) : super(key: key);
@@ -117,12 +118,12 @@ class _BeritaPageState extends State<BeritaPages> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(color: dark4),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.transparent,
                     spreadRadius: 2,
                     blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
@@ -185,7 +186,7 @@ class _BeritaPageState extends State<BeritaPages> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        Uri.decodeFull(dataBRS[index]["abstract"]),
+                        parse(HtmlUnescape().convert(dataBRS[index]["abstract"])).body?.text ?? '',
                         style: TextStyle(fontSize: 13, color: dark1),
                         textAlign: TextAlign.justify,
                       ),
@@ -251,7 +252,6 @@ class _BeritaPageState extends State<BeritaPages> {
           downloadDestination: DownloadDestinations.publicDownloads,
           onProgress: (fileName, double progress) {},
           onDownloadCompleted: (String path) {
-            File downloadedFile = File('/storage/emulated/0/Download/\$fileName.pdf');
 
             Fluttertoast.showToast(
               msg: 'Berita Resmi Statistik (BRS) "\$fileName.pdf" telah disimpan dalam Folder Download.',

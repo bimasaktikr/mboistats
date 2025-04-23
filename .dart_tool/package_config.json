@@ -128,6 +128,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "csslib",
+      "rootUri": "file:///C:/Users/Satria%20C.%20Wibawa/AppData/Local/Pub/Cache/hosted/pub.dev/csslib-1.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
       "name": "cupertino_icons",
       "rootUri": "file:///C:/Users/Satria%20C.%20Wibawa/AppData/Local/Pub/Cache/hosted/pub.dev/cupertino_icons-1.0.8",
       "packageUri": "lib/",
@@ -246,6 +252,12 @@
       "rootUri": "file:///C:/Users/Satria%20C.%20Wibawa/AppData/Local/Pub/Cache/hosted/pub.dev/fluttertoast-8.2.10",
       "packageUri": "lib/",
       "languageVersion": "2.12"
+    },
+    {
+      "name": "html",
+      "rootUri": "file:///C:/Users/Satria%20C.%20Wibawa/AppData/Local/Pub/Cache/hosted/pub.dev/html-0.15.5+1",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
     },
     {
       "name": "html_unescape",
@@ -770,7 +782,7 @@
       "languageVersion": "2.12"
     }
   ],
-  "generated": "2025-04-23T08:30:31.506731Z",
+  "generated": "2025-04-23T08:42:07.058515Z",
   "generator": "pub",
   "generatorVersion": "3.6.1",
   "flutterRoot": "file:///X:/AndroidProject/flutter_sdk",

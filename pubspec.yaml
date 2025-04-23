@@ -25,6 +25,7 @@ dependencies:
   flutter_downloader: ^1.6.1
   file_picker: ^8.0.0+1
   flutter_file_downloader: ^2.0.0
+  html: ^0.15.0
   html_unescape: ^2.0.0
   http: ^1.2.0
   open_file: ^3.2.1
