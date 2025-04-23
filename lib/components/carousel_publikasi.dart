@@ -83,7 +83,7 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
                 openDownloadConfirmation(
                   context,
                   item['pdf'] ?? '',
-                  item['title'],
+                  item['title'] ?? '',
                   item['abstract'] ?? '',
                   item['rl_date'] ?? '',
                   item['size'] ?? '',

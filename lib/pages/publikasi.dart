@@ -89,7 +89,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
           crossAxisCount: 2,
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          childAspectRatio: 0.75,
+          childAspectRatio: 3 / 4,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
         itemCount: dataPublikasi.length + (hasMore ? 1 : 0),
