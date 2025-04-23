@@ -81,67 +81,71 @@ class _PublikasiPageState extends State<PublikasiPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: ListView.builder(
+      body: GridView.builder(
         controller: _scrollController,
-        itemCount: dataPublikasi.length + 1,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 0.75,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        itemCount: dataPublikasi.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == dataPublikasi.length) {
             return hasMore
-                ? const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator()),
-            )
+                ? const Center(child: CircularProgressIndicator())
                 : const SizedBox();
           }
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
-            child: InkWell(
-              onTap: () => showDownloadDialog(context, dataPublikasi[index]["pdf"], index),
-              child: Container(
-                clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: dark4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withAlpha((0.2 * 255).round()),
-                      spreadRadius: 2,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+
+          return InkWell(
+            onTap: () => showDownloadDialog(context, dataPublikasi[index]["pdf"], index),
+            child: Container(
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: dark4),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.transparent,
+                    spreadRadius: 2,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Image.network(
+                      dataPublikasi[index]['cover'],
+                      width: double.infinity,
+                      fit: BoxFit.fill,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
                     ),
-                  ],
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  leading: Image.network(
-                    dataPublikasi[index]['cover'],
-                    fit: BoxFit.fill,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
                   ),
-                  title: Row(
-                    children: [
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dataPublikasi[index]["title"],
-                              style: bold16.copyWith(color: dark1),
-                              textAlign: TextAlign.left,
-                            ),
-                            Text(
-                              "Ukuran Berkas: ${dataPublikasi[index]["size"].replaceAll('.', ',')}",
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          dataPublikasi[index]["title"],
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: dark1,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           );
@@ -155,10 +159,46 @@ class _PublikasiPageState extends State<PublikasiPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Konfirmasi Unduh"),
-          content: const Text("Apakah Anda ingin membuka/mengunduh berkas publikasi ini?"),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tidak")),
+          title: Text(
+            dataPublikasi[index]["title"],
+            textAlign: TextAlign.center,
+            style: bold16.copyWith(color: dark1),
+          ),
+            content: SingleChildScrollView(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          Uri.decodeFull(dataPublikasi[index]["abstract"]),
+                          style: TextStyle(fontSize: 13, color: dark1),
+                          textAlign: TextAlign.justify,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Ukuran Berkas: ${dataPublikasi[index]["size"].replaceAll('.', ',')}",
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey
+                          ),
+                        ),
+                        Text(
+                          "Tanggal Rilis: ${dataPublikasi[index]["rl_date"]}",
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup")),
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);

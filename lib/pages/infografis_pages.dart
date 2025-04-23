@@ -74,12 +74,42 @@ class _InfografisPagesState extends State<InfografisPages> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text("Konfirmasi Unduh"),
-            content: const Text("Apakah Anda ingin mengunduh berkas infografis ini?"),
+            title: Text(
+              dataInfografis[index]["title"],
+              textAlign: TextAlign.center,
+              style: bold16.copyWith(color: dark1),
+            ),
+              content: SingleChildScrollView(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Image.network(
+                            dataInfografis[index]['img'],
+                            fit: BoxFit.fill,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Tanggal Rilis: ${dataInfografis[index]["date"]}",
+                            textAlign: TextAlign.justify,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text("Tidak"),
+                child: const Text("Tutup"),
               ),
               TextButton(
                 onPressed: () async {
@@ -87,7 +117,7 @@ class _InfografisPagesState extends State<InfografisPages> {
                   String imageTitle = dataInfografis[index]["title"];
                   await downloadAndShowConfirmation(context, imageUrl, imageTitle);
                 },
-                child: const Text("Ya"),
+                child: const Text("Unduh"),
               ),
             ],
           );
@@ -180,70 +210,73 @@ class _InfografisPagesState extends State<InfografisPages> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: ListView.builder(
+      body: GridView.builder(
         controller: _scrollController,
         itemCount: dataInfografis.length + (hasMore ? 1 : 0),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.75,
+        ),
+        padding: const EdgeInsets.all(16),
         itemBuilder: (context, index) {
           if (index == dataInfografis.length) {
-            return const Center(child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
-            ));
+            return const Center(child: CircularProgressIndicator());
           }
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
-            child: InkWell(
-              onTap: () {
-                String imageUrl = dataInfografis[index]["img"];
-                String title = dataInfografis[index]["title"];
-                openDownloadConfirmation(context, imageUrl, index, title);
-              },
-              child: Container(
-                clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: dark4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withAlpha((0.2 * 255).round()),
-                      spreadRadius: 2,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+          return InkWell(
+            onTap: () {
+              String imageUrl = dataInfografis[index]["img"];
+              String title = dataInfografis[index]["title"];
+              openDownloadConfirmation(context, imageUrl, index, title);
+            },
+            child: Container(
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: dark4),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.transparent,
+                    spreadRadius: 2,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Image.network(
+                      dataInfografis[index]['img'],
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
                     ),
-                  ],
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  leading: Image.network(
-                    dataInfografis[index]['img'],
-                    fit: BoxFit.fill,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
                   ),
-                  title: Row(
-                    children: [
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dataInfografis[index]["title"],
-                              style: bold16.copyWith(color: dark1),
-                              textAlign: TextAlign.left,
-                            ),
-                            Text(
-                              "Tanggal Unggah: ${dataInfografis[index]["date"]}",
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          dataInfografis[index]["title"],
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: dark1,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           );

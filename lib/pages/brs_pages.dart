@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
+//import 'package:html_unescape/html_unescape.dart';
 
 class BeritaPages extends StatefulWidget {
   const BeritaPages({Key? key}) : super(key: key);
@@ -95,65 +96,68 @@ class _BeritaPageState extends State<BeritaPages> {
           ],
         ),
       ),
-      body: ListView.builder(
+      body: GridView.builder(
         controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.75,
+        ),
         itemCount: dataBRS.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == dataBRS.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
-            child: InkWell(
-              onTap: () => showDownloadDialog(context, dataBRS[index]["pdf"], index),
-              child: Container(
-                clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: dark4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withAlpha((0.2 * 255).round()),
-                      spreadRadius: 2,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+          return InkWell(
+            onTap: () => showDownloadDialog(context, dataBRS[index]["pdf"], index),
+            child: Container(
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: dark4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.transparent,
+                    spreadRadius: 2,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Image.network(
+                      dataBRS[index]['thumbnail'],
+                      width: double.infinity,
+                      fit: BoxFit.fill,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
                     ),
-                  ],
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  leading: Image.network(
-                    dataBRS[index]['thumbnail'],
-                    fit: BoxFit.fill,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
                   ),
-                  title: Row(
-                    children: [
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dataBRS[index]["title"],
-                              style: bold16.copyWith(color: dark1),
-                              textAlign: TextAlign.left,
-                            ),
-                            Text(
-                              "Ukuran Berkas: ${dataBRS[index]["size"].replaceAll('.', ',')}",
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          dataBRS[index]["title"],
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: dark1,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 5,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           );
@@ -168,10 +172,46 @@ class _BeritaPageState extends State<BeritaPages> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Konfirmasi Unduh"),
-          content: const Text("Apakah Anda ingin membuka/mengunduh berkas BRS ini?"),
+          title: Text(
+            dataBRS[index]["title"],
+            textAlign: TextAlign.center,
+            style: bold16.copyWith(color: dark1),
+          ),
+          content: SingleChildScrollView(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        Uri.decodeFull(dataBRS[index]["abstract"]),
+                        style: TextStyle(fontSize: 13, color: dark1),
+                        textAlign: TextAlign.justify,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Ukuran Berkas: ${dataBRS[index]["size"].replaceAll('.', ',')}",
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey
+                        ),
+                      ),
+                      Text(
+                        "Tanggal Rilis: ${dataBRS[index]["rl_date"]}",
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tidak")),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup")),
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
@@ -211,8 +251,7 @@ class _BeritaPageState extends State<BeritaPages> {
           downloadDestination: DownloadDestinations.publicDownloads,
           onProgress: (fileName, double progress) {},
           onDownloadCompleted: (String path) {
-            File downloadedFile = File('/storage/emulated/0/Download/\$fileName\$fileExt');
-            downloadedFile.rename(downloadedFile.path.replaceAll(".php", ".pdf"));
+            File downloadedFile = File('/storage/emulated/0/Download/\$fileName.pdf');
 
             Fluttertoast.showToast(
               msg: 'Berita Resmi Statistik (BRS) "\$fileName.pdf" telah disimpan dalam Folder Download.',
