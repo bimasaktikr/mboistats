@@ -18,37 +18,54 @@ class InfografisPages extends StatefulWidget {
 class _InfografisPagesState extends State<InfografisPages> {
   late Saf saf;
   List<Map<String, dynamic>> dataInfografis = [];
-  String imageUrl = ''; // Variable to store the PDF URL
+  int currentPage = 1;
+  bool isLoading = false;
+  bool hasMore = true;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     fetchDataInfografis();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !isLoading && hasMore) {
+        fetchDataInfografis();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchDataInfografis() async {
-    const String apiUrl = "https://webapi.bps.go.id/v1/api/list/domain/3573/model/infographic/lang/ind/domain/3573/key/9db89e91c3c142df678e65a78c4e547f";
+    setState(() => isLoading = true);
+    final String apiUrl = "https://webapi.bps.go.id/v1/api/list/domain/3573/model/infographic/lang/ind/domain/3573/page/$currentPage/key/9db89e91c3c142df678e65a78c4e547f";
 
-    final response = await http.get(Uri.parse(apiUrl));
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      if (response.statusCode == 200) {
+        final parsedResponse = json.decode(response.body);
+        final List<dynamic> infografis = parsedResponse["data"][1];
 
-    if (response.statusCode == 200) {
-      final parsedResponse = json.decode(response.body);
-      final infografis = parsedResponse["data"][1];
-
-      setState(() {
-        dataInfografis = List<Map<String, dynamic>>.from(infografis);
-      });
-
-    } else {
-      throw Exception('Failed to load data');
+        if (infografis.isEmpty) {
+          setState(() => hasMore = false);
+        } else {
+          setState(() {
+            currentPage++;
+            dataInfografis.addAll(List<Map<String, dynamic>>.from(infografis));
+          });
+        }
+      } else {
+        throw Exception('Failed to load data');
+      }
+    } catch (_) {
+      // Handle error
+    } finally {
+      setState(() => isLoading = false);
     }
-  }
-
-  String truncateText(String text, int maxLength) {
-    if (text.length > maxLength) {
-      return text.substring(0, maxLength) + '...';
-    }
-    return text;
   }
 
   void openDownloadConfirmation(BuildContext context, String imageUrl, int index, String imageTitle) async {
@@ -61,9 +78,7 @@ class _InfografisPagesState extends State<InfografisPages> {
             content: const Text("Apakah Anda ingin mengunduh berkas infografis ini?"),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context, false);
-                },
+                onPressed: () => Navigator.pop(context, false),
                 child: const Text("Tidak"),
               ),
               TextButton(
@@ -86,7 +101,6 @@ class _InfografisPagesState extends State<InfografisPages> {
   }
 
   Future<void> downloadAndShowConfirmation(BuildContext context, String pdfUrl, String fileName) async {
-    // Check if the necessary permissions are granted
     if (await _checkPermission()) {
       try {
         Fluttertoast.showToast(
@@ -99,17 +113,13 @@ class _InfografisPagesState extends State<InfografisPages> {
           fontSize: 16.0,
         );
 
-        //Download a single file
         FileDownloader.downloadFile(
             url: pdfUrl,
             name: fileName,
             downloadDestination: DownloadDestinations.publicDownloads,
-            onProgress: (fileName, double progress) {
-
-            },
+            onProgress: (fileName, double progress) {},
             onDownloadCompleted: (String path) {
-              //Renaming File Extension
-              String fileExt = path.substring(path.lastIndexOf('.'),path.length);
+              String fileExt = path.substring(path.lastIndexOf('.'), path.length);
               File downloadedFile = File('/storage/emulated/0/Download/$fileName$fileExt');
               downloadedFile.rename(downloadedFile.path.replaceAll('.php', '.jpg'));
 
@@ -124,7 +134,7 @@ class _InfografisPagesState extends State<InfografisPages> {
               );
             },
             onDownloadError: (String error) {
-              Navigator.pop(context); // Close the download dialog
+              Navigator.pop(context);
               Fluttertoast.showToast(
                 msg: "Gagal mengunduh berkas.",
                 toastLength: Toast.LENGTH_SHORT,
@@ -136,7 +146,7 @@ class _InfografisPagesState extends State<InfografisPages> {
               );
             });
       } catch (error) {
-        Navigator.pop(context); // Close the download dialog
+        Navigator.pop(context);
         Fluttertoast.showToast(
           msg: "Terjadi kesalahan saat mengunduh. $error",
           toastLength: Toast.LENGTH_SHORT,
@@ -147,9 +157,7 @@ class _InfografisPagesState extends State<InfografisPages> {
           fontSize: 16.0,
         );
       }
-    }
-    else {
-      // Display a message indicating that the application is not authorized
+    } else {
       Fluttertoast.showToast(
         msg: "Aplikasi belum diizinkan untuk mengakses penyimpanan.",
         toastLength: Toast.LENGTH_SHORT,
@@ -168,18 +176,20 @@ class _InfografisPagesState extends State<InfografisPages> {
       appBar: AppBar(
         title: const Text('Infografis'),
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/left-arrow.png',
-            height: 25,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          icon: Image.asset('assets/icons/left-arrow.png', height: 25),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: ListView.builder(
-        itemCount: dataInfografis.length,
+        controller: _scrollController,
+        itemCount: dataInfografis.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
+          if (index == dataInfografis.length) {
+            return const Center(child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ));
+          }
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
@@ -205,27 +215,31 @@ class _InfografisPagesState extends State<InfografisPages> {
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  leading: Image.asset(
-                    'assets/icons/infographics.png',
-                    width: 40,
-                    height: 40,
+                  leading: Image.network(
+                    dataInfografis[index]['img'],
+                    fit: BoxFit.fill,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
                   ),
                   title: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Flexible(
-                        child: Text(
-                          dataInfografis[index]["title"],
-                          style: bold16.copyWith(color: dark1),
-                          textAlign: TextAlign.left,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dataInfografis[index]["title"],
+                              style: bold16.copyWith(color: dark1),
+                              textAlign: TextAlign.left,
+                            ),
+                            Text(
+                              "Tanggal Unggah: ${dataInfografis[index]["date"]}",
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
                         ),
                       ),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: Image.asset(
-                          'assets/icons/right-arrow.png',
-                          height: 16,
-                        ),
                       ),
                     ],
                   ),
@@ -246,8 +260,7 @@ class _InfografisPagesState extends State<InfografisPages> {
         await Permission.storage.request();
         await saf.getDirectoryPermission(isDynamic: true);
         return permissionStatus.isGranted;
-      }
-      else {
+      } else {
         return permissionStatus.isGranted;
       }
     }

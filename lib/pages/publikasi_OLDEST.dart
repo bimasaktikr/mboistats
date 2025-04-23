@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'package:mboistats/theme.dart';
 import 'package:saf/saf.dart';
 import 'dart:convert';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 
 class PublikasiPage extends StatefulWidget {
+  const PublikasiPage({Key? key}) : super(key: key);
+
   @override
   _PublikasiPageState createState() => _PublikasiPageState();
 }
@@ -13,78 +21,13 @@ class _PublikasiPageState extends State<PublikasiPage> {
   List<Map<String, dynamic>> dataPublikasi = [];
   List<String> abstraksiBrs = [];
   String pdfUrl = '';
-  final _scrollController = ScrollController();
-  final _list = <String>[];
-  int _currentPage = 1;
-  bool _isLoading = false;
-  late String _error;
 
   @override
   void initState() {
-    _scrollController.addListener(_loadMore);
-    _fetchData(_currentPage);
+    super.initState();
+    fetchDataPublikasi();
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchData(int pageKey) async {
-    setState(() {
-      _isLoading = true;
-      _error = '';
-    });
-    try {
-      final response = await http.get(Uri.parse('https://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/$pageKey/key/9db89e91c3c142df678e65a78c4e547f'));
-      if (response.statusCode == 200) {
-        setState(() {
-          _list.addAll(List<String>.from(json.decode(response.body)));
-          _isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load data');
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
-    }
-  }
-
-  void _loadMore() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent && !_isLoading) {
-      _currentPage++;
-      _fetchData(_currentPage);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Infinite Scrolling Example with Loading and Error States'),
-      ),
-      body: _error != null
-          ? Center(child: Text('Error: $_error'))
-          : ListView.builder(
-        controller: _scrollController,
-        itemCount: _list.length + (_isLoading ? 1 : 0),
-        itemBuilder: (BuildContext context, int index) {
-          if (index == _list.length) {
-            return const Center(child: CircularProgressIndicator());
-          } else {
-            return ListTile(
-              title: Text(_list[index]),
-            );
-          }
-        },
-      ),
-    );
-  }
-/*
   Future<void> fetchDataPublikasi() async {
     const String apiUrl = "https://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/1/key/9db89e91c3c142df678e65a78c4e547f";
 
@@ -113,7 +56,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Publikasi'),
+        title: const Text('Publikasi'),
         leading: IconButton(
           icon: Image.asset(
             'assets/icons/left-arrow.png',
@@ -141,15 +84,15 @@ class _PublikasiPageState extends State<PublikasiPage> {
                   border: Border.all(color: dark4),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withAlpha((0.2 * 255).round()),
                       spreadRadius: 2,
                       blurRadius: 4,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: ListTile(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
                   leading: Image.asset(
                     'assets/icons/publication.png',
                     width: 40,
@@ -169,7 +112,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
                             Text(
                               "Size: ${dataPublikasi[index]["size"]}",
                               style:
-                                  TextStyle(fontSize: 12, color: Colors.grey),
+                                  const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -198,14 +141,14 @@ class _PublikasiPageState extends State<PublikasiPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Konfirmasi Unduh"),
-          content: Text("Apakah Anda ingin membuka/mengunduh berkas publikasi ini?"),
+          title: const Text("Konfirmasi Unduh"),
+          content: const Text("Apakah Anda ingin membuka/mengunduh berkas publikasi ini?"),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context, false);
               },
-              child: Text("Tidak"),
+              child: const Text("Tidak"),
             ),
             TextButton(
               onPressed: () async {
@@ -214,14 +157,14 @@ class _PublikasiPageState extends State<PublikasiPage> {
                 String fileName = dataPublikasi[index]["title"];
                 await downloadAndShowConfirmation(context, pdfUrl, fileName);
               },
-              child: Text("Unduh"),
+              child: const Text("Unduh"),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 openPdfDirectly(context, pdfUrl);
               },
-              child: Text("Buka PDF"),
+              child: const Text("Buka PDF"),
             ),
           ],
         );
@@ -335,19 +278,19 @@ class _PublikasiPageState extends State<PublikasiPage> {
 class PDFViewer extends StatelessWidget {
   final String pdfUrl;
 
-  PDFViewer({required this.pdfUrl});
+  const PDFViewer({Key? key, required this.pdfUrl}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('PDF Viewer'),
+        title: const Text('PDF Viewer'),
       ),
       body: SfPdfViewer.network(
         pdfUrl,
       ),
     );
-  } */
+  }
 }
 
 

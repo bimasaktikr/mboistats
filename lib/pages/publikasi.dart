@@ -19,37 +19,56 @@ class PublikasiPage extends StatefulWidget {
 class _PublikasiPageState extends State<PublikasiPage> {
   late Saf saf;
   List<Map<String, dynamic>> dataPublikasi = [];
-  List<String> abstraksiBrs = [];
-  String pdfUrl = '';
+  int currentPage = 1;
+  bool isLoading = false;
+  bool hasMore = true;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     fetchDataPublikasi();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !isLoading && hasMore) {
+        fetchDataPublikasi();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchDataPublikasi() async {
-    const String apiUrl = "https://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/1/key/9db89e91c3c142df678e65a78c4e547f";
+    setState(() {
+      isLoading = true;
+    });
+
+    final String apiUrl = "https://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/$currentPage/key/9db89e91c3c142df678e65a78c4e547f";
 
     final response = await http.get(Uri.parse(apiUrl));
 
     if (response.statusCode == 200) {
       final parsedResponse = json.decode(response.body);
-      final publikasi = parsedResponse["data"][1];
+      final publikasi = List<Map<String, dynamic>>.from(parsedResponse["data"][1]);
 
       setState(() {
-        dataPublikasi = List<Map<String, dynamic>>.from(publikasi);
+        if (publikasi.isNotEmpty) {
+          dataPublikasi.addAll(publikasi);
+          currentPage++;
+        } else {
+          hasMore = false;
+        }
+        isLoading = false;
       });
     } else {
+      setState(() {
+        isLoading = false;
+      });
       throw Exception('Failed to load data');
     }
-  }
-
-  String truncateText(String text, int maxLength) {
-    if (text.length > maxLength) {
-      return text.substring(0, maxLength) + '...';
-    }
-    return text;
   }
 
   @override
@@ -58,25 +77,26 @@ class _PublikasiPageState extends State<PublikasiPage> {
       appBar: AppBar(
         title: const Text('Publikasi'),
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/left-arrow.png',
-            height: 25,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+          icon: Image.asset('assets/icons/left-arrow.png', height: 25),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: ListView.builder(
-        itemCount: dataPublikasi.length,
+        controller: _scrollController,
+        itemCount: dataPublikasi.length + 1,
         itemBuilder: (context, index) {
+          if (index == dataPublikasi.length) {
+            return hasMore
+                ? const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            )
+                : const SizedBox();
+          }
           return Padding(
             padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
             child: InkWell(
-              onTap: () {
-                String pdfUrl = dataPublikasi[index]["pdf"];
-                showDownloadDialog(context, pdfUrl, index);
-              },
+              onTap: () => showDownloadDialog(context, dataPublikasi[index]["pdf"], index),
               child: Container(
                 clipBehavior: Clip.hardEdge,
                 decoration: BoxDecoration(
@@ -93,10 +113,10 @@ class _PublikasiPageState extends State<PublikasiPage> {
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  leading: Image.asset(
-                    'assets/icons/publication.png',
-                    width: 40,
-                    height: 40,
+                  leading: Image.network(
+                    dataPublikasi[index]['cover'],
+                    fit: BoxFit.fill,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
                   ),
                   title: Row(
                     children: [
@@ -110,19 +130,14 @@ class _PublikasiPageState extends State<PublikasiPage> {
                               textAlign: TextAlign.left,
                             ),
                             Text(
-                              "Size: ${dataPublikasi[index]["size"]}",
-                              style:
-                                  const TextStyle(fontSize: 12, color: Colors.grey),
+                              "Ukuran Berkas: ${dataPublikasi[index]["size"].replaceAll('.', ',')}",
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
                       ),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: Image.asset(
-                          'assets/icons/right-arrow.png',
-                          height: 16,
-                        ),
                       ),
                     ],
                   ),
@@ -136,7 +151,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
   }
 
   void showDownloadDialog(BuildContext context, String pdfUrl, int index) {
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -144,16 +158,10 @@ class _PublikasiPageState extends State<PublikasiPage> {
           title: const Text("Konfirmasi Unduh"),
           content: const Text("Apakah Anda ingin membuka/mengunduh berkas publikasi ini?"),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context, false);
-              },
-              child: const Text("Tidak"),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tidak")),
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
-                // showToastMessage(pdfUrl);
                 String fileName = dataPublikasi[index]["title"];
                 await downloadAndShowConfirmation(context, pdfUrl, fileName);
               },
@@ -173,75 +181,60 @@ class _PublikasiPageState extends State<PublikasiPage> {
   }
 
   Future<void> downloadAndShowConfirmation(BuildContext context, String pdfUrl, String fileName) async {
-    // Check if the necessary permissions are granted
     if (await _checkPermission()) {
       try {
         Fluttertoast.showToast(
           msg: "Berkas publikasi sedang diunduh.",
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
           backgroundColor: Colors.blue,
           textColor: Colors.white,
           fontSize: 16.0,
         );
 
-        //Download a single file
         FileDownloader.downloadFile(
             url: pdfUrl,
             name: fileName,
             downloadDestination: DownloadDestinations.publicDownloads,
-            onProgress: (fileName, double progress) {
-
-            },
+            onProgress: (fileName, double progress) {},
             onDownloadCompleted: (String path) {
-              //Renaming File Extension
-              String fileExt = path.substring(path.lastIndexOf('.'),path.length);
-              File downloadedFile = File('/storage/emulated/0/Download/$fileName$fileExt');
+              File downloadedFile = File('/storage/emulated/0/Download/\$fileName\$fileExt');
               downloadedFile.rename(downloadedFile.path.replaceAll(".php", ".pdf"));
 
               Fluttertoast.showToast(
-                msg: 'Publikasi "$fileName.pdf" telah disimpan dalam Folder Download.',
+                msg: 'Publikasi "\$fileName.pdf" telah disimpan dalam Folder Download.',
                 toastLength: Toast.LENGTH_LONG,
                 gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
                 backgroundColor: Colors.blue,
                 textColor: Colors.white,
                 fontSize: 16.0,
               );
             },
             onDownloadError: (String error) {
-              Navigator.pop(context); // Close the download dialog
               Fluttertoast.showToast(
                 msg: "Gagal mengunduh berkas.",
                 toastLength: Toast.LENGTH_SHORT,
                 gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
                 backgroundColor: Colors.blue,
                 textColor: Colors.white,
                 fontSize: 16.0,
               );
             });
       } catch (error) {
-        Navigator.pop(context); // Close the download dialog
         Fluttertoast.showToast(
-          msg: "Terjadi kesalahan saat mengunduh. $error",
+          msg: "Terjadi kesalahan saat mengunduh. \$error",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
           backgroundColor: Colors.blue,
           textColor: Colors.white,
           fontSize: 16.0,
         );
       }
-    }
-    else {
-      // Display a message indicating that the application is not authorized
+    } else {
       Fluttertoast.showToast(
         msg: "Aplikasi belum diizinkan untuk mengakses penyimpanan.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
         backgroundColor: Colors.blue,
         textColor: Colors.white,
         fontSize: 16.0,
@@ -254,11 +247,10 @@ class _PublikasiPageState extends State<PublikasiPage> {
       var permissionStatus = await Permission.storage.status;
 
       if (permissionStatus.isDenied) {
-          await Permission.storage.request();
-          await saf.getDirectoryPermission(isDynamic: true);
-          return permissionStatus.isGranted;
-      }
-      else {
+        await Permission.storage.request();
+        await saf.getDirectoryPermission(isDynamic: true);
+        return permissionStatus.isGranted;
+      } else {
         return permissionStatus.isGranted;
       }
     }
@@ -292,5 +284,3 @@ class PDFViewer extends StatelessWidget {
     );
   }
 }
-
-
