@@ -111,30 +111,39 @@ class _ContactState extends State<Contact> {
                               'Apakah Anda ingin menghubungi BPS Kota Malang pada nomor telepon ${item.description}?',
                               textAlign: TextAlign.justify,
                           ),
-                          actions: <Widget>[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                OutlinedButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(false);
-                                  },
-                                  style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
-                                  child: const Text('Batal', style: TextStyle(color: Colors.blue)),
-                                ),
-                                const SizedBox(width: 16), // Space between buttons
-                                OutlinedButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(); // Tutup dialog
-                                    launchUrlString('tel:${item.description}'); // Meluncurkan panggilan telepon
-                                  },
-                                  style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
-                                  child: const Text('Hubungi', style: TextStyle(color: Colors.blue)),
-                                ),
-                              ],
-                            ),
-                          ],
-
+                            actions: <Widget>[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 120, // Set desired width
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop(false);
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(color: Colors.blue),
+                                      ),
+                                      child: const Text('Batal', style: TextStyle(color: Colors.blue)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16), // Space between buttons
+                                  SizedBox(
+                                    width: 120, // Set desired width
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop(); // Tutup dialog
+                                        launchUrlString('tel:${item.description}'); // Meluncurkan panggilan telepon
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(color: Colors.blue),
+                                      ),
+                                      child: const Text('Hubungi', style: TextStyle(color: Colors.blue)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ]
                         ),
                       );
                     } else if (item.title == 'Alamat') {

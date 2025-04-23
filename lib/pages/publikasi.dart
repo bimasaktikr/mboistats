@@ -103,6 +103,8 @@ class _PublikasiPageState extends State<PublikasiPage> {
           return InkWell(
             onTap: () => showDownloadDialog(context, dataPublikasi[index]["pdf"], index),
             child: Container(
+              width: 70,
+              height: 100,
               clipBehavior: Clip.hardEdge,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
