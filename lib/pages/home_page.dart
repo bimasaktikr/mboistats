@@ -39,11 +39,13 @@ class _HomePageState extends State<HomePage> {
             children: [
               OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(false),
+                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
                 child: const Text('Tidak', style: TextStyle(color: Colors.blue)),
               ),
               const SizedBox(width: 16), // space between buttons
               OutlinedButton(
                 onPressed: () => SystemNavigator.pop(),
+                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
                 child: const Text('Ya', style: TextStyle(color: Colors.blue)),
               ),
             ],
