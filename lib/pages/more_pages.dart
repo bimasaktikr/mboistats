@@ -34,9 +34,9 @@ class MorePages extends StatelessWidget {
                 child: InkWell(
                   onTap: () {
                     if (item.title == 'Galeri InovaZI') {
-                      launchUrlString('https://sites.google.com/view/bincangdata/halaman-muka');
-                    } else if (item.title == 'LAPOR') {
-                      launchUrlString('https://s.bps.go.id/lapor3573');
+                      launchUrlString('https://s.bps.go.id/mboistats_galeri_inovazi');
+                    } else if (item.title == 'PENGADUAN') {
+                      launchUrlString('https://s.bps.go.id/mboistats_lapor3573');
                     }
                   },
                   child: Container(
