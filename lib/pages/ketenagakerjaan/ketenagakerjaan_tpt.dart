@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class PersentasePengangguranMenurutPendidikanPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _PersentasePengangguranMenurutPendidikanPageState extends State<Persentase
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/ketenagakerjaan_tpt.html');
+    ..loadFlutterAssetWithServer('assets/web/ketenagakerjaan_tpt.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

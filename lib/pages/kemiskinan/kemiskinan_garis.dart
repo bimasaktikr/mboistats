@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class GarisKemiskinanPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _GarisKemiskinanPageState extends State<GarisKemiskinanPage> {
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/kemiskinan_garis.html');
+    ..loadFlutterAssetWithServer('assets/web/kemiskinan_garis.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

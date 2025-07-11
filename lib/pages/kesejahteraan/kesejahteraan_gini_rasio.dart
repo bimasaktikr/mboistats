@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class GiniRasioPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _GiniRasioPageState extends State<GiniRasioPage> {
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/kesejahteraan_gini_rasio.html');
+    ..loadFlutterAssetWithServer('assets/web/kesejahteraan_gini_rasio.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

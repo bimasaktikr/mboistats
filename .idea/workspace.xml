@@ -13,41 +13,114 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2355516e-4a0a-42b0-908b-cd3ab65d93c8" name="Changes" comment="perubahan data">
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/CHANGELOG.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/CONTRIBUTING.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/LICENSE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/analysis_options.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/gradle.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/gradle/wrapper/gradle-wrapper.jar" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/gradlew" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/gradlew.bat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/settings.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/AndroidManifest.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/SafPlugin.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/api/DocumentFileApi.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/api/DocumentsContractApi.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/api/StorageAccessFrameworkApi.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/api/utils/DocumentCommon.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/api/utils/DocumentConstant.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/api/utils/DocumentFileColumn.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/api/utils/SafUtil.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/plugin/ActivityListener.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/plugin/Common.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/plugin/Listenable.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/android/src/main/kotlin/com/ivehement/saf/plugin/PluginConstant.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/analysis_options.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/debug/AndroidManifest.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/kotlin/com/ivehement/saf_example/MainActivity.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/drawable-v21/launch_background.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/drawable/launch_background.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/mipmap-hdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/mipmap-mdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/values-night/styles.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/main/res/values/styles.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/app/src/profile/AndroidManifest.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/build.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/gradle.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/android/settings.gradle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/lib/main.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/pubspec.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/screenshots/saf_banner.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/screenshots/saf_example.gif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/example/test/widget_test.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/saf.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/channels.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/storage_access_framework/api.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/storage_access_framework/document_bitmap.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/storage_access_framework/document_file.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/storage_access_framework/document_file_column.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/storage_access_framework/file_types.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/storage_access_framework/partial_document_file.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/storage_access_framework/saf.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/lib/src/storage_access_framework/uri_permission.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/pubspec.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/local_packages/saf/test/saf_test.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.dart_tool/dartpad/web_plugin_registrant.dart" beforeDir="false" afterPath="$PROJECT_DIR$/.dart_tool/dartpad/web_plugin_registrant.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.dart_tool/package_config.json" beforeDir="false" afterPath="$PROJECT_DIR$/.dart_tool/package_config.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.dart_tool/package_config_subset" beforeDir="false" afterPath="$PROJECT_DIR$/.dart_tool/package_config_subset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.flutter-plugins" beforeDir="false" afterPath="$PROJECT_DIR$/.flutter-plugins" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.flutter-plugins-dependencies" beforeDir="false" afterPath="$PROJECT_DIR$/.flutter-plugins-dependencies" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ipm.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ipm.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ipm_daya_beli.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ipm_daya_beli.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ipm_hls.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ipm_hls.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ipm_rls.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ipm_rls.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ipm_uhh.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ipm_uhh.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kemiskinan_garis.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kemiskinan_garis.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kemiskinan_indeks_kedalaman.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kemiskinan_indeks_kedalaman.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kemiskinan_indeks_keparahan.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kemiskinan_indeks_keparahan.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kemiskinan_tingkat.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kemiskinan_tingkat.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kependudukan_blimbing.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kependudukan_blimbing.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kependudukan_jenis_kelamin.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kependudukan_jenis_kelamin.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kependudukan_kecamatan.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kependudukan_kecamatan.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kependudukan_kedungkandang.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kependudukan_kedungkandang.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kependudukan_klojen.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kependudukan_klojen.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kependudukan_lowokwaru.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kependudukan_lowokwaru.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kependudukan_sukun.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kependudukan_sukun.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kesejahteraan_gini_rasio.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kesejahteraan_gini_rasio.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/kesejahteraan_pengeluaran_perkapita.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/kesejahteraan_pengeluaran_perkapita.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ketenagakerjaan_ak_pendidikan.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ketenagakerjaan_ak_pendidikan.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ketenagakerjaan_penganggur_pendidikan.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ketenagakerjaan_penganggur_pendidikan.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ketenagakerjaan_tpak.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ketenagakerjaan_tpak.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/ketenagakerjaan_tpt.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/ketenagakerjaan_tpt.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/perekonomian_inflasi_bulanan.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/perekonomian_inflasi_bulanan.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/perekonomian_inflasi_tahunan.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/perekonomian_inflasi_tahunan.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/perekonomian_lpe.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/perekonomian_lpe.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/perekonomian_pdrb_lapus.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/perekonomian_pdrb_lapus.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/pertanian_luas_panen_padi.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/pertanian_luas_panen_padi.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/pertanian_produksi_beras.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/pertanian_produksi_beras.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/pertanian_produksi_padi.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/pertanian_produksi_padi.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/web/pertanian_produktivitas_padi.html" beforeDir="false" afterPath="$PROJECT_DIR$/assets/web/pertanian_produktivitas_padi.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/android/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/main.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/IPM/ipm.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/IPM/ipm.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/IPM/ipm_daya_beli.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/IPM/ipm_daya_beli.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/IPM/ipm_hls.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/IPM/ipm_hls.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/IPM/ipm_rls.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/IPM/ipm_rls.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/IPM/ipm_uhh.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/IPM/ipm_uhh.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/contact.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/contact.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/ekonomi/perekonomian_inflasi_bulanan.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/ekonomi/perekonomian_inflasi_bulanan.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/ekonomi/perekonomian_inflasi_tahunan.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/ekonomi/perekonomian_inflasi_tahunan.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/ekonomi/perekonomian_lpe.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/ekonomi/perekonomian_lpe.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/ekonomi/perekonomian_pdrb.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/ekonomi/perekonomian_pdrb.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kemiskinan/kemiskinan_garis.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kemiskinan/kemiskinan_garis.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kemiskinan/kemiskinan_indeks_kedalaman.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kemiskinan/kemiskinan_indeks_kedalaman.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kemiskinan/kemiskinan_indeks_keparahan.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kemiskinan/kemiskinan_indeks_keparahan.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kemiskinan/kemiskinan_tingkat.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kemiskinan/kemiskinan_tingkat.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_blimbing.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_blimbing.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_jenis_kelamin.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_jenis_kelamin.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_kecamatan.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_kecamatan.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_kedungkandang.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_kedungkandang.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_klojen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_klojen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_lowokwaru.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_lowokwaru.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_sukun.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kependudukan/kependudukan_sukun.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kesejahteraan/kesejahteraan_gini_rasio.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kesejahteraan/kesejahteraan_gini_rasio.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/kesejahteraan/kesejahteraan_pengeluaran_perkapita.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/kesejahteraan/kesejahteraan_pengeluaran_perkapita.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/ketenagakerjaan/ketenagakerjaan_ak_pendidikan.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/ketenagakerjaan/ketenagakerjaan_ak_pendidikan.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/ketenagakerjaan/ketenagakerjaan_penganggur_pendidikan.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/ketenagakerjaan/ketenagakerjaan_penganggur_pendidikan.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/ketenagakerjaan/ketenagakerjaan_tpak.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/ketenagakerjaan/ketenagakerjaan_tpak.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/ketenagakerjaan/ketenagakerjaan_tpt.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/ketenagakerjaan/ketenagakerjaan_tpt.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/pertanian/pertanian_luas_panen_padi.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/pertanian/pertanian_luas_panen_padi.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/pertanian/pertanian_produksi_beras.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/pertanian/pertanian_produksi_beras.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/pertanian/pertanian_produksi_padi.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/pertanian/pertanian_produksi_padi.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pages/pertanian/pertanian_produktivitas_padi.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pages/pertanian/pertanian_produktivitas_padi.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/windows/flutter/generated_plugins.cmake" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -111,7 +184,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_ADD_EXTERNAL_FILES": "true",
-    "ResourceManagerPrefKey.ResourceType": "LAYOUT",
+    "ResourceManagerPrefKey.ResourceType": "DRAWABLE",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
@@ -121,11 +194,11 @@
     "ignore.virus.scanning.warn.message": "true",
     "io.flutter.reload.alreadyRun": "true",
     "last_opened_file_path": "X:/AndroidProject/mboistats+/android",
-    "project.structure.last.edited": "Modules",
+    "project.structure.last.edited": "SDKs",
     "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.2",
     "run.code.analysis.last.selected.profile": "pProject Default",
-    "settings.editor.selected.configurable": "AndroidSdkUpdater",
+    "settings.editor.selected.configurable": "debugger.hotswap",
     "show.migrate.to.gradle.popup": "false"
   }
 }]]></component>
@@ -134,6 +207,21 @@
       <recent name="E:\Data Kuliah\proyek-magang\mboistats\android" />
       <recent name="E:\Data Kuliah\proyek-magang\mboistats\mboistats\android" />
     </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="mboistats_android" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="mboistats_android" />
+      <option name="filePath" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
@@ -146,14 +234,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1701761023049</updated>
-    </task>
-    <task id="LOCAL-00004" summary="perubahan data">
-      <option name="closed" value="true" />
-      <created>1713346693807</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1713346693807</updated>
     </task>
     <task id="LOCAL-00005" summary="perubahan data">
       <option name="closed" value="true" />
@@ -539,7 +619,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745999173355</updated>
     </task>
-    <option name="localTasksCounter" value="53" />
+    <task id="LOCAL-00053" summary="perubahan data">
+      <option name="closed" value="true" />
+      <created>1752023802352</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1752023802353</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="ToolWindowManager">

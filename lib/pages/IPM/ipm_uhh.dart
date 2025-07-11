@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class UsiaHarapanHidupPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _UsiaHarapanHidupPageState extends State<UsiaHarapanHidupPage> {
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/ipm_uhh.html');
+    ..loadFlutterAssetWithServer('assets/web/ipm_uhh.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

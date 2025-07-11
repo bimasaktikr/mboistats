@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class PDRB extends StatefulWidget {
@@ -24,7 +25,7 @@ class _PDRBState extends State<PDRB> {
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/perekonomian_pdrb_lapus.html');
+    ..loadFlutterAssetWithServer('assets/web/perekonomian_pdrb_lapus.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

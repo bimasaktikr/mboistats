@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class DayaBeliPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _DayaBeliPageState extends State<DayaBeliPage> {
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/ipm_daya_beli.html');
+    ..loadFlutterAssetWithServer('assets/web/ipm_daya_beli.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

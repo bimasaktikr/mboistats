@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class PendudukBlimbingPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _PendudukBlimbingPageState extends State<PendudukBlimbingPage> {
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/kependudukan_blimbing.html');
+    ..loadFlutterAssetWithServer('assets/web/kependudukan_blimbing.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

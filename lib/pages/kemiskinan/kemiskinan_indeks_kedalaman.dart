@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class IndeksKedalamanKemiskinanPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _IndeksKedalamanKemiskinanPageState extends State<IndeksKedalamanKemiskina
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/kemiskinan_indeks_kedalaman.html');
+    ..loadFlutterAssetWithServer('assets/web/kemiskinan_indeks_kedalaman.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/datas/contact.dart';
 import 'package:mboistats/theme.dart';

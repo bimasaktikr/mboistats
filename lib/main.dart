@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:mboistats/route-manager.dart';
-import 'package:connectivity/connectivity.dart';
+// import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:webview_flutter_plus/webview_flutter_plus.dart';
+
+LocalhostServer localhostServer = LocalhostServer();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await localhostServer.start(port: 0);
   runApp(const MyApp());
 }
 

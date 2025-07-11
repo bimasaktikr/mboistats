@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class IndexPembangunanManusiaPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _IndexPembangunanManusiaPageState extends State<IndexPembangunanManusiaPag
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/ipm.html');
+    ..loadFlutterAssetWithServer('assets/web/ipm.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {

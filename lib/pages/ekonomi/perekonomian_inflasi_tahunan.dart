@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/main.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 class InflasiTahunanPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _InflasiTahunanPageState extends State<InflasiTahunanPage> {
         onWebResourceError: (WebResourceError error) {},
       ),
     )
-    ..loadFlutterAssetServer('assets/web/perekonomian_inflasi_tahunan.html');
+    ..loadFlutterAssetWithServer('assets/web/perekonomian_inflasi_tahunan.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {
