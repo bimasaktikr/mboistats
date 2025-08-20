@@ -37,6 +37,8 @@ class MorePages extends StatelessWidget {
                       launchUrlString('https://s.bps.go.id/mboistats_galeri_inovazi');
                     } else if (item.title == 'PENGADUAN') {
                       launchUrlString('https://s.bps.go.id/mboistats_lapor3573');
+                    }else if (item.title == 'Feedback') {
+                      launchUrlString('https://s.bps.go.id/mboistats_feedback');
                     }
                   },
                   child: Container(
