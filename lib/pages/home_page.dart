@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mboistats/components/app_drawer.dart'; // Import drawer baru
 import 'package:mboistats/components/buttonSection.dart';
 import 'package:mboistats/components/carousel_infografis.dart';
 import 'package:mboistats/components/carousel_publikasi.dart';
@@ -15,12 +16,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // --- TAMBAHKAN: GlobalKeys untuk me-refresh carousel ---
+  final GlobalKey<CarouselPublikasiState> _publikasiKey = GlobalKey<CarouselPublikasiState>();
+  final GlobalKey<CarouselInfografisState> _infografisKey = GlobalKey<CarouselInfografisState>();
+
   @override
   void initState() {
     super.initState();
   }
 
+  // --- TAMBAHKAN: Fungsi untuk me-refresh kedua carousel ---
+  void _refreshCarousels() {
+    print("DEBUG: Refreshing carousels from HomePage...");
+    _publikasiKey.currentState?.fetchData();
+    _infografisKey.currentState?.fetchData();
+  }
+
   Future<bool> _onWillPop() async {
+    // ... (kode _onWillPop tetap sama) ...
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -80,14 +93,18 @@ class _HomePageState extends State<HomePage> {
             'MBOIStatS+',
             style: TextStyle(color: Colors.black),
           ),
-          leading: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Image.asset('assets/images/Mbois-stat Logo_Fix Putih.png',
-                  width: 40, height: 40),
-            ],
-          ),
+          // --- UBAH: Gunakan icon hamburger standar untuk membuka drawer ---
+          // 'leading' tidak diperlukan lagi jika menggunakan Drawer
+          // leading: Row(
+          //   mainAxisAlignment: MainAxisAlignment.end,
+          //   children: [
+          //     Image.asset('assets/images/Mbois-stat Logo_Fix Putih.png',
+          //         width: 40, height: 40),
+          //   ],
+          // ),
         ),
+        // --- TAMBAHKAN: Drawer ---
+        drawer: AppDrawer(onRefreshNeeded: _refreshCarousels), // Kirim fungsi refresh
         body: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,8 +122,10 @@ class _HomePageState extends State<HomePage> {
               ),
               const Menus(),
               ButtonSection(),
-              const CarouselPublikasi(),
-              const CarouselInfografis(),
+              // --- TAMBAHKAN: Key ke Carousel ---
+              CarouselPublikasi(key: _publikasiKey),
+              CarouselInfografis(key: _infografisKey),
+              // --- AKHIR PERUBAHAN ---
             ],
           ),
         ),
@@ -115,3 +134,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+

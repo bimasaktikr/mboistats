@@ -21,74 +21,51 @@ class KependudukanPages extends StatelessWidget {
           },
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(
-              height: 24,
-            ),
-            //News
-            ...kependudukan.map((item) => Padding(
-                  padding:
-                  const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+      body: ListView( // Ganti SingleChildScrollView/Column ke ListView
+        padding: const EdgeInsets.only(top: 24.0),
+        children: [
+          ...kependudukan.map((item) => Container(
+                // --- PERUBAHAN TAMPILAN ---
+                margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 10.0,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12.0),
                   child: InkWell(
                     onTap: () {
                       if (item.route != null) {
                         Navigator.of(context).pushNamed(item.route!);
                       }
                     },
-                    child: Container(
-                      clipBehavior: Clip.hardEdge,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: dark4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey
-                                .withOpacity(0.2), // Warna abu-abu transparan
-                            spreadRadius: 2, // Seberapa tersebar bayangannya
-                            blurRadius: 4, // Seberapa kabur bayangannya
-                            offset: const Offset(
-                                0, 2), // Perpindahan bayangan dari widget
-                          ),
-                        ],
-                      ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                       child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      leading: GestureDetector(
-                        onTap: () {
-                          if (item.route != null) {
-                            Navigator.of(context).pushNamed(item.route!);
-                          }
-                        },
-                        child: Image.asset('assets/icons/${item.icons}'),
+                        contentPadding: EdgeInsets.zero,
+                        leading: Image.asset('assets/icons/${item.icons}'),
+                        title: Text(
+                          item.title,
+                          style: bold16.copyWith(color: dark1, fontSize: 14),
+                        ),
+                        trailing: Image.asset(
+                          'assets/icons/right-arrow.png',
+                          height: 16,
+                        ),
                       ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              item.title,
-                              style: bold16.copyWith(color: dark1),
-                              textAlign: TextAlign.left,
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Image.asset(
-                              'assets/icons/right-arrow.png',
-                              height: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                     ),
                   ),
-                )),
-          ],
-        ),
+                ),
+                // --- AKHIR PERUBAHAN ---
+              )),
+        ],
       ),
     );
   }

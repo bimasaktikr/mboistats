@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import
+import 'dart:async'; // Import untuk Timer
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -7,32 +9,54 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  double opacity = 1.0; // Nilai opasitas awal
+  double opacity = 0.0; // Mulai dari 0
   late AnimationController controller;
 
   @override
   void initState() {
     super.initState();
 
-    // Menggunakan Future.delayed untuk mengatur animasi
-    Future.delayed(Duration(seconds: 2), () {
-      setState(() {
-        opacity =
-            0.0; // Mengubah opasitas menjadi 0 untuk menghilangkan tulisan
-      });
-
-      // Navigasi ke halaman beranda setelah animasi selesai
-      Future.delayed(Duration(seconds: 1), () {
-        Navigator.pushReplacementNamed(context, '/main');
-      });
-    });
-
     controller = AnimationController(
       duration: Duration(seconds: 1),
       vsync: this,
     );
 
-    controller.forward();
+    // Mulai animasi fade-in
+    Timer(Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          opacity = 1.0;
+        });
+      }
+    });
+
+    // Panggil fungsi pengecekan login
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    // Tunggu animasi fade-in selesai dan beri sedikit jeda
+    await Future.delayed(Duration(seconds: 2));
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Cek status login, default-nya false (belum login)
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    // Mulai fade-out
+    if (mounted) {
+      setState(() {
+        opacity = 0.0;
+      });
+    }
+    await Future.delayed(Duration(seconds: 1));
+
+    // Navigasi berdasarkan status login
+    if (!mounted) return;
+    if (isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/main');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override
@@ -45,35 +69,14 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            AnimatedOpacity(
-              opacity: opacity,
-              duration: Duration(seconds: 1),
-              child: Image.asset(
-                'assets/images/Mbois-stat Logo_Fix Putih.png',
-                width: 200,
-                height: 200,
-              ),
-            ),
-            AnimatedPositioned(
-              top: 130, // Ganti nilai top sesuai keinginan
-              duration: Duration(seconds: 1),
-              child: AnimatedOpacity(
-                opacity: opacity,
-                duration: Duration(seconds: 1),
-                // child: const Text(
-                //   "mboistats+",
-                //   style: TextStyle(
-                //     fontSize: 32,
-                //     fontWeight: FontWeight.bold,
-                //     color: Color.fromARGB(221, 219, 95, 12),
-                //   ),
-                // ),
-              ),
-            ),
-          ],
+        child: AnimatedOpacity(
+          opacity: opacity, // Gunakan state opacity
+          duration: Duration(seconds: 1),
+          child: Image.asset(
+            'assets/images/Mbois-stat Logo_Fix Putih.png',
+            width: 200,
+            height: 200,
+          ),
         ),
       ),
     );

@@ -28,66 +28,66 @@ class _FooterState extends State<Footer> {
   }
 
   void _onItemTapped(int index) {
+    // Jangan lakukan apa-apa jika halaman sudah aktif
+    if (index == _selectedIndex) return; 
+
     setState(() {
       _selectedIndex = index;
     });
 
     switch (_selectedIndex) {
       case 0:
+        // --- PERUBAHAN DI SINI ---
+        // Ganti 'pushNamed' menjadi 'pushReplacementNamed'
+        // agar tidak menumpuk halaman
         Navigator.of(context)
-            .pushNamed('/main'); // Ganti dengan rute yang sesuai
+            .pushReplacementNamed('/main'); // Ganti dengan rute yang sesuai
         break;
       case 1:
+        // --- PERUBAHAN DI SINI ---
         Navigator.of(context)
-            .pushNamed('/berita'); // Ganti dengan rute yang sesuai
+            .pushReplacementNamed('/berita'); // Ganti dengan rute yang sesuai
         break;
       case 2:
+        // --- PERUBAHAN DI SINI ---
         Navigator.of(context)
-            .pushNamed('/contact'); // Ganti dengan rute yang sesuai
+            .pushReplacementNamed('/contact'); // Ganti dengan rute yang sesuai
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Intersep saat tombol kembali ditekan
-        if (_selectedIndex != 0) {
-          // Jika tidak berada di halaman beranda, navigasi kembali ke halaman beranda
-          Navigator.of(context).pushNamed('/main');
-          return false; // Jangan pop rute saat ini
-        }
-        return true; // Izinkan popping rute saat ini (keluar dari aplikasi)
-      },
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.home,
-              color: _selectedIndex == 0 ? Colors.blue : null, // Home
-            ),
-            label: 'Beranda',
+    // --- PERUBAHAN DI SINI ---
+    // Hapus seluruh wrapper 'WillPopScope'
+    // Biarkan 'HomePage' yang mengelola tombol 'back'
+    return BottomNavigationBar(
+      currentIndex: _selectedIndex,
+      onTap: _onItemTapped,
+      items: [
+        BottomNavigationBarItem(
+          icon: Icon(
+            Icons.home,
+            color: _selectedIndex == 0 ? Colors.blue : null, // Home
           ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.newspaper_outlined,
-              color: _selectedIndex == 1 ? Colors.blue : null, // News
-            ),
-            label: 'BRS',
+          label: 'Beranda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(
+            Icons.newspaper_outlined,
+            color: _selectedIndex == 1 ? Colors.blue : null, // News
           ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.contacts,
-              color: _selectedIndex == 2 ? Colors.blue : null, // Contact
-            ),
-            label: 'Kontak',
+          label: 'BRS',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(
+            Icons.contacts,
+            color: _selectedIndex == 2 ? Colors.blue : null, // Contact
           ),
-        ],
-      ),
+          label: 'Kontak',
+        ),
+      ],
     );
+    // --- AKHIR PERUBAHAN ---
   }
-  }
-
+}

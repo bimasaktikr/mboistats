@@ -47,18 +47,21 @@ import 'package:mboistats/pages/pertanian/pertanian_luas_panen_padi.dart';
 import 'package:mboistats/pages/pertanian/pertanian_produksi_beras.dart';
 import 'package:mboistats/pages/pertanian/pertanian_produksi_padi.dart';
 import 'package:mboistats/pages/pertanian/pertanian_produktivitas_padi.dart';
+import 'package:mboistats/pages/favorit_page.dart'; // <-- TAMBAHKAN IMPORT BARU
+import 'package:mboistats/pages/login_page.dart'; // <-- TAMBAHKAN IMPORT INI
 
 class RouteManager {
   static Map<String, Widget Function(BuildContext)> routes = {
     '/splash': (context) => SplashScreen(),
-    '/main': (context) => HomePage(),
-    '/berita': (context) => BeritaPages(),
-    '/infografis': (context) => InfografisPages(),
-    '/tentang': (context) => TentangPages(),
+    '/login': (context) => const LoginPage(), // <-- TAMBAHKAN RUTE INI
+    '/main': (context) => const HomePage(),
+    '/berita': (context) => const BeritaPages(),
+    '/infografis': (context) => const InfografisPages(),
+    '/tentang': (context) => const TentangPages(),
     '/informasipelayanan': (context) => InformasiPelayananPages(),
-    '/publikasi': (context) => PublikasiPage(),
-    '/contact': (context) => Contact(),
-    '/kependudukan': (context) => KependudukanPages(),
+    '/publikasi': (context) => const PublikasiPage(),
+    '/contact': (context) => const Contact(),
+    '/kependudukan': (context) => const KependudukanPages(),
 
     '/ekonomi': (context) => EkonomiPages(),
     '/ipm': (context) => IPMPages(),
@@ -114,6 +117,7 @@ class RouteManager {
     '/LuasPanenPadi': (context) => LuasPanenPadiPage(),
     '/ProduksiPadi': (context) => ProduksiPadiPage(),
     '/ProduktivitasPadi': (context) => ProduktivitasPadiPage(),
-    '/ProduksiBeras': (context) => ProduksiBerasPage(),
+    '/ProduksiBeras': (context) => const ProduksiBerasPage(),
+    '/favorit': (context) => const FavoritPage(), // <-- TAMBAHKAN RUTE BARU
   };
 }

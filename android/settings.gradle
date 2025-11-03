@@ -1,20 +1,39 @@
-pluginManagement {
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+pluginManagement { // <-- HARUS PALING ATAS
     def flutterSdkPath = {
         def properties = new Properties()
-        file("local.properties").withInputStream { properties.load(it) }
-        def flutterSdkPath = properties.getProperty("flutter.sdk")
-        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
-        return flutterSdkPath
-    }
-    settings.ext.flutterSdkPath = flutterSdkPath()
+        def localPropertiesFile = new File(rootProject.projectDir.parentFile, "local.properties")
+        if (localPropertiesFile.exists()) {
+             localPropertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
+        } else {
+            localPropertiesFile = new File(rootProject.projectDir, "local.properties")
+             if (localPropertiesFile.exists()) {
+                localPropertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
+            }
+        }
+        def flutterSdkPathValue = properties.getProperty("flutter.sdk")
+        assert flutterSdkPathValue != null, "flutter.sdk not set in local.properties. Try running 'flutter doctor --android-licenses' and check for the file at 'C:\\projectflutter\\mboistats\\android\\local.properties' or 'C:\\projectflutter\\mboistats\\local.properties'."
+        return flutterSdkPathValue
+    }()
 
-    includeBuild("${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle")
+    includeBuild "$flutterSdkPath/packages/flutter_tools/gradle"
 
-    plugins {
-        id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
     }
 }
 
-include ":app"
+plugins { // <-- Setelah pluginManagement
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0" // <-- Plugin Flutter sudah di-apply di sini
+    id "com.android.application" version '8.6.0' apply false // <-- Sesuaikan jika perlu
+    id "org.jetbrains.kotlin.android" version '1.9.10' apply false // <-- Sesuaikan jika perlu
+}
 
-apply from: "${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle/app_plugin_loader.gradle"
+include ':app' // <-- Setelah plugins
+
+// TIDAK ADA LAGI 'apply from: ... app_plugin_loader.gradle' DI SINI
