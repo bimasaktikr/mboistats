@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/theme.dart'; // <-- Impor tema untuk warna
 
 class Footer extends StatefulWidget {
   const Footer({Key? key}) : super(key: key);
@@ -13,81 +14,104 @@ class _FooterState extends State<Footer> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    // Ambil nama rute halaman yang sedang aktif
     final currentRoute = ModalRoute.of(context)!.settings.name;
-
-    // Tentukan _selectedIndex berdasarkan nama rute halaman yang sedang aktif
     if (currentRoute == '/berita') {
       _selectedIndex = 1;
     } else if (currentRoute == '/contact') {
       _selectedIndex = 2;
     } else {
-      _selectedIndex = 0; // Default ke Beranda jika tidak ada rute yang cocok
+      _selectedIndex = 0;
     }
   }
 
   void _onItemTapped(int index) {
-    // Jangan lakukan apa-apa jika halaman sudah aktif
-    if (index == _selectedIndex) return; 
-
+    if (index == _selectedIndex) return;
     setState(() {
       _selectedIndex = index;
     });
-
-    switch (_selectedIndex) {
+    switch (index) {
       case 0:
-        // --- PERUBAHAN DI SINI ---
-        // Ganti 'pushNamed' menjadi 'pushReplacementNamed'
-        // agar tidak menumpuk halaman
-        Navigator.of(context)
-            .pushReplacementNamed('/main'); // Ganti dengan rute yang sesuai
+        Navigator.of(context).pushReplacementNamed('/main');
         break;
       case 1:
-        // --- PERUBAHAN DI SINI ---
-        Navigator.of(context)
-            .pushReplacementNamed('/berita'); // Ganti dengan rute yang sesuai
+        Navigator.of(context).pushReplacementNamed('/berita');
         break;
       case 2:
-        // --- PERUBAHAN DI SINI ---
-        Navigator.of(context)
-            .pushReplacementNamed('/contact'); // Ganti dengan rute yang sesuai
+        Navigator.of(context).pushReplacementNamed('/contact');
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- PERUBAHAN DI SINI ---
-    // Hapus seluruh wrapper 'WillPopScope'
-    // Biarkan 'HomePage' yang mengelola tombol 'back'
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: _onItemTapped,
-      items: [
-        BottomNavigationBarItem(
-          icon: Icon(
-            Icons.home,
-            color: _selectedIndex == 0 ? Colors.blue : null, // Home
-          ),
-          label: 'Beranda',
+    // Ini adalah 'Container' mengambang Anda
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Container(
+        // height: 65, // <-- 1. DIBUANG! Ini penyebab overflow
+
+        // --- 2. TAMBAHKAN PADDING DI SINI ---
+        // Ini akan memberi "ruang napas" vertikal di DALAM container.
+        // 'BottomNavigationBar' punya tinggi default ~56px.
+        // 'padding: EdgeInsets.symmetric(vertical: 4.0)' akan memberi 4px
+        // di atas dan 4px di bawah, sehingga total tingginya jadi ~64px.
+        // Ini aman dan tidak akan overflow.
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        // --- AKHIR PERBAIKAN ---
+
+        decoration: BoxDecoration(
+          color: Colors.white, // Latar belakang putih SOLID
+          borderRadius:
+              BorderRadius.circular(20.0), // Sudut yang membulat
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1), // Bayangan halus
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        BottomNavigationBarItem(
-          icon: Icon(
-            Icons.newspaper_outlined,
-            color: _selectedIndex == 1 ? Colors.blue : null, // News
+        // ClipRRect untuk memotong sudut BottomNavigationBar di dalamnya
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20.0),
+          child: BottomNavigationBar(
+            backgroundColor: Colors.transparent, // WAJIB, agar tembus ke Container
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            selectedItemColor: blue1,
+            unselectedItemColor: dark2,
+            type: BottomNavigationBarType.fixed,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            elevation: 0, // WAJIB, hapus bayangan/latar belakang bawaan
+
+            // --- 3. SAMAKAN UKURAN FONT ---
+            // Ini PENTING agar ikon tidak "melompat"
+            // dan terlihat pas di tengah.
+            selectedFontSize: 12.0,
+            unselectedFontSize: 12.0,
+            // --- AKHIR PERBAIKAN ---
+
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Beranda',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.newspaper_outlined),
+                activeIcon: Icon(Icons.newspaper),
+                label: 'BRS',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.contacts_outlined),
+                activeIcon: Icon(Icons.contacts),
+                label: 'Kontak',
+              ),
+            ],
           ),
-          label: 'BRS',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(
-            Icons.contacts,
-            color: _selectedIndex == 2 ? Colors.blue : null, // Contact
-          ),
-          label: 'Kontak',
-        ),
-      ],
+      ),
     );
-    // --- AKHIR PERUBAHAN ---
   }
 }

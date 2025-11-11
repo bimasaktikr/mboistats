@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mboistats/services/auth_service_custom.dart'; // <-- GANTI SERVICE
 import 'package:mboistats/theme.dart';
 
 class LoginPage extends StatefulWidget {
@@ -11,142 +10,97 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  // --- LOGIKA DIPERBARUI ---
+  final AuthServiceCustom _authService = AuthServiceCustom();
   bool _isLoading = false;
 
-  Future<void> _login() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    
+    final bool success = await _authService.signInWithGoogle(context);
 
-    // --- KREDENSIAL LOKAL (MOCK) ---
-    // Kredensial palsu untuk login
-    const String mockUsername = 'admin';
-    const String mockPassword = '12345';
-    // ---------------------------------
-
-    await Future.delayed(const Duration(seconds: 1)); // Simulasi loading API
-
-    if (_usernameController.text == mockUsername && _passwordController.text == mockPassword) {
-      // Jika berhasil, simpan status login
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('username', mockUsername); // Simpan username jika perlu
-
-      // Navigasi ke Halaman Utama dan hapus riwayat navigasi
-      Navigator.pushReplacementNamed(context, '/main');
-      
+    if (success) {
+      // Login berhasil
+      print("Login Berhasil via Server Kustom");
+      // Navigasi ke halaman utama dan hapus semua halaman sebelumnya
+      if (mounted) {
+         Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
+      }
     } else {
-      // Jika gagal, tampilkan pesan
-      Fluttertoast.showToast(
-        msg: "Username atau Password salah",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+      // Login gagal atau dibatalkan
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
-
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+  // --- AKHIR LOGIKA ---
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Logo Aplikasi Anda
-              Image.asset(
-                'assets/images/Mbois-stat Logo_Fix Putih.png',
-                height: 120,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Selamat Datang di MBOIStatS+',
-                textAlign: TextAlign.center,
-                style: bold18.copyWith(color: dark1),
-              ),
-              Text(
-                'Silakan login untuk melanjutkan',
-                textAlign: TextAlign.center,
-                style: regular14.copyWith(color: dark2),
-              ),
-              const SizedBox(height: 48),
-
-              // Kolom Username
-              TextField(
-                controller: _usernameController,
-                keyboardType: TextInputType.text,
-                decoration: InputDecoration(
-                  labelText: 'Username',
-                  prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Image.asset(
+                  'assets/images/Mbois-stat Logo_Fix Putih.png', // Logo Anda
+                  height: 120,
                 ),
-              ),
-              const SizedBox(height: 20),
-
-              // Kolom Password
-              TextField(
-                controller: _passwordController,
-                obscureText: true, // Sembunyikan password
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
+                const SizedBox(height: 24),
+                Text(
+                  'Selamat Datang di MBOIStatS+',
+                  textAlign: TextAlign.center,
+                  style: bold18.copyWith(color: dark1),
                 ),
-              ),
-              const SizedBox(height: 32),
-
-              // Tombol Login
-              ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  backgroundColor: Colors.blue, // Sesuaikan dengan tema Anda
+                const SizedBox(height: 8),
+                Text(
+                  'Masuk untuk menyimpan data favorit Anda.',
+                  textAlign: TextAlign.center,
+                  style: regular14.copyWith(color: dark2),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+                const SizedBox(height: 48),
+
+                // Tombol Google Sign-In
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: dark1,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: dark4),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                      )
-                    : const Text(
-                        'Login',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        onPressed: _handleGoogleSignIn,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/icons/google_icon.png', // Pastikan Anda punya aset ini
+                              height: 24,
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              'Masuk dengan Google',
+                              style: semibold14.copyWith(color: dark1),
+                            ),
+                          ],
+                        ),
                       ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+

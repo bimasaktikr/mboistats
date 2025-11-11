@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// HAPUS: import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mboistats/services/firestore_service.dart'; // <-- TAMBAH: Impor service baru
 import 'package:mboistats/theme.dart';
-import 'dart:convert';
+import 'dart:convert'; // <-- Tetap diperlukan untuk dialog
 import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html_unescape/html_unescape.dart';
@@ -18,57 +19,15 @@ class FavoritPage extends StatefulWidget {
 }
 
 class _FavoritPageState extends State<FavoritPage> {
-  List<Map<String, dynamic>> _favoriteItems = [];
-  bool _isLoading = true;
-  bool _didChange = false; 
+  // HAPUS: List<Map<String, dynamic>> _favoriteItems = [];
+  // HAPUS: bool _isLoading = true;
+  bool _didChange = false; // <-- TETAP DIPERLUKAN (untuk refresh HomePage saat pop)
 
-  @override
-  void initState() {
-    super.initState();
-    _loadFavorites();
-  }
+  // TAMBAH: Buat instance dari service kita
+  final FirestoreService _firestoreService = FirestoreService();
 
-  Future<void> _loadFavorites() async {
-    setState(() => _isLoading = true);
-    final prefs = await SharedPreferences.getInstance();
-    final allKeys = prefs.getKeys();
-
-    final favoriteKeys = allKeys.where((key) =>
-        key.startsWith('favorite_publikasi_') ||
-        key.startsWith('favorite_infografis_') ||
-        key.startsWith('favorite_brs_')); 
-
-    List<Map<String, dynamic>> items = [];
-    for (String key in favoriteKeys) {
-      final Object? value = prefs.get(key);
-
-      if (value is String) {
-        try {
-          items.add(jsonDecode(value));
-        } catch (e) {
-          print("Gagal decode JSON untuk key: $key, data rusak, menghapus.");
-          await prefs.remove(key); 
-        }
-      } else if (value is bool) {
-        print("Menghapus data favorit format lama (boolean) untuk key: $key");
-        await prefs.remove(key);
-      } else {
-        print("Tipe data tidak dikenal di favorit untuk key: $key, menghapus.");
-        await prefs.remove(key);
-      }
-    }
-
-    items.sort((a, b) {
-      String timeA = a['favorited_at'] ?? '1970-01-01T00:00:00.000Z'; 
-      String timeB = b['favorited_at'] ?? '1970-01-01T00:00:00.000Z'; 
-      return timeB.compareTo(timeA); 
-    });
-
-    setState(() {
-      _favoriteItems = items;
-      _isLoading = false;
-    });
-  }
+  // HAPUS: initState() dan _loadFavorites() tidak diperlukan lagi,
+  // StreamBuilder akan menangani loading.
 
   Widget _buildFavoriteItem(BuildContext context, Map<String, dynamic> item) {
     // Tentukan tipe item
@@ -76,7 +35,7 @@ class _FavoritPageState extends State<FavoritPage> {
     final bool isPublikasi = itemType == 'publikasi';
     final bool isInfografis = itemType == 'infografis';
     final bool isBrs = itemType == 'brs';
-    
+
     // Ambil data berdasarkan tipe
     final String title = item['title'] ?? 'Tanpa Judul';
     String imageUrl = '';
@@ -95,7 +54,7 @@ class _FavoritPageState extends State<FavoritPage> {
       typeLabel = 'Infografis';
       typeColor = Colors.green[700]!;
     } else if (isBrs) {
-      imageUrl = item['thumbnail'] ?? ''; 
+      imageUrl = item['thumbnail'] ?? '';
       date = item['rl_date'] ?? '';
       typeLabel = 'BRS';
       typeColor = Colors.orange[700]!;
@@ -105,49 +64,48 @@ class _FavoritPageState extends State<FavoritPage> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12.0), 
+        borderRadius: BorderRadius.circular(12.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08), 
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 10.0,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: ClipRRect( 
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(12.0),
-        child: InkWell( 
+        child: InkWell(
           onTap: () {
             _showItemDialog(
-              context,
-              item,
-              (String updatedPostId, bool newStatus) {
-                setState(() {
-                   _didChange = true; 
-                });
-                if (!newStatus) {
-                  setState(() {
-                    _favoriteItems.removeWhere((i) => (i['title'] ?? '') == updatedPostId);
-                  });
-                } else {
-                  _loadFavorites(); 
-                }
-              }
-            );
+                context,
+                item,
+                // PERUBAHAN: Saat favorit berubah, kita hanya perlu set _didChange.
+                // StreamBuilder akan otomatis memperbarui UI.
+                (String updatedPostId, bool newStatus) {
+              setState(() {
+                _didChange = true;
+              });
+              // HAPUS: _loadFavorites() atau _favoriteItems.removeWhere()
+              // tidak diperlukan lagi.
+            });
           },
-          child: Padding( 
+          child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0), 
+                  borderRadius: BorderRadius.circular(8.0),
                   child: Image.network(
                     imageUrl,
                     width: 70,
                     height: 90,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => 
-                      Container(width: 70, height: 90, color: Colors.grey[200], child: Icon(Icons.broken_image, color: Colors.grey[400])),
+                    errorBuilder: (context, error, stackTrace) => Container(
+                        width: 70,
+                        height: 90,
+                        color: Colors.grey[200],
+                        child: Icon(Icons.broken_image, color: Colors.grey[400])),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -156,17 +114,17 @@ class _FavoritPageState extends State<FavoritPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        typeLabel, 
+                        typeLabel,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600, 
-                          color: typeColor, 
+                          fontWeight: FontWeight.w600,
+                          color: typeColor,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         title,
-                        style: semibold14.copyWith(color: dark1), 
+                        style: semibold14.copyWith(color: dark1),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -192,7 +150,7 @@ class _FavoritPageState extends State<FavoritPage> {
     return WillPopScope(
       onWillPop: () async {
         Navigator.of(context).pop(_didChange);
-        return false; 
+        return false;
       },
       child: Scaffold(
         appBar: AppBar(
@@ -202,99 +160,132 @@ class _FavoritPageState extends State<FavoritPage> {
             onPressed: () => Navigator.of(context).pop(_didChange),
           ),
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _favoriteItems.isEmpty
-                ? Center(
-                    child: Text(
-                      'Anda belum memiliki item favorit.',
-                      style: regular14.copyWith(color: dark2),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _favoriteItems.length,
-                    itemBuilder: (context, index) {
-                      return _buildFavoriteItem(context, _favoriteItems[index]);
-                    },
-                  ),
+        // --- PERUBAHAN BESAR DI SINI ---
+        // Ganti body lama dengan StreamBuilder
+        body: StreamBuilder<List<Map<String, dynamic>>>(
+          // 1. Dengarkan stream dari FirestoreService
+          stream: _firestoreService.getFavoritesStream(),
+          builder: (context, snapshot) {
+            // 2. Tampilkan loading spinner saat menunggu
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            // 3. Tampilkan error jika ada
+            if (snapshot.hasError) {
+              print("Error StreamBuilder Favorit: ${snapshot.error}");
+              return Center(
+                  child: Text('Terjadi kesalahan memuat favorit.',
+                      style: regular14.copyWith(color: dark2)));
+            }
+
+            // 4. Tampilkan pesan jika data kosong
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(
+                child: Text(
+                  'Anda belum memiliki item favorit.',
+                  style: regular14.copyWith(color: dark2),
+                ),
+              );
+            }
+
+            // 5. Jika berhasil, ambil data dan bangun ListView
+            final favoriteItems = snapshot.data!;
+            return ListView.builder(
+              itemCount: favoriteItems.length,
+              itemBuilder: (context, index) {
+                return _buildFavoriteItem(context, favoriteItems[index]);
+              },
+            );
+          },
+        ),
+        // --- AKHIR PERUBAHAN ---
       ),
     );
   }
 
   void _showItemDialog(
-    BuildContext context, 
-    Map<String, dynamic> item, 
-    Function(String postId, bool newStatus) onFavoriteChanged 
-  ) {
-
+      BuildContext context,
+      Map<String, dynamic> item,
+      Function(String postId, bool newStatus) onFavoriteChanged) {
+    // --- PERUBAHAN LOGIKA ---
+    // Ambil detail item untuk Firestore
     final String itemType = item['type'] ?? 'unknown';
+    final String itemTitle = item["title"] ?? "Tanpa Judul";
+
+    // Tambahkan flags berdasarkan tipe sehingga variabel seperti isBrs tersedia
     final bool isPublikasi = itemType == 'publikasi';
     final bool isInfografis = itemType == 'infografis';
     final bool isBrs = itemType == 'brs';
-    
-    final String title = item["title"] ?? "Tanpa Judul";
-    final String postId = title;
-    final String postType = item['type']; 
 
-    bool? _isFavorited; 
-    final String favoriteKey = 'favorite_${postType}_$postId';
+    // HAPUS: String postId = title;
+    // HAPUS: String postType = item['type'];
+    // HAPUS: String favoriteKey = 'favorite_${postType}_$postId';
+    // --- AKHIR PERUBAHAN ---
+
+    bool? _isFavorited;
 
     showDialog(
-      context: context, 
-      builder: (BuildContext dialogContextInner) { 
+      context: context,
+      builder: (BuildContext dialogContextInner) {
         return StatefulBuilder(
-          builder: (dialogBuilderContext, setDialogState) { 
+          builder: (dialogBuilderContext, setDialogState) {
             
+            // --- PERUBAHAN LOGIKA ---
             void checkInitialFavoriteStatus() async {
-              if (_isFavorited != null) return; 
+              if (_isFavorited != null) return;
               try {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
+                // Ganti pengecekan SharedPreferences dengan Firestore
+                bool isFav =
+                    await _firestoreService.isFavorite(itemType, itemTitle);
+
                 if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
                   setDialogState(() {
-                    _isFavorited = prefs.containsKey(favoriteKey); 
+                    _isFavorited = isFav;
                   });
                 }
               } catch (e) {
                 print("Error checking favorite status: $e");
                 if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
-                   setDialogState(() => _isFavorited = false); 
+                  setDialogState(() => _isFavorited = false);
                 }
               }
             }
+            // --- AKHIR PERUBAHAN ---
 
-            WidgetsBinding.instance?.addPostFrameCallback((_) {
-               if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
-                  checkInitialFavoriteStatus();
-               }
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
+                checkInitialFavoriteStatus();
+              }
             });
 
+            // --- PERUBAHAN LOGIKA ---
             void toggleFavorite() async {
-              if (_isFavorited == null) return; 
+              if (_isFavorited == null) return;
 
               try {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                bool newStatus = !_isFavorited!; 
+                bool newStatus = !_isFavorited!;
                 if (newStatus) {
-                  item['favorited_at'] = DateTime.now().toIso8601String();
-                  String jsonData = jsonEncode(item);
-                  await prefs.setString(favoriteKey, jsonData);
+                  // Kirim seluruh data item ke service
+                  await _firestoreService.addFavorite(item);
                 } else {
-                  await prefs.remove(favoriteKey);
+                  // Kirim key yang diperlukan untuk menghapus
+                  await _firestoreService.removeFavorite(itemType, itemTitle);
                 }
-                
+
                 if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
                   setDialogState(() {
-                    _isFavorited = newStatus; 
+                    _isFavorited = newStatus;
                   });
                 }
-                
-                onFavoriteChanged(postId, newStatus); 
 
+                onFavoriteChanged(itemTitle, newStatus);
               } catch (e) {
                 print("Error toggling favorite: $e");
               }
             }
-            
+            // --- AKHIR PERUBAHAN ---
+
             Widget dialogContent;
             List<Widget> dialogActions = []; // Tombol Aksi
             List<Widget> mainButtons = []; // Tombol baris pertama
@@ -302,20 +293,23 @@ class _FavoritPageState extends State<FavoritPage> {
             // Tombol Tutup (Umum)
             mainButtons.add(
               TextButton(
-                onPressed: () => Navigator.pop(dialogContextInner), 
+                onPressed: () => Navigator.pop(dialogContextInner),
                 child: const Text("Tutup"),
-              )
+              ),
             );
 
-            // --- KONTEN DAN TOMBOL DINAMIS ---
-            if (isPublikasi || isBrs) { // Publikasi dan BRS mirip
+            // --- KONTEN DAN TOMBOL DINAMIS (TIDAK BERUBAH) ---
+            if (isPublikasi || isBrs) {
               dialogContent = SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      parse(HtmlUnescape().convert(item["abstract"] ?? "")).body?.text ?? '', 
+                      parse(HtmlUnescape().convert(item["abstract"] ?? ""))
+                              .body
+                              ?.text ??
+                          '',
                       style: TextStyle(fontSize: 13, color: dark1),
                       textAlign: TextAlign.justify,
                     ),
@@ -331,42 +325,40 @@ class _FavoritPageState extends State<FavoritPage> {
                   ],
                 ),
               );
-              
-              mainButtons.addAll([ // Tambahkan ke baris pertama
+
+              mainButtons.addAll([
                 TextButton(
                   onPressed: () async {
-                    Navigator.pop(dialogContextInner); 
-                    await _downloadFile(context, item["pdf"] ?? "", title, isPublikasi: true); 
+                    Navigator.pop(dialogContextInner);
+                    await _downloadFile(context, item["pdf"] ?? "", itemTitle,
+                        isPublikasi: true);
                   },
                   child: const Text("Unduh"),
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(dialogContextInner); 
+                    Navigator.pop(dialogContextInner);
                     _openPdfDirectly(context, item["pdf"] ?? "");
                   },
                   child: const Text("Buka PDF"),
                 ),
               ]);
-
-            } else { // Infografis
+            } else {
               dialogContent = SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Image.network(
-                      item['img'] ?? '',
-                      fit: BoxFit.contain, 
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.broken_image, size: 100, color: Colors.grey),
-                      loadingBuilder: (context, child, loadingProgress) {
-                         if (loadingProgress == null) return child;
-                         return Container( 
-                            height: 150, 
-                            child: Center(child: CircularProgressIndicator())
-                         );
-                      }
-                    ),
+                    Image.network(item['img'] ?? '',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.broken_image,
+                                size: 100, color: Colors.grey),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                              height: 150,
+                              child: Center(child: CircularProgressIndicator()));
+                        }),
                     const SizedBox(height: 8),
                     Text(
                       "Tanggal Rilis: ${item['date'] ?? 'N/A'}",
@@ -376,12 +368,13 @@ class _FavoritPageState extends State<FavoritPage> {
                   ],
                 ),
               );
-              
-              mainButtons.add( // Tambahkan ke baris pertama
+
+              mainButtons.add(
                 TextButton(
                   onPressed: () async {
-                     Navigator.pop(dialogContextInner); 
-                    await _downloadFile(context, item["img"] ?? "", title, isPublikasi: false);
+                    Navigator.pop(dialogContextInner);
+                    await _downloadFile(context, item["img"] ?? "", itemTitle,
+                        isPublikasi: false);
                   },
                   child: Row(
                     children: const [
@@ -393,54 +386,61 @@ class _FavoritPageState extends State<FavoritPage> {
                 ),
               );
             }
+            // --- AKHIR KONTEN DINAMIS ---
+
 
             // Tombol Favorit (Baris kedua)
             Widget favoriteButton = TextButton(
-                onPressed: toggleFavorite, 
-                child: _isFavorited == null 
-                  ? Container(width: 20, height: 20, margin: EdgeInsets.symmetric(horizontal: 16), child: CircularProgressIndicator(strokeWidth: 2))
+              onPressed: toggleFavorite,
+              child: _isFavorited == null
+                  ? Container(
+                      width: 20,
+                      height: 20,
+                      margin: EdgeInsets.symmetric(horizontal: 16),
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          _isFavorited! ? Icons.favorite : Icons.favorite_border, 
+                          _isFavorited!
+                              ? Icons.favorite
+                              : Icons.favorite_border,
                           color: _isFavorited! ? Colors.red : Colors.grey[600],
                           size: 20,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _isFavorited! ? 'Favorit' : 'Favoritkan', 
-                          style: TextStyle(color: _isFavorited! ? Colors.red : Colors.grey[700]),
+                          _isFavorited! ? 'Favorit' : 'Favoritkan',
+                          style: TextStyle(
+                              color: _isFavorited!
+                                  ? Colors.red
+                                  : Colors.grey[700]),
                         ),
                       ],
                     ),
-              );
+            );
 
-            // --- PERUBAHAN TATA LETAK DI SINI ---
             dialogActions = [
-              // Baris 1: Tombol Tutup, Unduh, Buka PDF
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: mainButtons,
               ),
-              // Baris 2: Tombol Favorit
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [favoriteButton],
               )
             ];
-            // --- AKHIR PERUBAHAN TATA LETAK ---
 
             return AlertDialog(
               title: Text(
-                title, 
+                itemTitle,
                 textAlign: TextAlign.center,
                 style: bold16.copyWith(color: dark1),
               ),
-              content: dialogContent, 
-              actionsPadding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0), // Beri padding
+              content: dialogContent,
+              actionsPadding:
+                  EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
               actions: [
-                // Ganti SingleChildScrollView menjadi Column
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: dialogActions,
@@ -453,13 +453,14 @@ class _FavoritPageState extends State<FavoritPage> {
     );
   }
 
-  // ... (Sisa kode _downloadFile, _checkPermission, _openPdfDirectly, dan PDFViewer tetap sama) ...
-  Future<void> _downloadFile(BuildContext context, String fileUrl, String fileName, {required bool isPublikasi}) async {
+  // --- FUNGSI HELPER (TIDAK BERUBAH) ---
+  Future<void> _downloadFile(BuildContext context, String fileUrl, String fileName,
+      {required bool isPublikasi}) async {
     if (fileUrl.isEmpty) {
-       Fluttertoast.showToast(msg: "URL tidak valid.");
-       return;
+      Fluttertoast.showToast(msg: "URL tidak valid.");
+      return;
     }
-    
+
     if (await _checkPermission()) {
       try {
         final String fileType = isPublikasi ? "Publikasi" : "Infografis";
@@ -471,27 +472,39 @@ class _FavoritPageState extends State<FavoritPage> {
 
         String extension = ".pdf";
         if (!isPublikasi) {
-            try {
-              Uri uri = Uri.parse(fileUrl); String path = uri.path; int lastDot = path.lastIndexOf('.');
-              if (lastDot != -1) { extension = path.substring(lastDot); int queryStart = extension.indexOf('?'); if (queryStart != -1) extension = extension.substring(0, queryStart); }
-              if (extension.isEmpty || extension.length > 5 || extension == '.php') extension = ".jpg";
-            } catch (_) { extension = ".jpg"; }
+          try {
+            Uri uri = Uri.parse(fileUrl);
+            String path = uri.path;
+            int lastDot = path.lastIndexOf('.');
+            if (lastDot != -1) {
+              extension = path.substring(lastDot);
+              int queryStart = extension.indexOf('?');
+              if (queryStart != -1)
+                extension = extension.substring(0, queryStart);
+            }
+            if (extension.isEmpty || extension.length > 5 || extension == '.php')
+              extension = ".jpg";
+          } catch (_) {
+            extension = ".jpg";
+          }
         }
-        
-        String safeFileName = fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-        
+
+        String safeFileName =
+            fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+
         FileDownloader.downloadFile(
             url: fileUrl.trim(),
-            name: "$safeFileName$extension", 
+            name: "$safeFileName$extension",
             downloadDestination: DownloadDestinations.publicDownloads,
             onDownloadCompleted: (String path) {
               if (isPublikasi && path.toLowerCase().endsWith('.php')) {
-                  File downloadedFile = File(path);
-                  String newPath = path.replaceAll('.php', '.pdf');
-                  downloadedFile.renameSync(newPath);
+                File downloadedFile = File(path);
+                String newPath = path.replaceAll('.php', '.pdf');
+                downloadedFile.renameSync(newPath);
               }
               Fluttertoast.showToast(
-                msg: '$fileType "$safeFileName$extension" disimpan di Download.',
+                msg:
+                    '$fileType "$safeFileName$extension" disimpan di Download.',
               );
             },
             onDownloadError: (String error) {
@@ -518,8 +531,8 @@ class _FavoritPageState extends State<FavoritPage> {
 
   void _openPdfDirectly(BuildContext context, String pdfUrl) {
     if (pdfUrl.isEmpty) {
-       Fluttertoast.showToast(msg: "URL PDF tidak valid.");
-       return;
+      Fluttertoast.showToast(msg: "URL PDF tidak valid.");
+      return;
     }
     Navigator.push(
       context,
@@ -540,19 +553,19 @@ class PDFViewer extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('PDF Viewer'),
-        leading: IconButton( 
+        leading: IconButton(
           icon: Image.asset('assets/icons/left-arrow.png', height: 25),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SfPdfViewer.network( 
+      body: SfPdfViewer.network(
         pdfUrl,
         onDocumentLoadFailed: (details) {
-            print("PDF Load Failed: ${details.description}");
-            Fluttertoast.showToast(msg: "Gagal memuat PDF: ${details.description}");
+          print("PDF Load Failed: ${details.description}");
+          Fluttertoast.showToast(
+              msg: "Gagal memuat PDF: ${details.description}");
         },
       ),
     );
   }
 }
-

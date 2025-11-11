@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-pluginManagement { // <-- HARUS PALING ATAS
+pluginManagement {
     def flutterSdkPath = {
         def properties = new Properties()
         def localPropertiesFile = new File(rootProject.projectDir.parentFile, "local.properties")
         if (localPropertiesFile.exists()) {
              localPropertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
         } else {
-            localPropertiesFile = new File(rootProject.projectDir, "local.properties")
+             localPropertiesFile = new File(rootProject.projectDir, "local.properties")
              if (localPropertiesFile.exists()) {
-                localPropertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
+                 localPropertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
             }
         }
         def flutterSdkPathValue = properties.getProperty("flutter.sdk")
@@ -28,12 +28,18 @@ pluginManagement { // <-- HARUS PALING ATAS
     }
 }
 
-plugins { // <-- Setelah pluginManagement
-    id "dev.flutter.flutter-plugin-loader" version "1.0.0" // <-- Plugin Flutter sudah di-apply di sini
-    id "com.android.application" version '8.6.0' apply false // <-- Sesuaikan jika perlu
-    id "org.jetbrains.kotlin.android" version '1.9.10' apply false // <-- Sesuaikan jika perlu
+
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version '8.6.0' apply false
+    
+    // --- INI PERBAIKANNYA ---
+    // Naikkan versi Kotlin untuk mengatasi error metadata
+    id "org.jetbrains.kotlin.android" version '2.0.0' apply false
+    // --- AKHIR PERBAIKAN ---
+
+    id 'com.google.gms.google-services' version '4.3.15' apply false
 }
 
-include ':app' // <-- Setelah plugins
+include ':app'
 
-// TIDAK ADA LAGI 'apply from: ... app_plugin_loader.gradle' DI SINI

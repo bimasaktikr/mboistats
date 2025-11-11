@@ -1,16 +1,23 @@
 buildscript {
-    ext.kotlin_version = '1.9.10'
+    // KITA HAPUS 'ext.kotlin_version' DARI SINI
+
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-       // classpath 'com.android.tools.build:gradle:7.3.0'
-            classpath 'com.android.tools.build:gradle:8.6.0'
-            classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        // Versi ini harus cocok dengan 'settings.gradle' Anda
+        classpath 'com.android.tools.build:gradle:8.6.0'
 
-        
+        // --- INI PERBAIKANNYA ---
+        // KITA HAPUS BARIS INI:
+        // classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        // (Ini sudah diatur oleh settings.gradle)
+        // --- AKHIR PERBAIKAN ---
+
+        // Versi ini harus cocok dengan 'settings.gradle' Anda
+        classpath 'com.google.gms:google-services:4.3.15'
     }
 }
 
@@ -33,4 +40,3 @@ tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
 
-// apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle" // <-- Pastikan ini ada

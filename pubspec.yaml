@@ -2,14 +2,14 @@ name: mboistats
 description: "A new Flutter project."
 
 # The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`.This is preferred for private packages.
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 version: 3.3.5+75
 
 environment:
- sdk: '>=2.12.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -44,15 +44,35 @@ dependencies:
   connectivity_plus: ^6.1.4
   open_settings_plus: ^0.4.0
   package_info_plus: ^8.3.0
+  google_sign_in: ^6.2.1
+  flutter_secure_storage: ^9.2.2
+  
+  firebase_core: ^3.2.0 
+  firebase_auth: ^5.1.2 
+  cloud_firestore: ^5.1.0
+
+  # --- PERBAIKAN: Upgrade ke v9 ---
+  # v8.1.2 tidak kompatibel dengan flutter_inappwebview v6 (yang kita perlukan).
+  # v9.0.0+ sudah kompatibel.
+  youtube_player_flutter: ^9.0.1 # <-- DI-UPGRADE DARI 8.1.2
+
 # package_info: ^2.0.3
 
- 
+  
   
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
+
+# --- INI TETAP DIPERLUKAN ---
+# Ini akan memaksa semua plugin (seperti webview_flutter_plus)
+# untuk menggunakan versi inappwebview yang baru.
+dependency_overrides:
+  flutter_inappwebview: ^6.0.0
+# --- AKHIR TAMBAHAN ---
+
 flutter:
   uses-material-design: true
   assets:
@@ -60,19 +80,7 @@ flutter:
     - assets/icons/
     - assets/web/
     # - assets/icons/mboistatsLogo.png
-    # - assets/icons/ekonomi.png
-    # - assets/icons/ipm.png
-    # - assets/icons/kemiskinan.png
-    # - assets/icons/kependudukan.png
-    # - assets/icons/kesejahteraan.png
-    # - assets/icons/ketenagakerjaan.png
-    # - assets/icons/pertanian.png
-    # - assets/icons/faq.png
-    # - assets/icons/telephone.png
-    # - assets/images/Rectangle8.png
-    # - assets/images/gambar2.png
-    # - assets/images/gambar3.png
-    # - assets/images/pic1.jpeg
+    # ... (sisa aset Anda) ...
 
   fonts:
     - family: SF-Pro-Display
@@ -86,8 +94,9 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/Mbois-stat Logo_Fix Putih.png"
-  min_sdk_android: 21 # android min sdk min:16, default 21
+  image_path: "assets/images/mboistats_icon.png"
+  min_sdk_android: 21 
+  # ... (sisa konfigurasi launcher_icons) ...
   # web:
   #   generate: true
   #   image_path: "path/to/image.png"

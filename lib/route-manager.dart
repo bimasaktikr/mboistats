@@ -49,6 +49,8 @@ import 'package:mboistats/pages/pertanian/pertanian_produksi_padi.dart';
 import 'package:mboistats/pages/pertanian/pertanian_produktivitas_padi.dart';
 import 'package:mboistats/pages/favorit_page.dart'; // <-- TAMBAHKAN IMPORT BARU
 import 'package:mboistats/pages/login_page.dart'; // <-- TAMBAHKAN IMPORT INI
+import 'package:mboistats/pages/youtube_list_page.dart';
+import 'package:mboistats/pages/youtube_player_page.dart';
 
 class RouteManager {
   static Map<String, Widget Function(BuildContext)> routes = {
@@ -119,5 +121,8 @@ class RouteManager {
     '/ProduktivitasPadi': (context) => ProduktivitasPadiPage(),
     '/ProduksiBeras': (context) => const ProduksiBerasPage(),
     '/favorit': (context) => const FavoritPage(), // <-- TAMBAHKAN RUTE BARU
+
+    '/youtube_list': (context) => const YoutubeListPage(),
+    '/youtube_player': (context) => const YoutubePlayerPage(),
   };
 }
