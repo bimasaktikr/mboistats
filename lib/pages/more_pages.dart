@@ -26,7 +26,6 @@ class MorePages extends StatelessWidget {
         padding: const EdgeInsets.only(top: 24.0),
         children: [
           ...more.map((item) => Container(
-                // --- PERUBAHAN TAMPILAN ---
                 margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -68,7 +67,6 @@ class MorePages extends StatelessWidget {
                     ),
                   ),
                 ),
-                // --- AKHIR PERUBAHAN ---
               )),
         ],
       ),

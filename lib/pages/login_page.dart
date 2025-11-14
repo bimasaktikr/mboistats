@@ -12,27 +12,18 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // --- PERBAIKAN: Ambil authService dari context ---
-  // Hapus: final SupabaseAuthService _authService = SupabaseAuthService();
-  // --- AKHIR PERBAIKAN ---
   bool _isLoading = false;
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
-    
-    // --- PERBAIKAN: Ambil authService dari context ---
     final authService = context.read<SupabaseAuthService>();
     final bool success = await authService.signInWithGoogle(context);
-    // --- AKHIR PERBAIKAN ---
 
     if (success) {
       print("Login Supabase Berhasil");
 
       if (mounted) {
-        // --- PERBAIKAN DI SINI ---
-        // Hapus 'await' karena checkCurrentUser() adalah fungsi 'void'
         context.read<SupabaseDbService>().checkCurrentUser();
-        // --- AKHIR PERBAIKAN ---
         print("DEBUG: Refresh data favorit manual SELESAI.");
       }
       

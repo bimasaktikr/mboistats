@@ -47,7 +47,6 @@ class _InfografisPagesState extends State<InfografisPages> {
   }
 
   Future<void> fetchDataInfografis() async {
-    // ... (Fungsi ini tidak berubah dari sebelumnya) ...
     if (!hasMore || isLoading) return;
     setState(() => isLoading = true);
     final String apiUrl =
@@ -89,8 +88,6 @@ class _InfografisPagesState extends State<InfografisPages> {
 
   @override
   Widget build(BuildContext context) {
-    // --- HAPUS 'context.watch' DARI SINI ---
-    // final favoriteIds = context.watch<SupabaseDbService>().favoriteIds; // <-- HAPUS
 
     return Scaffold(
       appBar: AppBar(
@@ -125,8 +122,6 @@ class _InfografisPagesState extends State<InfografisPages> {
                     String imageUrl = item["img"] ?? '';
                     String title =
                         item["title"] ?? "Infografis Tanpa Judul $index";
-                    
-                    // --- PERUBAHAN UTAMA: BUNGKUS CARD DENGAN CONSUMER ---
                     return Consumer<SupabaseDbService>(
                       builder: (consumerContext, dbService, child) {
                         
@@ -213,7 +208,6 @@ class _InfografisPagesState extends State<InfografisPages> {
                                       ),
                                     ],
                                   ),
-                                  // Ikon ini sekarang AKAN SINKRON
                                   if (isFavorited) 
                                     Positioned(
                                       top: 8,
@@ -241,14 +235,10 @@ class _InfografisPagesState extends State<InfografisPages> {
                         );
                       },
                     );
-                    // --- AKHIR PERUBAHAN UTAMA ---
                   },
                 ),
     );
   }
-
-  // --- Fungsi showDownloadDialog TIDAK BERUBAH dari sebelumnya ---
-  // (Karena sudah menggunakan Consumer di dalamnya)
   void openDownloadConfirmation(
     BuildContext context,
     Map<String, dynamic> item,
@@ -404,8 +394,6 @@ class _InfografisPagesState extends State<InfografisPages> {
       },
     );
   }
-
-  // ... (Fungsi helper download dan checkPermission tidak berubah) ...
   Future<void> downloadAndShowConfirmation(
       BuildContext context, String imgUrl, String fileName) async {
     if (await _checkPermission()) {

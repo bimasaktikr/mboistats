@@ -53,7 +53,6 @@ class _BeritaPageState extends State<BeritaPages> {
   }
 
   Future<void> fetchDataBRS() async {
-    // ... (Fungsi ini tidak berubah dari sebelumnya) ...
     if (!hasMore || isLoading) return;
     setState(() => isLoading = true);
     final String apiUrl =
@@ -94,8 +93,6 @@ class _BeritaPageState extends State<BeritaPages> {
 
   @override
   Widget build(BuildContext context) {
-    // --- HAPUS 'context.watch' DARI SINI ---
-    // final favoriteIds = context.watch<SupabaseDbService>().favoriteIds; // <-- HAPUS
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
@@ -148,8 +145,6 @@ class _BeritaPageState extends State<BeritaPages> {
                         
                         final item = dataBRS[index];
                         final String title = item['title'] ?? 'BRS Tanpa Judul $index';
-
-                        // --- PERUBAHAN UTAMA: BUNGKUS CARD DENGAN CONSUMER ---
                         return Consumer<SupabaseDbService>(
                           builder: (consumerContext, dbService, child) {
 
@@ -221,7 +216,6 @@ class _BeritaPageState extends State<BeritaPages> {
                                           ),
                                         ],
                                       ),
-                                      // Ikon ini sekarang AKAN SINKRON
                                       if (isFavorited)
                                         Positioned(
                                           top: 8,
@@ -248,7 +242,6 @@ class _BeritaPageState extends State<BeritaPages> {
                             );
                           },
                         );
-                        // --- AKHIR PERUBAHAN UTAMA ---
                       },
                     ),
           const Positioned(
@@ -261,9 +254,6 @@ class _BeritaPageState extends State<BeritaPages> {
       ),
     );
   }
-
-  // --- Fungsi showDownloadDialog TIDAK BERUBAH dari sebelumnya ---
-  // (Karena sudah menggunakan Consumer di dalamnya)
   void showDownloadDialog(
       BuildContext context,
       Map<String, dynamic> item,
@@ -420,8 +410,6 @@ class _BeritaPageState extends State<BeritaPages> {
       },
     );
   }
-
-  // ... (Fungsi helper download, checkPermission, openPdf tidak berubah) ...
   Future<void> downloadAndShowConfirmation(
       BuildContext context, String pdfUrl, String fileName) async {
     if (await _checkPermission()) {

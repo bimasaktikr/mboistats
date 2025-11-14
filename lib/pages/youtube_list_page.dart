@@ -12,17 +12,12 @@ class YoutubeListPage extends StatefulWidget {
 }
 
 class _YoutubeListPageState extends State<YoutubeListPage> {
-  // Service baru (bisa dideklarasikan di initState)
   late YoutubeService _youtubeService;
 
   final List<YoutubeVideo> _videos = [];
-  
-  // --- PERUBAHAN STATE PAGINATION ---
-  // Hapus: _nextPageToken, _prevPageToken, _pageHistory
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalResults = 0;
-  // --- AKHIR PERUBAHAN ---
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -37,24 +32,17 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
   void initState() {
     super.initState();
     _youtubeService = YoutubeService(); // Buat instance service
-    // Muat halaman pertama tanpa filter
     _fetchPage(1); 
   }
-
-  /// Fungsi utama baru untuk mengambil data
   Future<void> _fetchPage(int pageNumber, {bool isRefresh = false}) async {
     setState(() {
       _isLoading = true;
       _isError = false;
       _errorMessage = '';
     });
-
-    // Jika ini adalah refresh (pull-to-refresh atau ganti filter)
-    // kita reset pagination ke halaman pertama
     int pageToFetch = isRefresh ? 1 : pageNumber;
 
     try {
-      // Panggil fungsi hybrid baru dari service, kirim semua state
       final result = await _youtubeService.getVideos(
         page: pageToFetch,
         publishedAfter: _startDate,  // Kirim tanggal mulai
@@ -104,7 +92,6 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
           _endDate = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
         }
       });
-      // Muat ulang dari halaman 1 dengan filter baru
       _fetchPage(1, isRefresh: true);
     }
   }
@@ -168,7 +155,6 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
                     _startDate = null;
                     _endDate = null;
                   });
-                  // Muat ulang dari halaman 1 tanpa filter
                   _fetchPage(1, isRefresh: true);
                 },
               ),
@@ -268,8 +254,6 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
         ),
       );
     }
-
-    // Gunakan CustomScrollView agar tombol pagination bisa menempel di bawah
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -296,8 +280,6 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
       ],
     );
   }
-
-  // --- LOGIKA PAGINATION BARU ---
   Widget _buildPaginationControls() {
     if (_isLoading || _totalPages <= 1) return const SizedBox(height: 48);
 
@@ -342,7 +324,6 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
       ),
     );
   }
-  // --- AKHIR LOGIKA PAGINATION ---
 
   Widget _buildVideoCard(BuildContext context, YoutubeVideo video) {
     String formattedDate = '';

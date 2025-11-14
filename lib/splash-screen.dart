@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// HAPUS: import 'package:mboistats/services/auth_service_custom.dart'; // <-- Hapus import ini
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -10,13 +9,11 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   double opacity = 1.0;
   late AnimationController controller;
-  // HAPUS: final AuthServiceCustom _authService = AuthServiceCustom.instance;
 
   @override
   void initState() {
     super.initState();
 
-    // Logika ini sudah benar, tidak perlu diubah
     Future.delayed(Duration(seconds: 2), () {
       if (!mounted) return;
       setState(() {

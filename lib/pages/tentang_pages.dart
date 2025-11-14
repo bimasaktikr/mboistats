@@ -7,7 +7,6 @@ class TentangPages extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Karena 'tentang' hanya punya 1 item, kita ambil langsung
     final tentangItem = tentang[0];
 
     return Scaffold(
@@ -47,8 +46,6 @@ class TentangPages extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24), // Beri jarak lebih
-            
-            // --- PERUBAHAN TAMPILAN DI SINI ---
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -60,7 +57,6 @@ class TentangPages extends StatelessWidget {
                     offset: const Offset(0, 4),
                   ),
                 ],
-                // border: Border.all(color: dark4), // Dihapus
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0), // Padding lebih besar
@@ -83,7 +79,6 @@ class TentangPages extends StatelessWidget {
                 ),
               ),
             ),
-            // --- AKHIR PERUBAHAN TAMPILAN ---
             const SizedBox(height: 24), // Jarak di bawah
           ],
         ),

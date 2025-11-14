@@ -44,20 +44,10 @@ class _FooterState extends State<Footer> {
 
   @override
   Widget build(BuildContext context) {
-    // Ini adalah 'Container' mengambang Anda
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Container(
-        // height: 65, // <-- 1. DIBUANG! Ini penyebab overflow
-
-        // --- 2. TAMBAHKAN PADDING DI SINI ---
-        // Ini akan memberi "ruang napas" vertikal di DALAM container.
-        // 'BottomNavigationBar' punya tinggi default ~56px.
-        // 'padding: EdgeInsets.symmetric(vertical: 4.0)' akan memberi 4px
-        // di atas dan 4px di bawah, sehingga total tingginya jadi ~64px.
-        // Ini aman dan tidak akan overflow.
         padding: const EdgeInsets.symmetric(vertical: 4.0),
-        // --- AKHIR PERBAIKAN ---
 
         decoration: BoxDecoration(
           color: Colors.white, // Latar belakang putih SOLID
@@ -71,7 +61,6 @@ class _FooterState extends State<Footer> {
             ),
           ],
         ),
-        // ClipRRect untuk memotong sudut BottomNavigationBar di dalamnya
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20.0),
           child: BottomNavigationBar(
@@ -84,13 +73,8 @@ class _FooterState extends State<Footer> {
             showSelectedLabels: true,
             showUnselectedLabels: true,
             elevation: 0, // WAJIB, hapus bayangan/latar belakang bawaan
-
-            // --- 3. SAMAKAN UKURAN FONT ---
-            // Ini PENTING agar ikon tidak "melompat"
-            // dan terlihat pas di tengah.
             selectedFontSize: 12.0,
             unselectedFontSize: 12.0,
-            // --- AKHIR PERBAIKAN ---
 
             items: const [
               BottomNavigationBarItem(

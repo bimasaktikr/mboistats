@@ -16,18 +16,14 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
   late YoutubePlayerController _controller;
   late YoutubeVideo _video; // Simpan seluruh objek video
   bool _isPlayerReady = false;
-
-  // Format tanggal untuk ditampilkan di UI
   final DateFormat _dateFormatter = DateFormat('dd MMMM yyyy');
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Ambil seluruh objek YoutubeVideo yang dikirim dari halaman daftar
     final video = ModalRoute.of(context)!.settings.arguments as YoutubeVideo?;
 
     if (video == null) {
-      // Handle error jika tidak ada ID
       Navigator.of(context).pop();
       return;
     }
@@ -39,8 +35,6 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
       flags: const YoutubePlayerFlags(
         autoPlay: true,
         mute: false,
-        // Kontrol ini sudah termasuk tombol gerigi (resolusi)
-        // dan double-tap-to-skip
         controlsVisibleAtStart: true, 
       ),
     )..addListener(listener);
@@ -49,14 +43,12 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
   void listener() {
     if (_isPlayerReady && mounted && !_controller.value.isFullScreen) {
       setState(() {
-        // State bisa diperbarui di sini jika perlu
       });
     }
   }
 
   @override
   void deactivate() {
-    // Memberhentikan video saat halaman dinonaktifkan
     _controller.pause();
     super.deactivate();
   }
@@ -64,7 +56,6 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
   @override
   void dispose() {
     _controller.dispose();
-    // Pastikan orientasi potret kembali normal saat keluar halaman
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
     ]);
@@ -73,7 +64,6 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Format tanggal rilis
     String formattedDate = '';
     try {
       final DateTime publishedDate = DateTime.parse(_video.publishedAt);
@@ -81,18 +71,14 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
     } catch (e) {
       formattedDate = 'Tanggal tidak diketahui';
     }
-
-    // Gunakan YoutubePlayerBuilder untuk menangani rotasi/fullscreen
     return YoutubePlayerBuilder(
       onEnterFullScreen: () {
-        // Saat masuk fullscreen, paksa orientasi landscape
         SystemChrome.setPreferredOrientations([
           DeviceOrientation.landscapeLeft,
           DeviceOrientation.landscapeRight,
         ]);
       },
       onExitFullScreen: () {
-        // Saat keluar fullscreen, kembalikan ke potret
         SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
       },
       player: YoutubePlayer(
@@ -116,11 +102,9 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
             ),
           ),
           body: SingleChildScrollView(
-            // Gunakan SingleChildScrollView agar deskripsi panjang bisa di-scroll
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- 1. PLAYER (DI ATAS, DENGAN PADDING) ---
                 const SizedBox(height: 16), // Jarak dari AppBar
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -130,21 +114,16 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // --- AKHIR PLAYER ---
-
-                // --- 2. INFORMASI VIDEO (DI BAWAH PLAYER) ---
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Judul
                       Text(
                         _video.title,
                         style: bold18.copyWith(color: dark1),
                       ),
                       const SizedBox(height: 12),
-                      // Nama Channel dan Tanggal Rilis
                       Row(
                         children: [
                           Icon(Icons.person_outline, color: dark3, size: 16),
@@ -166,7 +145,6 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
                       const SizedBox(height: 16),
                       Divider(color: Colors.grey[300]),
                       const SizedBox(height: 16),
-                      // Deskripsi
                       Text(
                         'Deskripsi',
                         style: bold16.copyWith(color: dark1),
@@ -182,7 +160,6 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
                     ],
                   ),
                 ),
-                // --- AKHIR INFORMASI VIDEO ---
               ],
             ),
           ),

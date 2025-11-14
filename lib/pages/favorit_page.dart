@@ -21,8 +21,6 @@ class FavoritPage extends StatefulWidget {
 }
 
 class _FavoritPageState extends State<FavoritPage> {
-  // Hapus: bool _didChange = false; 
-  // Hapus: final SupabaseDbService _dbService = SupabaseDbService();
 
   Widget _buildFavoriteItem(BuildContext context, Map<String, dynamic> item) {
     final String itemType = item['item_type'] ?? 'unknown'; 
@@ -52,7 +50,6 @@ class _FavoritPageState extends State<FavoritPage> {
       typeLabel = 'BRS';
       typeColor = Colors.orange[700]!;
     } else {
-      // Fallback jika item_type tidak dikenal
       imageUrl = 'https://placehold.co/70x90/e0e0e0/9e9e9e?text=?';
       date = 'N/A';
     }
@@ -74,7 +71,6 @@ class _FavoritPageState extends State<FavoritPage> {
         borderRadius: BorderRadius.circular(12.0),
         child: InkWell(
           onTap: () {
-            // Panggil _showItemDialog versi baru
             _showItemDialog(context, item);
           },
           child: Padding(
@@ -136,7 +132,6 @@ class _FavoritPageState extends State<FavoritPage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Hapus: Navigator.of(context).pop(_didChange);
         Navigator.of(context).pop(); // Cukup pop() saja
         return false;
       },
@@ -145,18 +140,12 @@ class _FavoritPageState extends State<FavoritPage> {
           title: const Text('Favorit Saya'),
           leading: IconButton(
             icon: Image.asset('assets/icons/left-arrow.png', height: 25),
-            // Hapus: onPressed: () => Navigator.of(context).pop(_didChange),
             onPressed: () => Navigator.of(context).pop(), // Cukup pop() saja
           ),
         ),
-        // --- PERUBAHAN BESAR DI SINI ---
         body: Consumer<SupabaseDbService>(
           builder: (context, dbService, child) {
-            
-            // 1. Ambil data favorit langsung dari provider
             final favoriteItems = dbService.favoriteItems;
-            
-            // 2. Tampilkan pesan jika kosong
             if (favoriteItems.isEmpty) {
               return Center(
                 child: Text(
@@ -165,8 +154,6 @@ class _FavoritPageState extends State<FavoritPage> {
                 ),
               );
             }
-
-            // 3. Bangun ListView
             return ListView.builder(
               itemCount: favoriteItems.length,
               itemBuilder: (context, index) {
@@ -175,12 +162,9 @@ class _FavoritPageState extends State<FavoritPage> {
             );
           },
         ),
-        // --- AKHIR PERUBAHAN ---
       ),
     );
   }
-
-  // --- PERBAIKAN BESAR DI FUNGSI DIALOG ---
   void _showItemDialog(
       BuildContext context,
       Map<String, dynamic> item) {
@@ -191,42 +175,28 @@ class _FavoritPageState extends State<FavoritPage> {
     final bool isPublikasi = itemType == 'publikasi';
     final bool isInfografis = itemType == 'infografis';
     final bool isBrs = itemType == 'brs';
-    
-    // Ambil dbService SATU KALI.
-    // PENTING: Gunakan read() karena kita di dalam fungsi/aksi.
     final dbService = context.read<SupabaseDbService>();
-    
-    // Ambil status favorit saat ini LANGSUNG dari provider
     final String favoriteKey = dbService.generateItemId(itemType, itemTitle); // <-- Gunakan fungsi helper baru
     bool isCurrentlyFavorited = dbService.favoriteIds.contains(favoriteKey);
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContextInner) {
-        // Gunakan StatefulBuilder HANYA untuk update UI di dalam dialog
         return StatefulBuilder(
           builder: (dialogBuilderContext, setDialogState) {
             
             void toggleFavorite() async {
               try {
-                // Tentukan status baru
                 bool newStatus = !isCurrentlyFavorited;
                 
                 if (newStatus) {
-                  // --- PERBAIKAN BUG 'unknown' ---
-                  // 'item' dari database tidak punya 'type', jadi kita buat map baru
-                  // yang "dikenali" oleh fungsi addFavorite
                   Map<String, dynamic> itemToAdd = Map.from(item);
                   itemToAdd['type'] = itemType; // <-- Kunci perbaikannya di sini
                   
                   await dbService.addFavorite(itemToAdd);
-                  // --- AKHIR PERBAIKAN ---
                 } else {
-                  // Panggil aksi dari provider
                   await dbService.removeFavorite(itemType, itemTitle);
                 }
-                
-                // Update UI lokal di dalam dialog
                 if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
                   setDialogState(() {
                     isCurrentlyFavorited = newStatus;
@@ -237,8 +207,6 @@ class _FavoritPageState extends State<FavoritPage> {
                 print("Error toggling favorite: $e");
               }
             }
-            
-            // ... (Sisa dialog UI tidak berubah) ...
             Widget dialogContent;
             List<Widget> dialogActions = []; 
             List<Widget> mainButtons = []; 
@@ -339,8 +307,6 @@ class _FavoritPageState extends State<FavoritPage> {
             } else {
               dialogContent = const Text("Data favorit ini tidak dikenali.");
             }
-            
-            // Tombol favorit sekarang menggunakan 'isCurrentlyFavorited'
             Widget favoriteButton = TextButton(
               onPressed: toggleFavorite,
               child: Row(
@@ -397,9 +363,6 @@ class _FavoritPageState extends State<FavoritPage> {
       },
     );
   }
-  // --- AKHIR PERBAIKAN ---
-
-  // --- FUNGSI HELPER (TIDAK BERUBAH) ---
   Future<void> _downloadFile(BuildContext context, String fileUrl, String fileName,
       {required bool isPublikasi}) async {
     if (fileUrl.isEmpty) {

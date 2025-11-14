@@ -52,7 +52,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
   }
   
   Future<void> fetchDataPublikasi() async {
-    // ... (Fungsi ini tidak berubah dari sebelumnya) ...
     if (!hasMore || isLoading) return;
     setState(() => isLoading = true);
     final String apiUrl =
@@ -93,8 +92,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
 
   @override
   Widget build(BuildContext context) {
-    // --- HAPUS 'context.watch' DARI SINI ---
-    // final favoriteIds = context.watch<SupabaseDbService>().favoriteIds; // <-- HAPUS
     
     return Scaffold(
       appBar: AppBar(
@@ -129,8 +126,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
                     final item = dataPublikasi[index];
                     final String title =
                         item['title'] ?? 'Publikasi Tanpa Judul $index';
-                    
-                    // --- PERUBAHAN UTAMA: BUNGKUS CARD DENGAN CONSUMER ---
                     return Consumer<SupabaseDbService>(
                       builder: (consumerContext, dbService, child) {
                         
@@ -210,7 +205,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
                                       ),
                                     ],
                                   ),
-                                  // Ikon ini sekarang AKAN SINKRON
                                   if (isFavorited)
                                     Positioned(
                                       top: 8,
@@ -238,14 +232,10 @@ class _PublikasiPageState extends State<PublikasiPage> {
                         );
                       },
                     );
-                    // --- AKHIR PERUBAHAN UTAMA ---
                   },
                 ),
     );
   }
-
-  // --- Fungsi showDownloadDialog TIDAK BERUBAH dari sebelumnya ---
-  // (Karena sudah menggunakan Consumer di dalamnya)
   void showDownloadDialog(
       BuildContext context, 
       Map<String, dynamic> item,
@@ -399,9 +389,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
       },
     );
   }
-
-
-  // ... (Fungsi helper download, checkPermission, openPdf tidak berubah) ...
   Future<void> downloadAndShowConfirmation(
       BuildContext context, String pdfUrl, String fileName) async {
     if (await _checkPermission()) {

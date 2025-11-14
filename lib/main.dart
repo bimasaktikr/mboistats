@@ -10,36 +10,25 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:mboistats/services/supabase_db_service.dart';
-// --- AKHIR TAMBAHAN ---
 
 LocalhostServer localhostServer = LocalhostServer();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
   await localhostServer.start(port: 0);
-
-  // --- PERUBAHAN: BUNGKUS MyApp DENGAN MultiProvider ---
   runApp(
     MultiProvider(
       providers: [
-        // 1. Sediakan service Auth
-        // Kita gunakan Provider() standar karena ia tidak perlu "memberi tahu" UI
         Provider<SupabaseAuthService>(
           create: (_) => SupabaseAuthService(),
         ),
-        
-        // 2. Sediakan service DB, dan berikan service Auth ke dalamnya
-        // Kita gunakan ChangeNotifierProvider karena service DB akan
-        // memberi tahu UI (notifyListeners) jika ada data favorit yang berubah.
         ChangeNotifierProvider<SupabaseDbService>(
           create: (context) => SupabaseDbService(
-            // context.read() mengambil SupabaseAuthService dari provider di atas
             context.read<SupabaseAuthService>(),
           ),
         ),
@@ -47,14 +36,12 @@ void main() async {
       child: const MyApp(),
     ),
   );
-  // --- AKHIR PERUBAHAN ---
 }
 
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -70,8 +57,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ... (Class ConnectivityWrapper tidak berubah) ...
-
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
   const ConnectivityWrapper({Key? key, required this.child}) : super(key: key);
@@ -82,7 +67,6 @@ class ConnectivityWrapper extends StatefulWidget {
 class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   var connectivityResult;
   bool showConnectivityBanner = false;
-
   @override
   void initState() {
     super.initState();
@@ -103,7 +87,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
       });
     });
   }
-
   Future<void> checkConnectivity() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (mounted) {
@@ -112,12 +95,10 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
       });
     }
   }
-
   void showToastMessage() {
     String message = connectivityResult == ConnectivityResult.none
         ? "Tidak terhubung ke internet"
         : "Terkoneksi ke internet";
-
     Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_SHORT,
@@ -130,7 +111,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
       fontSize: 16.0,
     );
   }
-
   Widget buildConnectivityBanner() {
     return Container(
       height: 40,
@@ -167,7 +147,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Stack(

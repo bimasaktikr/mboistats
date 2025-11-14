@@ -36,7 +36,6 @@ class CarouselInfografisState extends State<CarouselInfografis> {
   }
 
   Future<void> fetchData() async {
-    // ... (Fungsi ini tidak berubah dari sebelumnya) ...
     if (mounted && !_isLoadingApi) {
       setState(() => _isLoadingApi = true);
     }
@@ -70,8 +69,6 @@ class CarouselInfografisState extends State<CarouselInfografis> {
 
   @override
   Widget build(BuildContext context) {
-    // --- HAPUS 'context.watch' DARI SINI ---
-    // final favoriteIds = context.watch<SupabaseDbService>().favoriteIds; // <-- HAPUS
 
     if (_isLoadingApi) {
       return const Center(
@@ -116,8 +113,6 @@ class CarouselInfografisState extends State<CarouselInfografis> {
           items: dataInfografis.map((item) {
             final String imageUrl = item['img'] ?? '';
             final String title = item['title'] ?? 'Tanpa Judul';
-
-            // --- PERUBAHAN UTAMA: BUNGKUS CARD DENGAN CONSUMER ---
             return Consumer<SupabaseDbService>(
               builder: (consumerContext, dbService, child) {
                 
@@ -171,7 +166,6 @@ class CarouselInfografisState extends State<CarouselInfografis> {
                                         child: Icon(Icons.broken_image,
                                             size: 40, color: Colors.grey)),
                               ),
-                              // Ikon ini sekarang AKAN SINKRON
                               if (isFavorited) 
                                 Positioned(
                                   top: 12,
@@ -200,7 +194,6 @@ class CarouselInfografisState extends State<CarouselInfografis> {
                 );
               },
             );
-            // --- AKHIR PERUBAHAN UTAMA ---
           }).toList(),
         ),
       ],
@@ -208,7 +201,6 @@ class CarouselInfografisState extends State<CarouselInfografis> {
   }
 
   Future<bool> _checkPermission() async {
-    // ... (Fungsi helper permission tidak berubah) ...
     if (Platform.isAndroid || Platform.isIOS) {
       var permissionStatus = await Permission.storage.status;
       if (permissionStatus.isDenied) {
@@ -218,9 +210,6 @@ class CarouselInfografisState extends State<CarouselInfografis> {
     }
     return true;
   }
-
-  // --- Fungsi showDownloadDialog TIDAK BERUBAH dari sebelumnya ---
-  // (Karena sudah menggunakan Consumer di dalamnya)
   void openDownloadConfirmation(
     BuildContext context, 
     Map<String, dynamic> item,
@@ -376,9 +365,6 @@ class CarouselInfografisState extends State<CarouselInfografis> {
       },
     );
   }
-
-
-  // ... (Fungsi helper download dan checkPermission tidak berubah) ...
   Future<void> downloadAndShowConfirmation(BuildContext buildContext,
       String imgUrl, String fileName) async {
     if (await _checkPermission()) {

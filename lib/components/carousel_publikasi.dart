@@ -42,7 +42,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
   }
 
   Future<void> fetchData() async {
-    // ... (Fungsi ini tidak berubah dari sebelumnya) ...
     if (mounted && !_isLoadingApi) {
       setState(() => _isLoadingApi = true);
     }
@@ -76,8 +75,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
 
   @override
   Widget build(BuildContext context) {
-    // --- HAPUS 'context.watch' DARI SINI ---
-    // final favoriteIds = context.watch<SupabaseDbService>().favoriteIds; // <-- HAPUS
     
     if (_isLoadingApi) {
       return const Center(
@@ -122,8 +119,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
           items: dataPublikasi.map((item) {
             final String imageUrl = item['cover'] ?? '';
             final String title = item['title'] ?? 'Tanpa Judul';
-
-            // --- PERUBAHAN UTAMA: BUNGKUS CARD DENGAN CONSUMER ---
             return Consumer<SupabaseDbService>(
               builder: (consumerContext, dbService, child) {
                 
@@ -176,7 +171,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
                                       child: Icon(Icons.broken_image,
                                           size: 40, color: Colors.grey)),
                             ),
-                            // Ikon ini sekarang AKAN SINKRON
                             if (isFavorited) 
                               Positioned(
                                 top: 12,
@@ -204,7 +198,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
                 });
               },
             );
-            // --- AKHIR PERUBAHAN UTAMA ---
           }).toList(),
         ),
       ],
@@ -212,7 +205,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
   }
 
   Future<bool> _checkPermission() async {
-    // ... (Fungsi helper permission tidak berubah) ...
     if (Platform.isAndroid || Platform.isIOS) {
       var permissionStatus = await Permission.storage.status;
       if (permissionStatus.isDenied) {
@@ -227,9 +219,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
     }
     return true;
   }
-
-  // --- Fungsi showDownloadDialog TIDAK BERUBAH dari sebelumnya ---
-  // (Karena sudah menggunakan Consumer di dalamnya)
   void openDownloadConfirmation(
       BuildContext context, 
       Map<String, dynamic> item,
@@ -386,8 +375,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
       },
     );
   }
-
-  // ... (Fungsi helper download, checkPermission, openPdf tidak berubah) ...
   Future<void> downloadAndShowConfirmation(
       BuildContext context, String pdfUrl, String fileName) async {
     if (await _checkPermission()) {

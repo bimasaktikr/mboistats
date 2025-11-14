@@ -38,14 +38,9 @@ class _ContactState extends State<Contact> {
         backgroundColor: Colors.white,
         elevation: 0,
         toolbarHeight: 50,
-        // --- PERUBAIKAN DI SINI ---
-        // 1. Matikan panah 'back' otomatis
         automaticallyImplyLeading: false,
-        // 2. Hapus logo dari 'leading'
         leading: null, 
-        // 3. Set rata kiri
         centerTitle: false, 
-        // 4. Gunakan Row yang sama dengan HomePage
         title: Row(
           mainAxisSize: MainAxisSize.min, 
           children: [
@@ -61,7 +56,6 @@ class _ContactState extends State<Contact> {
             ),
           ],
         ),
-        // --- AKHIR PERUBAIKAN ---
       ),
       body: Stack(
         children: [

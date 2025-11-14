@@ -122,6 +122,7 @@ class RouteManager {
     '/ProduksiBeras': (context) => const ProduksiBerasPage(),
     '/favorit': (context) => const FavoritPage(), // <-- TAMBAHKAN RUTE BARU
 
+    //Youtube
     '/youtube_list': (context) => const YoutubeListPage(),
     '/youtube_player': (context) => const YoutubePlayerPage(),
   };

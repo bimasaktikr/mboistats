@@ -26,14 +26,12 @@ class AuthGuardDialog extends StatelessWidget {
       ),
       actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       actions: [
-        // Tombol "Nanti Saja"
         TextButton(
           child: Text('Nanti Saja', style: semibold14.copyWith(color: dark3)),
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
-        // Tombol "Login"
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: blue1,
@@ -42,20 +40,11 @@ class AuthGuardDialog extends StatelessWidget {
             ),
           ),
           child: Text('Login Sekarang', style: semibold14.copyWith(color: Colors.white)),
-          
-          // --- Logika Navigasi yang Aman ---
           onPressed: () {
-            // 1. Ambil instance Navigator SEBELUM pop()
-            // Ini penting karena context dialog akan hilang setelah di-pop
             final navigator = Navigator.of(context);
-            
-            // 2. Tutup dialog saat ini menggunakan navigator
             navigator.pop(); 
-            
-            // 3. Arahkan ke Halaman Login menggunakan navigator yang aman
             navigator.pushNamed('/login'); 
           },
-          // --- Akhir Logika Navigasi ---
         ),
       ],
     );

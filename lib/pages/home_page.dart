@@ -14,7 +14,6 @@ import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 // --- TAMBAHAN IMPORT ---
 import 'package:provider/provider.dart';
-// --- AKHIR TAMBAHAN ---
 
 
 class HomePage extends StatefulWidget {
@@ -26,11 +25,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
-  
-  // --- PERBAIKAN: Hapus GlobalKey dan fungsi refresh ---
-  // HAPUS: final GlobalKey<CarouselPublikasiState> _publikasiKey = ...
-  // HAPUS: final GlobalKey<CarouselInfografisState> _infografisKey = ...
-  // --- AKHIR PERBAIKAN ---
 
   final YoutubeService _youtubeService = YoutubeService();
   bool _isLive = false;
@@ -38,10 +32,6 @@ class _HomePageState extends State<HomePage>
 
   late AnimationController _animationController;
   late Timer _timer;
-  
-  // --- PERBAIKAN: Ambil auth service dari context (Provider) ---
-  // HAPUS: final SupabaseAuthService _authService = ...
-  // --- AKHIR PERBAIKAN ---
 
   @override
   void initState() {
@@ -67,7 +57,6 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _checkLiveStatus() async {
-    // ... (fungsi ini tidak berubah) ...
     if (!_isLoadingLiveStatus && mounted) {
       setState(() {
         _isLoadingLiveStatus = true;
@@ -102,12 +91,7 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  // --- PERBAIKAN: Hapus fungsi refresh ---
-  // HAPUS: void _refreshCarousels() { ... }
-  // --- AKHIR PERBAIKAN ---
-
   Future<bool> _onWillPop() async {
-    // ... (fungsi ini tidak berubah) ...
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -155,7 +139,6 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildYoutubeBanner(BuildContext context) {
-    // ... (fungsi ini tidak berubah) ...
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -273,9 +256,7 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    // --- PERBAIKAN: Ambil auth service dari context ---
     final authService = context.watch<SupabaseAuthService>();
-    // --- AKHIR PERBAIKAN ---
 
     return StreamBuilder<AuthState>(
       stream: authService.authStateChanges,
@@ -332,12 +313,9 @@ class _HomePageState extends State<HomePage>
                   ),
               ],
             ),
-            // --- PERBAIKAN DI SINI ---
-            // Panggil AppDrawer() tanpa parameter 'onRefreshNeeded'
             drawer: user != null
                 ? const AppDrawer() // <-- HAPUS PARAMETER
                 : null,
-            // --- AKHIR PERBAIKAN ---
             body: Stack(
               children: [
                 SingleChildScrollView(
@@ -365,10 +343,8 @@ class _HomePageState extends State<HomePage>
                       ),
                       const Menus(),
                       ButtonSection(),
-                      // --- PERBAIKAN: Hapus 'key' ---
                       CarouselPublikasi(), // <-- HAPUS KEY
                       CarouselInfografis(), // <-- HAPUS KEY
-                      // --- AKHIR PERBAIKAN ---
                     ],
                   ),
                 ),

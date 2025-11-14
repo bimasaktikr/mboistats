@@ -18,17 +18,10 @@ class YoutubeVideo {
     required this.publishedAt,
     required this.description,
   });
-
-  // Factory "pintar" ini sekarang dapat mem-parsing DUA jenis JSON
-  // dari YouTube API:
-  // 1. Hasil dari `search.list` (untuk video LIVE)
-  // 2. Hasil dari `playlistItems.list` (untuk video playlist)
   factory YoutubeVideo.fromJson(Map<String, dynamic> item) {
     
     try {
-      // Cek apakah ini item dari `search.list` (punya key 'id.videoId')
       if (item.containsKey('id') && item['id'] is Map && item['id'].containsKey('videoId')) {
-        // Ini adalah item hasil 'Search' (Kemungkinan video LIVE)
         return YoutubeVideo(
           id: item['id']['videoId'],
           title: item['snippet']['title'] ?? 'Tanpa Judul',
@@ -39,11 +32,7 @@ class YoutubeVideo {
           description: item['snippet']['description'] ?? 'Tidak ada deskripsi.',
         );
       } 
-      // Cek apakah ini item dari `playlistItems.list` (punya key 'snippet.resourceId')
       else if (item.containsKey('snippet') && item['snippet'].containsKey('resourceId')) {
-        // Ini adalah item hasil 'Playlist'
-        
-        // Logika untuk mengambil thumbnail terbaik yang tersedia
         String thumbUrl = '';
         if (item['snippet']['thumbnails'] != null) {
           if (item['snippet']['thumbnails']['high'] != null) {
@@ -65,14 +54,12 @@ class YoutubeVideo {
           description: item['snippet']['description'] ?? 'Tidak ada deskripsi.',
         );
       } 
-      // Fallback jika format tidak dikenali
       else {
         log("Format JSON YouTube tidak dikenali: ${item.toString()}", name: "YoutubeVideoModel");
         throw const FormatException('Format JSON YouTube tidak dikenali.');
       }
     } catch (e) {
       log("Error parsing YoutubeVideo.fromJson: $e \nData: ${item.toString()}", name: "YoutubeVideoModel");
-      // Kembalikan video "rusak" agar tidak crash, tapi UI bisa menampilkannya sbg error
        return YoutubeVideo(
           id: '',
           title: 'Error Parsing Video',
@@ -85,8 +72,6 @@ class YoutubeVideo {
     }
   }
 }
-
-// --- PERUBAHAN BESAR DI MODEL RESULT ---
 // Kita tidak lagi menggunakan token, tapi pagination angka
 class YoutubeVideoResult {
   final List<YoutubeVideo> videos;
@@ -100,8 +85,6 @@ class YoutubeVideoResult {
     required this.totalPages,
     required this.totalResults,
   });
-
-  // Factory untuk mem-parsing respons dari server PHP kita
   factory YoutubeVideoResult.fromJson(Map<String, dynamic> json) {
     final List<dynamic> items = json['items'] ?? [];
     final List<YoutubeVideo> videos = items
