@@ -43,9 +43,10 @@ class AuthGuardDialog extends StatelessWidget {
           ),
           child: Text('Login Sekarang', style: semibold14.copyWith(color: Colors.white)),
           
-          // --- PERBAIKAN DI SINI ---
+          // --- Logika Navigasi yang Aman ---
           onPressed: () {
             // 1. Ambil instance Navigator SEBELUM pop()
+            // Ini penting karena context dialog akan hilang setelah di-pop
             final navigator = Navigator.of(context);
             
             // 2. Tutup dialog saat ini menggunakan navigator
@@ -54,7 +55,7 @@ class AuthGuardDialog extends StatelessWidget {
             // 3. Arahkan ke Halaman Login menggunakan navigator yang aman
             navigator.pushNamed('/login'); 
           },
-          // --- AKHIR PERBAIKAN ---
+          // --- Akhir Logika Navigasi ---
         ),
       ],
     );

@@ -10,8 +10,12 @@ import 'package:flutter/services.dart';
 import 'package:mboistats/services/youtube_service.dart';
 import 'package:mboistats/models/youtube_video.dart';
 import 'dart:async';
-import 'package:mboistats/services/auth_service_custom.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mboistats/services/supabase_auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+// --- TAMBAHAN IMPORT ---
+import 'package:provider/provider.dart';
+// --- AKHIR TAMBAHAN ---
+
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -22,10 +26,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
-  final GlobalKey<CarouselPublikasiState> _publikasiKey =
-      GlobalKey<CarouselPublikasiState>();
-  final GlobalKey<CarouselInfografisState> _infografisKey =
-      GlobalKey<CarouselInfografisState>();
+  
+  // --- PERBAIKAN: Hapus GlobalKey dan fungsi refresh ---
+  // HAPUS: final GlobalKey<CarouselPublikasiState> _publikasiKey = ...
+  // HAPUS: final GlobalKey<CarouselInfografisState> _infografisKey = ...
+  // --- AKHIR PERBAIKAN ---
 
   final YoutubeService _youtubeService = YoutubeService();
   bool _isLive = false;
@@ -33,6 +38,10 @@ class _HomePageState extends State<HomePage>
 
   late AnimationController _animationController;
   late Timer _timer;
+  
+  // --- PERBAIKAN: Ambil auth service dari context (Provider) ---
+  // HAPUS: final SupabaseAuthService _authService = ...
+  // --- AKHIR PERBAIKAN ---
 
   @override
   void initState() {
@@ -58,6 +67,7 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _checkLiveStatus() async {
+    // ... (fungsi ini tidak berubah) ...
     if (!_isLoadingLiveStatus && mounted) {
       setState(() {
         _isLoadingLiveStatus = true;
@@ -92,17 +102,12 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  void _refreshCarousels() {
-    print("DEBUG: Refreshing carousels from HomePage...");
-    if (_publikasiKey.currentState != null && mounted) {
-      _publikasiKey.currentState?.fetchData();
-    }
-    if (_infografisKey.currentState != null && mounted) {
-      _infografisKey.currentState?.fetchData();
-    }
-  }
+  // --- PERBAIKAN: Hapus fungsi refresh ---
+  // HAPUS: void _refreshCarousels() { ... }
+  // --- AKHIR PERBAIKAN ---
 
   Future<bool> _onWillPop() async {
+    // ... (fungsi ini tidak berubah) ...
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -150,6 +155,7 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildYoutubeBanner(BuildContext context) {
+    // ... (fungsi ini tidak berubah) ...
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -267,9 +273,16 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<User?>(
-      valueListenable: AuthServiceCustom.instance.currentUser,
-      builder: (context, User? user, _) {
+    // --- PERBAIKAN: Ambil auth service dari context ---
+    final authService = context.watch<SupabaseAuthService>();
+    // --- AKHIR PERBAIKAN ---
+
+    return StreamBuilder<AuthState>(
+      stream: authService.authStateChanges,
+      builder: (context, snapshot) {
+        
+        final User? user = snapshot.data?.session?.user ?? authService.currentUser;
+
         return WillPopScope(
           onWillPop: _onWillPop,
           child: Scaffold(
@@ -279,13 +292,7 @@ class _HomePageState extends State<HomePage>
               elevation: 0,
               toolbarHeight: 50,
               centerTitle: false,
-              
-              // --- PERUBAIKAN DINAMIS DI SINI ---
-              // Jika user TIDAK null (login), titleSpacing = 0.0 (rapat)
-              // Jika user null (logout), titleSpacing = 16.0 (ada padding kiri)
               titleSpacing: user != null ? 0.0 : 16.0,
-              // --- AKHIR PERUBAIKAN ---
-
               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -325,9 +332,12 @@ class _HomePageState extends State<HomePage>
                   ),
               ],
             ),
+            // --- PERBAIKAN DI SINI ---
+            // Panggil AppDrawer() tanpa parameter 'onRefreshNeeded'
             drawer: user != null
-                ? AppDrawer(onRefreshNeeded: _refreshCarousels)
+                ? const AppDrawer() // <-- HAPUS PARAMETER
                 : null,
+            // --- AKHIR PERBAIKAN ---
             body: Stack(
               children: [
                 SingleChildScrollView(
@@ -355,8 +365,10 @@ class _HomePageState extends State<HomePage>
                       ),
                       const Menus(),
                       ButtonSection(),
-                      CarouselPublikasi(key: _publikasiKey),
-                      CarouselInfografis(key: _infografisKey),
+                      // --- PERBAIKAN: Hapus 'key' ---
+                      CarouselPublikasi(), // <-- HAPUS KEY
+                      CarouselInfografis(), // <-- HAPUS KEY
+                      // --- AKHIR PERBAIKAN ---
                     ],
                   ),
                 ),

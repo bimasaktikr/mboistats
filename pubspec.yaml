@@ -47,14 +47,18 @@ dependencies:
   google_sign_in: ^6.2.1
   flutter_secure_storage: ^9.2.2
   
-  firebase_core: ^3.2.0 
-  firebase_auth: ^5.1.2 
-  cloud_firestore: ^5.1.0
+  # firebase_core: ^3.2.0 
+  # firebase_auth: ^5.1.2 
+  # cloud_firestore: ^5.1.0
 
   # --- PERBAIKAN: Upgrade ke v9 ---
   # v8.1.2 tidak kompatibel dengan flutter_inappwebview v6 (yang kita perlukan).
   # v9.0.0+ sudah kompatibel.
   youtube_player_flutter: ^9.0.1 # <-- DI-UPGRADE DARI 8.1.2
+  flutter_dotenv: ^5.1.0
+  supabase_flutter: ^2.5.7
+
+  provider: ^6.1.2
 
 # package_info: ^2.0.3
 
@@ -79,6 +83,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/web/
+    - .env
     # - assets/icons/mboistatsLogo.png
     # ... (sisa aset Anda) ...
 

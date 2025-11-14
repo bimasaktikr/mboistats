@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// HAPUS: import 'package:mboistats/services/auth_service_custom.dart';
+// HAPUS: import 'package:mboistats/services/auth_service_custom.dart'; // <-- Hapus import ini
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -16,21 +16,18 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // --- PERUBAHAN LOGIKA DI SINI ---
-    // Hapus logika _checkLoginStatus
+    // Logika ini sudah benar, tidak perlu diubah
     Future.delayed(Duration(seconds: 2), () {
       if (!mounted) return;
       setState(() {
         opacity = 0.0;
       });
 
-      // Navigasi SELALU ke halaman beranda (/main)
       Future.delayed(Duration(seconds: 1), () {
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/main'); // <-- SELALU KE /main
+        Navigator.pushReplacementNamed(context, '/main'); 
       });
     });
-    // --- AKHIR PERUBAHAN ---
 
     controller = AnimationController(
       duration: Duration(seconds: 1),

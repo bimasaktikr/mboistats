@@ -10,11 +10,9 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:mboistats/services/firestore_service.dart';
-import 'dart:async';
-
-// --- 1. TAMBAHKAN IMPORT AUTH SERVICE ---
-import 'package:mboistats/services/auth_service_custom.dart';
+import 'package:mboistats/services/supabase_db_service.dart';
+import 'package:mboistats/services/supabase_auth_service.dart';
+import 'package:provider/provider.dart';
 import 'package:mboistats/components/auth_guard.dialog.dart';
 
 import '../theme.dart';
@@ -30,74 +28,27 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
   late Saf saf;
   List<Map<String, dynamic>> dataPublikasi = [];
   bool _isLoadingApi = true;
-  final FirestoreService _firestoreService = FirestoreService();
-
-  // --- 2. TAMBAHKAN REFERENSI KE AUTH SERVICE ---
-  final AuthServiceCustom _authService = AuthServiceCustom.instance;
-  
-  Set<String> _favoriteIds = {};
-  StreamSubscription<Set<String>>? _favoriteSubscription;
 
   @override
   void initState() {
     super.initState();
     saf = Saf("mboistats_saf");
-    
     fetchData();
-
-    // --- 3. UBAH LOGIKA INIT ---
-    // Panggil metode subscription yang baru
-    _subscribeToFavorites();
-    // Dengarkan perubahan auth
-    _authService.currentUser.addListener(_onAuthStateChanged);
-    // --- AKHIR PERUBAHAN ---
   }
 
   @override
   void dispose() {
-    // --- 4. HENTIKAN LISTENER DAN SUBSCRIPTION ---
-    _authService.currentUser.removeListener(_onAuthStateChanged);
-    _favoriteSubscription?.cancel();
-    // --- AKHIR PERUBAHAN ---
-    
     super.dispose();
   }
 
-  // --- 5. BUAT HANDLER PERUBAHAN AUTH ---
-  void _onAuthStateChanged() {
-    // Panggil _subscribeToFavorites lagi saat auth berubah
-    // (misalnya, saat user logout)
-    _subscribeToFavorites();
-  }
-
-  // --- 6. BUAT METODE SUBSCRIPTION TERPISAH ---
-  void _subscribeToFavorites() {
-    // Batalkan subscription lama jika ada
-    _favoriteSubscription?.cancel();
-    
-    // Buat subscription baru. 
-    // Getter 'favoriteIdsStream' akan mengecek status auth saat ini.
-    // Jika logout, ia akan mengembalikan Stream.value({}).
-    _favoriteSubscription = _firestoreService.favoriteIdsStream.listen((ids) {
-      if (mounted) {
-        setState(() {
-          _favoriteIds = ids;
-        });
-      }
-    });
-  }
-  // --- AKHIR PERUBAHAN ---
-
   Future<void> fetchData() async {
+    // ... (Fungsi ini tidak berubah dari sebelumnya) ...
     if (mounted && !_isLoadingApi) {
-      setState(() {
-        _isLoadingApi = true;
-      });
+      setState(() => _isLoadingApi = true);
     }
     try {
       final response = await http.get(Uri.parse(
           'http://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/1/key/9db89e91c3c142df678e65a78c4e547f'));
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data != null &&
@@ -106,7 +57,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
             data['data'][1] is List) {
           final publications =
               (data['data'][1] as List).cast<Map<String, dynamic>>();
-          
           if (mounted) {
             setState(() {
               dataPublikasi = publications;
@@ -114,21 +64,21 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
             });
           }
         } else {
-          print('Struktur data API publikasi tidak sesuai.');
           if (mounted) setState(() => _isLoadingApi = false);
         }
       } else {
-        print('Gagal mendapatkan data publikasi. Kode: ${response.statusCode}');
         if (mounted) setState(() => _isLoadingApi = false);
       }
     } catch (error) {
-      print('Error fetch data publikasi: $error');
       if (mounted) setState(() => _isLoadingApi = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // --- HAPUS 'context.watch' DARI SINI ---
+    // final favoriteIds = context.watch<SupabaseDbService>().favoriteIds; // <-- HAPUS
+    
     if (_isLoadingApi) {
       return const Center(
         child: Padding(
@@ -173,93 +123,88 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
             final String imageUrl = item['cover'] ?? '';
             final String title = item['title'] ?? 'Tanpa Judul';
 
-            // Dapatkan status favorit dari state lokal (_favoriteIds)
-            final String favoriteKey = 'favorite_publikasi_$title';
-            final bool isFavorited = _favoriteIds.contains(favoriteKey);
+            // --- PERUBAHAN UTAMA: BUNGKUS CARD DENGAN CONSUMER ---
+            return Consumer<SupabaseDbService>(
+              builder: (consumerContext, dbService, child) {
+                
+                final String favoriteKey = dbService.generateItemId('publikasi', title);
+                final bool isFavorited = dbService.favoriteIds.contains(favoriteKey);
 
-            return Builder(builder: (BuildContext dialogContext) {
-              return GestureDetector(
-                onTap: () {
-                  openDownloadConfirmation(
-                    dialogContext, // <-- Perhatikan: context dari Builder
-                    item,
-                    isFavorited, // Kirim status favorit saat ini
-                    (String updatedPostId, bool newStatus) {
-                      // Callback ini tidak lagi diperlukan karena ada stream,
-                      // tapi kita biarkan untuk update instan
-                      final index = dataPublikasi.indexWhere(
-                          (i) => (i['title'] ?? '') == updatedPostId);
-                      if (index != -1 && mounted) {
-                        setState(() {
-                          dataPublikasi[index]['isFavorited'] = newStatus;
-                        });
-                      }
-                    }
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.0),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 10.0,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12.0),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          imageUrl,
-                          width: MediaQuery.of(context).size.width,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                value: progress.expectedTotalBytes != null
-                                    ? progress.cumulativeBytesLoaded /
-                                        progress.expectedTotalBytes!
-                                    : null,
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Center(
-                                  child: Icon(Icons.broken_image,
-                                      size: 40, color: Colors.grey)),
-                        ),
-                        if (isFavorited) // Gunakan 'isFavorited' dari build method
-                          Positioned(
-                            top: 12,
-                            right: 12,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: Colors.grey.shade300, width: 1),
-                              ),
-                              child: const Icon(
-                                Icons.favorite,
-                                color: Colors.red,
-                                size: 24,
-                              ),
-                            ),
+                return Builder(builder: (BuildContext dialogContext) {
+                  return GestureDetector(
+                    onTap: () {
+                      openDownloadConfirmation(
+                        dialogContext, 
+                        item,
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 10.0,
+                            offset: const Offset(0, 4),
                           ),
-                      ],
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12.0),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              imageUrl,
+                              width: MediaQuery.of(context).size.width,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: progress.expectedTotalBytes != null
+                                        ? progress.cumulativeBytesLoaded /
+                                            progress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Center(
+                                      child: Icon(Icons.broken_image,
+                                          size: 40, color: Colors.grey)),
+                            ),
+                            // Ikon ini sekarang AKAN SINKRON
+                            if (isFavorited) 
+                              Positioned(
+                                top: 12,
+                                right: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.grey.shade300, width: 1),
+                                  ),
+                                  child: const Icon(
+                                    Icons.favorite,
+                                    color: Colors.red,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            });
+                  );
+                });
+              },
+            );
+            // --- AKHIR PERUBAHAN UTAMA ---
           }).toList(),
         ),
       ],
@@ -267,9 +212,9 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
   }
 
   Future<bool> _checkPermission() async {
+    // ... (Fungsi helper permission tidak berubah) ...
     if (Platform.isAndroid || Platform.isIOS) {
       var permissionStatus = await Permission.storage.status;
-
       if (permissionStatus.isDenied) {
         permissionStatus = await Permission.storage.request();
         try {
@@ -283,179 +228,166 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
     return true;
   }
 
+  // --- Fungsi showDownloadDialog TIDAK BERUBAH dari sebelumnya ---
+  // (Karena sudah menggunakan Consumer di dalamnya)
   void openDownloadConfirmation(
-      BuildContext context, // <-- Ini adalah 'dialogContext' dari Builder
+      BuildContext context, 
       Map<String, dynamic> item,
-      bool isCurrentlyFavorited, // <-- Terima status favorit saat ini
-      Function(String postId, bool newStatus) onFavoriteChanged) {
+  ) {
 
     final String title = item["title"] ?? "Tanpa Judul";
-    final String postId = title;
     final String postType = 'publikasi';
     final String pdfUrl = item["pdf"] ?? "";
     final String abstract = item["abstract"] ?? "";
     final String size = item["size"] ?? "N/A";
     final String rlDate = item["rl_date"] ?? "N/A";
 
-    bool? _isFavoritedInDialog = isCurrentlyFavorited;
+    final String favoriteKey = context.read<SupabaseDbService>().generateItemId(postType, title);
 
     showDialog(
-      context: context, // Gunakan context dari Builder
+      context: context, 
       builder: (BuildContext dialogContextInner) {
-        return StatefulBuilder(builder: (dialogBuilderContext, setDialogState) {
+        return Consumer<SupabaseDbService>(
+          builder: (dialogConsumerContext, dbService, child) {
           
-          void toggleFavorite() async {
-            // Cek status login (Auth Guard)
-            bool isLoggedIn = AuthServiceCustom.instance.isLoggedIn();
-            if (!isLoggedIn) {
-              final navigator = Navigator.of(dialogBuilderContext);
-              navigator.pop(); // Tutup dialog saat ini
-              // Tampilkan dialog login
-              showDialog(
-                context: context, // Gunakan context dari Builder (yang juga context utama)
-                builder: (context) => const AuthGuardDialog(),
-              );
-              return; // Hentikan
-            }
-            
-            // Jika login, lanjutkan seperti biasa
-            if (_isFavoritedInDialog == null) return;
-            try {
-              bool newStatus = !_isFavoritedInDialog!;
-              if (newStatus) {
-                item['type'] = postType;
-                await _firestoreService.addFavorite(item);
-              } else {
-                await _firestoreService.removeFavorite(postType, postId);
-              }
+            final authService = dialogConsumerContext.read<SupabaseAuthService>();
+            final bool isCurrentlyFavorited = dbService.favoriteIds.contains(favoriteKey);
 
-              if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
-                setDialogState(() {
-                  _isFavoritedInDialog = newStatus;
-                });
+            void toggleFavorite() async {
+              bool isLoggedIn = authService.isLoggedIn();
+              
+              if (!isLoggedIn) {
+                final navigator = Navigator.of(dialogConsumerContext);
+                navigator.pop(); 
+                showDialog(
+                  context: context, 
+                  builder: (context) => const AuthGuardDialog(),
+                );
+                return; 
               }
               
-              onFavoriteChanged(postId, newStatus);
-            } catch (e) {
-              print("Error toggling favorite: $e");
+              try {
+                if (isCurrentlyFavorited) {
+                  await dbService.removeFavorite(postType, title);
+                } else {
+                  item['type'] = postType;
+                  await dbService.addFavorite(item);
+                }
+              } catch (e) {
+                print("Error toggling favorite: $e");
+              }
             }
-          }
+            
+            List<Widget> mainButtons = [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContextInner, false);
+                },
+                child: const Text("Tutup"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogContextInner);
+                  await downloadAndShowConfirmation(context, pdfUrl, title);
+                },
+                child: const Text("Unduh"),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContextInner);
+                  openPdfDirectly(context, pdfUrl);
+                },
+                child: const Text("Buka PDF"),
+              ),
+            ];
 
-          List<Widget> mainButtons = [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContextInner, false);
-              },
-              child: const Text("Tutup"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(dialogContextInner);
-                await downloadAndShowConfirmation(context, pdfUrl, title);
-              },
-              child: const Text("Unduh"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContextInner);
-                openPdfDirectly(context, pdfUrl);
-              },
-              child: const Text("Buka PDF"),
-            ),
-          ];
-
-          Widget favoriteButton = TextButton(
-            onPressed: toggleFavorite,
-            child: _isFavoritedInDialog == null
-                ? Container(
-                    width: 20,
-                    height: 20,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    child: const CircularProgressIndicator(strokeWidth: 2))
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isFavoritedInDialog!
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: _isFavoritedInDialog! ? Colors.red : Colors.grey[600],
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _isFavoritedInDialog! ? 'Favorit' : 'Favoritkan',
-                        style: TextStyle(
-                            color: _isFavoritedInDialog!
-                                ? Colors.red
-                                : Colors.grey[700]),
-                      ),
-                    ],
-                  ),
-          );
-
-          return AlertDialog(
-            title: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: bold16.copyWith(color: dark1),
-            ),
-            content: SingleChildScrollView(
+            Widget favoriteButton = TextButton(
+              onPressed: toggleFavorite,
               child: Row(
-                children: [
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          parse(HtmlUnescape().convert(abstract))
-                                  .body
-                                  ?.text ??
-                              '',
-                          style: TextStyle(fontSize: 13, color: dark1),
-                          textAlign: TextAlign.justify,
+                        Icon(
+                          isCurrentlyFavorited
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: isCurrentlyFavorited ? Colors.red : Colors.grey[600],
+                          size: 20,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(width: 4),
                         Text(
-                          "Ukuran Berkas: ${size.replaceAll('.', ',')}",
-                          style:
-                              const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        Text(
-                          "Tanggal Rilis: $rlDate",
-                          style:
-                              const TextStyle(fontSize: 12, color: Colors.grey),
+                          isCurrentlyFavorited ? 'Favorit' : 'Favoritkan',
+                          style: TextStyle(
+                              color: isCurrentlyFavorited
+                                  ? Colors.red
+                                  : Colors.grey[700]),
                         ),
                       ],
                     ),
-                  ),
-                ],
+            );
+
+            return AlertDialog(
+              title: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: bold16.copyWith(color: dark1),
               ),
-            ),
-            actionsPadding:
-                const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            actions: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: mainButtons,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [favoriteButton],
-                  )
-                ],
-              )
-            ],
-          );
-        });
+              content: SingleChildScrollView(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            parse(HtmlUnescape().convert(abstract))
+                                    .body
+                                    ?.text ??
+                                '',
+                            style: TextStyle(fontSize: 13, color: dark1),
+                            textAlign: TextAlign.justify,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Ukuran Berkas: ${size.replaceAll('.', ',')}",
+                            style:
+                                const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          Text(
+                            "Tanggal Rilis: $rlDate",
+                            style:
+                                const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actionsPadding:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+              actions: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: mainButtons,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [favoriteButton],
+                    )
+                  ],
+                )
+              ],
+            );
+          },
+        );
       },
     );
   }
 
-  // ... (Fungsi helper tidak berubah) ...
+  // ... (Fungsi helper download, checkPermission, openPdf tidak berubah) ...
   Future<void> downloadAndShowConfirmation(
       BuildContext context, String pdfUrl, String fileName) async {
     if (await _checkPermission()) {
@@ -469,10 +401,8 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
           textColor: Colors.white,
           fontSize: 16.0,
         );
-
         String safeFileName =
             fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-
         FileDownloader.downloadFile(
             url: pdfUrl,
             name: "$safeFileName.pdf",
@@ -484,7 +414,6 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
                 String newPath = path.replaceAll('.php', '.pdf');
                 downloadedFile.renameSync(newPath);
               }
-
               Fluttertoast.showToast(
                 msg:
                     'Publikasi "$safeFileName.pdf" telah disimpan dalam Folder Download.',
@@ -544,12 +473,9 @@ class CarouselPublikasiState extends State<CarouselPublikasi> {
     );
   }
 }
-
 class PDFViewer extends StatelessWidget {
   final String pdfUrl;
-
   const PDFViewer({Key? key, required this.pdfUrl}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

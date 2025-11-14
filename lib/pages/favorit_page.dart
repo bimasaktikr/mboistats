@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-// HAPUS: import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mboistats/services/firestore_service.dart'; // <-- TAMBAH: Impor service baru
+// --- PERUBAHAN IMPORT ---
+import 'package:mboistats/services/supabase_db_service.dart';
+import 'package:provider/provider.dart';
+// --- AKHIR PERUBAHAN ---
 import 'package:mboistats/theme.dart';
-import 'dart:convert'; // <-- Tetap diperlukan untuk dialog
+import 'dart:convert'; 
 import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html_unescape/html_unescape.dart';
@@ -19,24 +21,15 @@ class FavoritPage extends StatefulWidget {
 }
 
 class _FavoritPageState extends State<FavoritPage> {
-  // HAPUS: List<Map<String, dynamic>> _favoriteItems = [];
-  // HAPUS: bool _isLoading = true;
-  bool _didChange = false; // <-- TETAP DIPERLUKAN (untuk refresh HomePage saat pop)
-
-  // TAMBAH: Buat instance dari service kita
-  final FirestoreService _firestoreService = FirestoreService();
-
-  // HAPUS: initState() dan _loadFavorites() tidak diperlukan lagi,
-  // StreamBuilder akan menangani loading.
+  // Hapus: bool _didChange = false; 
+  // Hapus: final SupabaseDbService _dbService = SupabaseDbService();
 
   Widget _buildFavoriteItem(BuildContext context, Map<String, dynamic> item) {
-    // Tentukan tipe item
-    final String itemType = item['type'] ?? 'unknown';
+    final String itemType = item['item_type'] ?? 'unknown'; 
     final bool isPublikasi = itemType == 'publikasi';
     final bool isInfografis = itemType == 'infografis';
     final bool isBrs = itemType == 'brs';
 
-    // Ambil data berdasarkan tipe
     final String title = item['title'] ?? 'Tanpa Judul';
     String imageUrl = '';
     String date = '';
@@ -45,19 +38,23 @@ class _FavoritPageState extends State<FavoritPage> {
 
     if (isPublikasi) {
       imageUrl = item['cover'] ?? '';
-      date = item['rl_date'] ?? '';
+      date = item['rl_date'] ?? 'N/A';
       typeLabel = 'Publikasi';
       typeColor = Colors.blue[700]!;
     } else if (isInfografis) {
       imageUrl = item['img'] ?? '';
-      date = item['date'] ?? '';
+      date = item['date'] ?? 'N/A';
       typeLabel = 'Infografis';
       typeColor = Colors.green[700]!;
     } else if (isBrs) {
       imageUrl = item['thumbnail'] ?? '';
-      date = item['rl_date'] ?? '';
+      date = item['rl_date'] ?? 'N/A';
       typeLabel = 'BRS';
       typeColor = Colors.orange[700]!;
+    } else {
+      // Fallback jika item_type tidak dikenal
+      imageUrl = 'https://placehold.co/70x90/e0e0e0/9e9e9e?text=?';
+      date = 'N/A';
     }
 
     return Container(
@@ -77,18 +74,8 @@ class _FavoritPageState extends State<FavoritPage> {
         borderRadius: BorderRadius.circular(12.0),
         child: InkWell(
           onTap: () {
-            _showItemDialog(
-                context,
-                item,
-                // PERUBAHAN: Saat favorit berubah, kita hanya perlu set _didChange.
-                // StreamBuilder akan otomatis memperbarui UI.
-                (String updatedPostId, bool newStatus) {
-              setState(() {
-                _didChange = true;
-              });
-              // HAPUS: _loadFavorites() atau _favoriteItems.removeWhere()
-              // tidak diperlukan lagi.
-            });
+            // Panggil _showItemDialog versi baru
+            _showItemDialog(context, item);
           },
           child: Padding(
             padding: const EdgeInsets.all(12.0),
@@ -149,7 +136,8 @@ class _FavoritPageState extends State<FavoritPage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        Navigator.of(context).pop(_didChange);
+        // Hapus: Navigator.of(context).pop(_didChange);
+        Navigator.of(context).pop(); // Cukup pop() saja
         return false;
       },
       child: Scaffold(
@@ -157,30 +145,19 @@ class _FavoritPageState extends State<FavoritPage> {
           title: const Text('Favorit Saya'),
           leading: IconButton(
             icon: Image.asset('assets/icons/left-arrow.png', height: 25),
-            onPressed: () => Navigator.of(context).pop(_didChange),
+            // Hapus: onPressed: () => Navigator.of(context).pop(_didChange),
+            onPressed: () => Navigator.of(context).pop(), // Cukup pop() saja
           ),
         ),
         // --- PERUBAHAN BESAR DI SINI ---
-        // Ganti body lama dengan StreamBuilder
-        body: StreamBuilder<List<Map<String, dynamic>>>(
-          // 1. Dengarkan stream dari FirestoreService
-          stream: _firestoreService.getFavoritesStream(),
-          builder: (context, snapshot) {
-            // 2. Tampilkan loading spinner saat menunggu
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            // 3. Tampilkan error jika ada
-            if (snapshot.hasError) {
-              print("Error StreamBuilder Favorit: ${snapshot.error}");
-              return Center(
-                  child: Text('Terjadi kesalahan memuat favorit.',
-                      style: regular14.copyWith(color: dark2)));
-            }
-
-            // 4. Tampilkan pesan jika data kosong
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        body: Consumer<SupabaseDbService>(
+          builder: (context, dbService, child) {
+            
+            // 1. Ambil data favorit langsung dari provider
+            final favoriteItems = dbService.favoriteItems;
+            
+            // 2. Tampilkan pesan jika kosong
+            if (favoriteItems.isEmpty) {
               return Center(
                 child: Text(
                   'Anda belum memiliki item favorit.',
@@ -189,8 +166,7 @@ class _FavoritPageState extends State<FavoritPage> {
               );
             }
 
-            // 5. Jika berhasil, ambil data dan bangun ListView
-            final favoriteItems = snapshot.data!;
+            // 3. Bangun ListView
             return ListView.builder(
               itemCount: favoriteItems.length,
               itemBuilder: (context, index) {
@@ -204,93 +180,69 @@ class _FavoritPageState extends State<FavoritPage> {
     );
   }
 
+  // --- PERBAIKAN BESAR DI FUNGSI DIALOG ---
   void _showItemDialog(
       BuildContext context,
-      Map<String, dynamic> item,
-      Function(String postId, bool newStatus) onFavoriteChanged) {
-    // --- PERUBAHAN LOGIKA ---
-    // Ambil detail item untuk Firestore
-    final String itemType = item['type'] ?? 'unknown';
+      Map<String, dynamic> item) {
+        
+    final String itemType = item['item_type'] ?? 'unknown';
     final String itemTitle = item["title"] ?? "Tanpa Judul";
 
-    // Tambahkan flags berdasarkan tipe sehingga variabel seperti isBrs tersedia
     final bool isPublikasi = itemType == 'publikasi';
     final bool isInfografis = itemType == 'infografis';
     final bool isBrs = itemType == 'brs';
-
-    // HAPUS: String postId = title;
-    // HAPUS: String postType = item['type'];
-    // HAPUS: String favoriteKey = 'favorite_${postType}_$postId';
-    // --- AKHIR PERUBAHAN ---
-
-    bool? _isFavorited;
+    
+    // Ambil dbService SATU KALI.
+    // PENTING: Gunakan read() karena kita di dalam fungsi/aksi.
+    final dbService = context.read<SupabaseDbService>();
+    
+    // Ambil status favorit saat ini LANGSUNG dari provider
+    final String favoriteKey = dbService.generateItemId(itemType, itemTitle); // <-- Gunakan fungsi helper baru
+    bool isCurrentlyFavorited = dbService.favoriteIds.contains(favoriteKey);
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContextInner) {
+        // Gunakan StatefulBuilder HANYA untuk update UI di dalam dialog
         return StatefulBuilder(
           builder: (dialogBuilderContext, setDialogState) {
             
-            // --- PERUBAHAN LOGIKA ---
-            void checkInitialFavoriteStatus() async {
-              if (_isFavorited != null) return;
-              try {
-                // Ganti pengecekan SharedPreferences dengan Firestore
-                bool isFav =
-                    await _firestoreService.isFavorite(itemType, itemTitle);
-
-                if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
-                  setDialogState(() {
-                    _isFavorited = isFav;
-                  });
-                }
-              } catch (e) {
-                print("Error checking favorite status: $e");
-                if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
-                  setDialogState(() => _isFavorited = false);
-                }
-              }
-            }
-            // --- AKHIR PERUBAHAN ---
-
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
-                checkInitialFavoriteStatus();
-              }
-            });
-
-            // --- PERUBAHAN LOGIKA ---
             void toggleFavorite() async {
-              if (_isFavorited == null) return;
-
               try {
-                bool newStatus = !_isFavorited!;
+                // Tentukan status baru
+                bool newStatus = !isCurrentlyFavorited;
+                
                 if (newStatus) {
-                  // Kirim seluruh data item ke service
-                  await _firestoreService.addFavorite(item);
+                  // --- PERBAIKAN BUG 'unknown' ---
+                  // 'item' dari database tidak punya 'type', jadi kita buat map baru
+                  // yang "dikenali" oleh fungsi addFavorite
+                  Map<String, dynamic> itemToAdd = Map.from(item);
+                  itemToAdd['type'] = itemType; // <-- Kunci perbaikannya di sini
+                  
+                  await dbService.addFavorite(itemToAdd);
+                  // --- AKHIR PERBAIKAN ---
                 } else {
-                  // Kirim key yang diperlukan untuk menghapus
-                  await _firestoreService.removeFavorite(itemType, itemTitle);
+                  // Panggil aksi dari provider
+                  await dbService.removeFavorite(itemType, itemTitle);
                 }
-
+                
+                // Update UI lokal di dalam dialog
                 if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
                   setDialogState(() {
-                    _isFavorited = newStatus;
+                    isCurrentlyFavorited = newStatus;
                   });
                 }
-
-                onFavoriteChanged(itemTitle, newStatus);
+                                
               } catch (e) {
                 print("Error toggling favorite: $e");
               }
             }
-            // --- AKHIR PERUBAHAN ---
-
+            
+            // ... (Sisa dialog UI tidak berubah) ...
             Widget dialogContent;
-            List<Widget> dialogActions = []; // Tombol Aksi
-            List<Widget> mainButtons = []; // Tombol baris pertama
+            List<Widget> dialogActions = []; 
+            List<Widget> mainButtons = []; 
 
-            // Tombol Tutup (Umum)
             mainButtons.add(
               TextButton(
                 onPressed: () => Navigator.pop(dialogContextInner),
@@ -298,7 +250,6 @@ class _FavoritPageState extends State<FavoritPage> {
               ),
             );
 
-            // --- KONTEN DAN TOMBOL DINAMIS (TIDAK BERUBAH) ---
             if (isPublikasi || isBrs) {
               dialogContent = SingleChildScrollView(
                 child: Column(
@@ -343,7 +294,7 @@ class _FavoritPageState extends State<FavoritPage> {
                   child: const Text("Buka PDF"),
                 ),
               ]);
-            } else {
+            } else if (isInfografis) {
               dialogContent = SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -385,34 +336,28 @@ class _FavoritPageState extends State<FavoritPage> {
                   ),
                 ),
               );
+            } else {
+              dialogContent = const Text("Data favorit ini tidak dikenali.");
             }
-            // --- AKHIR KONTEN DINAMIS ---
-
-
-            // Tombol Favorit (Baris kedua)
+            
+            // Tombol favorit sekarang menggunakan 'isCurrentlyFavorited'
             Widget favoriteButton = TextButton(
               onPressed: toggleFavorite,
-              child: _isFavorited == null
-                  ? Container(
-                      width: 20,
-                      height: 20,
-                      margin: EdgeInsets.symmetric(horizontal: 16),
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : Row(
+              child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          _isFavorited!
+                          isCurrentlyFavorited // <-- Gunakan variabel dialog
                               ? Icons.favorite
                               : Icons.favorite_border,
-                          color: _isFavorited! ? Colors.red : Colors.grey[600],
+                          color: isCurrentlyFavorited ? Colors.red : Colors.grey[600],
                           size: 20,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _isFavorited! ? 'Favorit' : 'Favoritkan',
+                          isCurrentlyFavorited ? 'Favorit' : 'Favoritkan',
                           style: TextStyle(
-                              color: _isFavorited!
+                              color: isCurrentlyFavorited
                                   ? Colors.red
                                   : Colors.grey[700]),
                         ),
@@ -452,6 +397,7 @@ class _FavoritPageState extends State<FavoritPage> {
       },
     );
   }
+  // --- AKHIR PERBAIKAN ---
 
   // --- FUNGSI HELPER (TIDAK BERUBAH) ---
   Future<void> _downloadFile(BuildContext context, String fileUrl, String fileName,

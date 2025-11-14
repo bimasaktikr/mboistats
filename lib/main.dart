@@ -3,93 +3,96 @@ import 'package:mboistats/route-manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:mboistats/services/auth_service_custom.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Variabel global untuk server lokal (digunakan oleh WebView)
+// --- TAMBAHAN BARU UNTUK STATE MANAGEMENT ---
+import 'package:provider/provider.dart';
+import 'package:mboistats/services/supabase_auth_service.dart';
+import 'package:mboistats/services/supabase_db_service.dart';
+// --- AKHIR TAMBAHAN ---
+
 LocalhostServer localhostServer = LocalhostServer();
 
 void main() async {
-  // Pastikan binding Flutter siap
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
 
-  // Inisialisasi Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-
-  // Inisialisasi service autentikasi kustom kita
-  // Ini akan menyiapkan listener auth state global
-  await AuthServiceCustom.instance.init();
-
-  // Mulai server lokal untuk aset web
   await localhostServer.start(port: 0);
 
-  // Jalankan aplikasi
-  runApp(const MyApp());
+  // --- PERUBAHAN: BUNGKUS MyApp DENGAN MultiProvider ---
+  runApp(
+    MultiProvider(
+      providers: [
+        // 1. Sediakan service Auth
+        // Kita gunakan Provider() standar karena ia tidak perlu "memberi tahu" UI
+        Provider<SupabaseAuthService>(
+          create: (_) => SupabaseAuthService(),
+        ),
+        
+        // 2. Sediakan service DB, dan berikan service Auth ke dalamnya
+        // Kita gunakan ChangeNotifierProvider karena service DB akan
+        // memberi tahu UI (notifyListeners) jika ada data favorit yang berubah.
+        ChangeNotifierProvider<SupabaseDbService>(
+          create: (context) => SupabaseDbService(
+            // context.read() mengambil SupabaseAuthService dari provider di atas
+            context.read<SupabaseAuthService>(),
+          ),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
+  // --- AKHIR PERUBAHAN ---
 }
+
+final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // --- PERBAIKAN ARSITEKTUR DI SINI ---
-    // 1. MaterialApp sekarang adalah widget root/paling luar.
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       initialRoute: '/splash',
       routes: RouteManager.routes,
-
-      // 2. Gunakan properti 'builder' untuk membungkus aplikasi Anda.
-      // 'builder' memastikan widget di dalamnya (ConnectivityWrapper)
-      // adalah turunan dari MaterialApp dan memiliki akses
-      // ke Directionality, Theme, Navigator, dll.
       builder: (context, child) {
-        // 'child' di sini mewakili halaman apa pun yang
-        // sedang ditampilkan oleh Navigator (Splash, Home, Login, dll.)
-        
-        // 3. Bungkus 'child' (halaman Anda) dengan ConnectivityWrapper.
-        // Sekarang, saat ConnectivityWrapper memanggil Fluttertoast,
-        // ia akan menggunakan 'context' yang valid.
         return ConnectivityWrapper(
-          // 'child' tidak boleh null, tanda '!' aman di sini.
-          child: child!, 
+          child: child!,
         );
       },
     );
-    // --- AKHIR PERBAIKAN ARSITEKTUR ---
   }
 }
 
-/// Widget wrapper untuk memantau konektivitas internet
+// ... (Class ConnectivityWrapper tidak berubah) ...
+
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
-
   const ConnectivityWrapper({Key? key, required this.child}) : super(key: key);
-
   @override
   _ConnectivityWrapperState createState() => _ConnectivityWrapperState();
 }
 
 class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   var connectivityResult;
-  bool showConnectivityBanner = false; // Status untuk banner (saat ini tdk dipakai)
+  bool showConnectivityBanner = false;
 
   @override
   void initState() {
     super.initState();
-    // Cek koneksi saat aplikasi pertama kali dimulai
     checkConnectivity();
-    // Dengarkan perubahan koneksi
     Connectivity().onConnectivityChanged.listen((result) {
-      if (!mounted) return; // Tambahkan pengecekan 'mounted'
+      if (!mounted) return;
       setState(() {
         connectivityResult = result;
-        showConnectivityBanner =
-            false; // Set false agar banner tdk muncul permanen
-        showToastMessage(); // Tampilkan Toast
+        showConnectivityBanner = false;
+        showToastMessage();
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) {
             setState(() {
@@ -101,7 +104,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
     });
   }
 
-  /// Cek status koneksi awal
   Future<void> checkConnectivity() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (mounted) {
@@ -111,7 +113,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
     }
   }
 
-  /// Tampilkan Toast (pop-up kecil) status koneksi
   void showToastMessage() {
     String message = connectivityResult == ConnectivityResult.none
         ? "Tidak terhubung ke internet"
@@ -130,7 +131,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
     );
   }
 
-  /// (Tidak terpakai saat ini) Membangun banner di atas layar
   Widget buildConnectivityBanner() {
     return Container(
       height: 40,
@@ -170,13 +170,9 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // Stack untuk menampilkan aplikasi dan (jika aktif) banner koneksi
     return Stack(
       children: [
-        // widget.child di sini adalah halaman aktual Anda (misal: LoginPage)
-        widget.child, 
-        
-        // Tampilkan banner jika showConnectivityBanner adalah true
+        widget.child,
         if (showConnectivityBanner) buildConnectivityBanner(),
       ],
     );

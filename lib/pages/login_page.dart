@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mboistats/services/auth_service_custom.dart'; // <-- GANTI SERVICE
+import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:mboistats/theme.dart';
+import 'package:provider/provider.dart';
+import 'package:mboistats/services/supabase_db_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -10,31 +12,40 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // --- LOGIKA DIPERBARUI ---
-  final AuthServiceCustom _authService = AuthServiceCustom();
+  // --- PERBAIKAN: Ambil authService dari context ---
+  // Hapus: final SupabaseAuthService _authService = SupabaseAuthService();
+  // --- AKHIR PERBAIKAN ---
   bool _isLoading = false;
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
     
-    final bool success = await _authService.signInWithGoogle(context);
+    // --- PERBAIKAN: Ambil authService dari context ---
+    final authService = context.read<SupabaseAuthService>();
+    final bool success = await authService.signInWithGoogle(context);
+    // --- AKHIR PERBAIKAN ---
 
     if (success) {
-      // Login berhasil
-      print("Login Berhasil via Server Kustom");
-      // Navigasi ke halaman utama dan hapus semua halaman sebelumnya
+      print("Login Supabase Berhasil");
+
+      if (mounted) {
+        // --- PERBAIKAN DI SINI ---
+        // Hapus 'await' karena checkCurrentUser() adalah fungsi 'void'
+        context.read<SupabaseDbService>().checkCurrentUser();
+        // --- AKHIR PERBAIKAN ---
+        print("DEBUG: Refresh data favorit manual SELESAI.");
+      }
+      
       if (mounted) {
          Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
       }
     } else {
-      // Login gagal atau dibatalkan
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
   }
-  // --- AKHIR LOGIKA ---
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Image.asset(
-                  'assets/images/Mbois-stat Logo_Fix Putih.png', // Logo Anda
+                  'assets/images/Mbois-stat Logo_Fix Putih.png', 
                   height: 120,
                 ),
                 const SizedBox(height: 24),
@@ -65,7 +76,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 48),
 
-                // Tombol Google Sign-In
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
@@ -84,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Image.asset(
-                              'assets/icons/google_icon.png', // Pastikan Anda punya aset ini
+                              'assets/icons/google_icon.png', 
                               height: 24,
                             ),
                             const SizedBox(width: 16),
@@ -103,4 +113,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-

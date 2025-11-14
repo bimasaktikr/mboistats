@@ -17,7 +17,6 @@ buildscript {
         // --- AKHIR PERBAIKAN ---
 
         // Versi ini harus cocok dengan 'settings.gradle' Anda
-        classpath 'com.google.gms:google-services:4.3.15'
     }
 }
 

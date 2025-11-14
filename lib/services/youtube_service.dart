@@ -3,12 +3,20 @@ import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:mboistats/models/youtube_video.dart';
 import 'package:intl/intl.dart'; // Untuk format tanggal
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // <-- 1. TAMBAHKAN IMPORT INI
 
 class YoutubeService {
   // --- PERSIAPAN UNTUK API PRODUKSI ---
-  // Ganti ini dengan URL server API Python Anda yang sebenarnya
-  // (Contoh: "api.bpskotamalang.go.id" atau "api.internal.bps.go.id")
-  static const String _apiDomain = "api.server-anda.com";
+  
+  // --- PERUBAHAN DI SINI ---
+  // SEBELUM:
+  // static const String _apiDomain = "api.server-anda.com";
+  
+  // SESUDAH:
+  // Ganti 'const' menjadi 'final' dan baca dari dotenv.env
+  static final String _apiDomain = dotenv.env['API_DOMAIN']!;
+  // --- AKHIR PERUBAHAN ---
+  
   static const String _apiPath = "/v1/youtube/videos";
   // --- AKHIR PERSIAPAN ---
 
@@ -33,6 +41,12 @@ class YoutubeService {
     if (publishedBefore != null) {
       params['before'] = _apiDateFormat.format(publishedBefore);
     }
+    if (_apiDomain.isEmpty) {
+      log("FATAL: API Domain tidak terkonfigurasi.", name: "YoutubeService");
+      // Jangan panggil API. Langsung lempar error yang jelas.
+      throw Exception("Konfigurasi server tidak valid. Harap hubungi support.");
+    }
+
 
     // Gunakan Uri.https karena server produksi pasti aman (HTTPS)
     final uri = Uri.https(_apiDomain, _apiPath, params);

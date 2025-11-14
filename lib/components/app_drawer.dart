@@ -1,34 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:mboistats/services/auth_service_custom.dart';
+import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:mboistats/theme.dart';
+// --- TAMBAHAN IMPORT ---
+import 'package:provider/provider.dart';
+// --- AKHIR TAMBAHAN ---
 
 class AppDrawer extends StatefulWidget {
-  final VoidCallback onRefreshNeeded;
+  // --- PERBAIKAN DI SINI ---
+  // Hapus parameter 'onRefreshNeeded'
+  // final VoidCallback onRefreshNeeded;
 
   const AppDrawer({
     Key? key,
-    required this.onRefreshNeeded,
+    // required this.onRefreshNeeded, // <-- HAPUS INI
   }) : super(key: key);
+  // --- AKHIR PERBAIKAN ---
 
   @override
   _AppDrawerState createState() => _AppDrawerState();
 }
 
 class _AppDrawerState extends State<AppDrawer> {
-  // Gunakan instance singleton
-  final AuthServiceCustom _authService = AuthServiceCustom.instance;
   String _username = 'Tamu';
   String _email = 'Selamat datang!';
 
   @override
   void initState() {
     super.initState();
+    // Kita bisa ambil authService dari context
+    // karena kita sudah menyediakannya di main.dart
     _loadUserInfo();
   }
 
   Future<void> _loadUserInfo() async {
-    final username = await _authService.getUsername();
-    final email = await _authService.getEmail();
+    // --- PERBAIKAN: Ambil service dari context ---
+    final authService = context.read<SupabaseAuthService>();
+    // --- AKHIR PERBAIKAN ---
+    
+    final username = authService.getUsername();
+    final email = authService.getEmail();
     if (mounted) {
       setState(() {
         _username = username ?? 'Tamu';
@@ -37,20 +47,19 @@ class _AppDrawerState extends State<AppDrawer> {
     }
   }
 
-  // Fungsi untuk logout
   Future<void> _logout(BuildContext context) async {
-    // 1. Simpan navigator SEBELUM melakukan operasi async
     final navigator = Navigator.of(context);
+    // --- PERBAIKAN: Ambil service dari context ---
+    final authService = context.read<SupabaseAuthService>();
+    // --- AKHIR PERBAIKAN ---
 
-    // 2. Panggil fungsi signout dari service
-    await _authService.signOut();
+    await authService.signOut();
 
-    // 3. Beri tahu HomePage untuk me-refresh carousel (menghilangkan ikon hati)
-    widget.onRefreshNeeded();
+    // HAPUS: widget.onRefreshNeeded();
+    // Tidak perlu lagi, provider akan menangani update UI secara otomatis
 
-    // 4. Cukup tutup drawer
     if (navigator.canPop()) {
-      navigator.pop(); // HANYA tutup drawer
+      navigator.pop(); 
     }
   }
 
@@ -86,52 +95,38 @@ class _AppDrawerState extends State<AppDrawer> {
             leading: Icon(Icons.favorite, color: Colors.red[600]),
             title: Text('Favorit Saya', style: regular14.copyWith(color: dark1)),
             onTap: () async {
-              Navigator.pop(context); // Tutup drawer
-              final dynamic result =
-                  await Navigator.pushNamed(context, '/favorit');
-              // Jika ada perubahan di halaman favorit (misal, item dihapus),
-              // beri tahu HomePage untuk refresh juga.
-              if (result == true) {
-                widget.onRefreshNeeded();
-              }
+              Navigator.pop(context); 
+              
+              // --- PERBAIKAN: Hapus 'await' dan 'onRefreshNeeded' ---
+              // Cukup navigasi saja. Provider akan mengurus sisanya.
+              Navigator.pushNamed(context, '/favorit');
+              // HAPUS: final dynamic result = await ...
+              // HAPUS: if (result == true) { ... }
+              // --- AKHIR PERBAIKAN ---
             },
           ),
-
-          // --- PERUBAHAN: Tombol Logout Modern ---
-          // Gunakan Expanded untuk mendorong tombol ke bawah
           const Expanded(
             child: SizedBox(),
           ),
-
-          // Tombol Logout baru yang lebih modern
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton.icon(
+              icon: Icon(Icons.logout, color: Colors.white), // <-- Tambahkan ikon
               label: Text(
                 'Logout',
                 style: semibold14.copyWith(color: Colors.white),
               ),
               onPressed: () => _logout(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: red, // Warna merah untuk aksi "destruktif"
-                minimumSize: const Size(double.infinity, 48), // Lebar penuh
+                backgroundColor: red, 
+                minimumSize: const Size(double.infinity, 48), 
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 2, // Sedikit bayangan
+                elevation: 2, 
               ),
             ),
           ),
-          // Hapus ListTile Logout yang lama
-          // const Divider(),
-          // const Spacer(),
-          // ListTile(
-          //   leading: Icon(Icons.logout, color: dark2),
-          //   title: Text('Logout', style: regular14.copyWith(color: dark1)),
-          //   onTap: () => _logout(context),
-          // ),
-          // const SizedBox(height: 20),
-          // --- AKHIR PERUBAHAN ---
         ],
       ),
     );

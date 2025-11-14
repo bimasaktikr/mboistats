@@ -10,11 +10,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:mboistats/services/firestore_service.dart';
-import 'dart:async'; 
-
-// --- 1. TAMBAHKAN IMPORT AUTH SERVICE ---
-import 'package:mboistats/services/auth_service_custom.dart';
+import 'package:mboistats/services/supabase_db_service.dart';
+import 'package:mboistats/services/supabase_auth_service.dart';
+import 'package:provider/provider.dart';
 import 'package:mboistats/components/auth_guard.dialog.dart';
 
 class PublikasiPage extends StatefulWidget {
@@ -31,13 +29,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
   bool isLoading = false;
   bool hasMore = true;
   final ScrollController _scrollController = ScrollController();
-  final FirestoreService _firestoreService = FirestoreService();
-
-  // --- 2. TAMBAHKAN REFERENSI KE AUTH SERVICE ---
-  final AuthServiceCustom _authService = AuthServiceCustom.instance;
-  
-  Set<String> _favoriteIds = {};
-  StreamSubscription<Set<String>>? _favoriteSubscription;
 
   @override
   void initState() {
@@ -51,55 +42,21 @@ class _PublikasiPageState extends State<PublikasiPage> {
         fetchDataPublikasi();
       }
     });
-    
     fetchDataPublikasi();
-
-    // --- 3. UBAH LOGIKA INIT ---
-    _subscribeToFavorites();
-    _authService.currentUser.addListener(_onAuthStateChanged);
-    // --- AKHIR PERUBAHAN ---
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    
-    // --- 4. HENTIKAN LISTENER DAN SUBSCRIPTION ---
-    _authService.currentUser.removeListener(_onAuthStateChanged);
-    _favoriteSubscription?.cancel();
-    // --- AKHIR PERUBAHAN ---
-    
     super.dispose();
   }
-
-  // --- 5. BUAT HANDLER PERUBAHAN AUTH ---
-  void _onAuthStateChanged() {
-    _subscribeToFavorites();
-  }
-
-  // --- 6. BUAT METODE SUBSCRIPTION TERPISAH ---
-  void _subscribeToFavorites() {
-    _favoriteSubscription?.cancel();
-    _favoriteSubscription = _firestoreService.favoriteIdsStream.listen((ids) {
-      if (mounted) {
-        setState(() {
-          _favoriteIds = ids;
-        });
-      }
-    });
-  }
-  // --- AKHIR PERUBAHAN ---
-
+  
   Future<void> fetchDataPublikasi() async {
+    // ... (Fungsi ini tidak berubah dari sebelumnya) ...
     if (!hasMore || isLoading) return;
-
-    setState(() {
-      isLoading = true;
-    });
-
+    setState(() => isLoading = true);
     final String apiUrl =
         "http://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/$currentPage/key/9db89e91c3c142df678e65a78c4e547f";
-
     try {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
@@ -110,7 +67,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
             parsedResponse['data'][1] is List) {
           final publikasi =
               List<Map<String, dynamic>>.from(parsedResponse["data"][1]);
-
           if (mounted) {
             setState(() {
               if (publikasi.isNotEmpty) {
@@ -123,30 +79,23 @@ class _PublikasiPageState extends State<PublikasiPage> {
             });
           }
         } else {
-          print("Struktur data API publikasi tidak valid atau kosong.");
           if (mounted) setState(() => {isLoading = false, hasMore = false});
         }
       } else {
-        if (mounted) {
-          setState(() {
-            isLoading = false;
-          });
-        }
+        if (mounted) setState(() => isLoading = false);
         Fluttertoast.showToast(msg: "Gagal memuat data publikasi.");
       }
     } catch (e) {
-      print("Error fetchDataPublikasi: $e");
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-        Fluttertoast.showToast(msg: "Gagal memuat data: $e");
-      }
+      if (mounted) setState(() => isLoading = false);
+      Fluttertoast.showToast(msg: "Gagal memuat data: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // --- HAPUS 'context.watch' DARI SINI ---
+    // final favoriteIds = context.watch<SupabaseDbService>().favoriteIds; // <-- HAPUS
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Publikasi'),
@@ -176,32 +125,23 @@ class _PublikasiPageState extends State<PublikasiPage> {
                           ? const Center(child: CircularProgressIndicator())
                           : const SizedBox.shrink();
                     }
-
-                    return Builder(
-                      builder: (BuildContext itemContext) {
-                        final item = dataPublikasi[index];
-                        final String title =
-                            item['title'] ?? 'Publikasi Tanpa Judul $index';
+                    
+                    final item = dataPublikasi[index];
+                    final String title =
+                        item['title'] ?? 'Publikasi Tanpa Judul $index';
+                    
+                    // --- PERUBAHAN UTAMA: BUNGKUS CARD DENGAN CONSUMER ---
+                    return Consumer<SupabaseDbService>(
+                      builder: (consumerContext, dbService, child) {
                         
-                        final String favoriteKey = 'favorite_publikasi_$title';
-                        final bool isFavorited = _favoriteIds.contains(favoriteKey);
+                        final String favoriteKey = dbService.generateItemId('publikasi', title);
+                        final bool isFavorited = dbService.favoriteIds.contains(favoriteKey);
 
                         return GestureDetector(
                           onTap: () {
                             showDownloadDialog(
-                              itemContext, // <-- context dari Builder
+                              context, // Gunakan context dari itemBuilder
                               item,
-                              isFavorited, // Kirim status favorit saat ini
-                              (String updatedPostId, bool newStatus) {
-                                final itemIndex = dataPublikasi.indexWhere(
-                                    (i) => (i['title'] ?? '') == updatedPostId);
-                                if (itemIndex != -1 && mounted) {
-                                  setState(() {
-                                    dataPublikasi[itemIndex]['isFavorited'] =
-                                        newStatus;
-                                  });
-                                }
-                              }
                             );
                           },
                           child: Container(
@@ -243,8 +183,8 @@ class _PublikasiPageState extends State<PublikasiPage> {
                                                       color: Colors.grey[200],
                                                       child: Icon(
                                                           Icons.broken_image,
-                                                          color: Colors.grey[
-                                                              400])),
+                                                          color: Colors
+                                                              .grey[400])),
                                         ),
                                       ),
                                       Padding(
@@ -270,7 +210,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
                                       ),
                                     ],
                                   ),
-                                  // Gunakan 'isFavorited' dari build method
+                                  // Ikon ini sekarang AKAN SINKRON
                                   if (isFavorited)
                                     Positioned(
                                       top: 8,
@@ -298,69 +238,60 @@ class _PublikasiPageState extends State<PublikasiPage> {
                         );
                       },
                     );
+                    // --- AKHIR PERUBAHAN UTAMA ---
                   },
                 ),
     );
   }
 
+  // --- Fungsi showDownloadDialog TIDAK BERUBAH dari sebelumnya ---
+  // (Karena sudah menggunakan Consumer di dalamnya)
   void showDownloadDialog(
-      BuildContext context, // <-- Ini adalah 'itemContext' dari Builder
+      BuildContext context, 
       Map<String, dynamic> item,
-      bool isCurrentlyFavorited, // <-- Terima status favorit saat ini
-      Function(String postId, bool newStatus) onFavoriteChanged) {
+  ) {
         
     final String title = item["title"] ?? "Tanpa Judul";
-    final String postId = title;
-    final String postType = 'publikasi';
+    final String postType = 'publikasi'; 
     final String pdfUrl = item["pdf"] ?? "";
     final String abstract = item["abstract"] ?? "";
     final String size = item["size"] ?? "N/A";
     final String rlDate = item["rl_date"] ?? "N/A";
+    
+    final String favoriteKey = context.read<SupabaseDbService>().generateItemId(postType, title);
 
     showDialog(
-      context: context, // Gunakan context dari Builder
+      context: context, 
       builder: (BuildContext dialogContextInner) {
-        bool? _isFavoritedInDialog = isCurrentlyFavorited;
-
-        return StatefulBuilder(
-          builder: (dialogBuilderContext, setDialogState) {
+        return Consumer<SupabaseDbService>(
+          builder: (dialogConsumerContext, dbService, child) {
             
+            final authService = dialogConsumerContext.read<SupabaseAuthService>();
+            final bool isCurrentlyFavorited = dbService.favoriteIds.contains(favoriteKey);
+
             void toggleFavorite() async {
-              // Auth Guard
-              bool isLoggedIn = AuthServiceCustom.instance.isLoggedIn();
+              bool isLoggedIn = authService.isLoggedIn();
               if (!isLoggedIn) {
-                final navigator = Navigator.of(dialogBuilderContext);
+                final navigator = Navigator.of(dialogConsumerContext);
                 navigator.pop(); 
                 showDialog(
-                  context: context,
+                  context: context, 
                   builder: (context) => const AuthGuardDialog(),
                 );
                 return;
               }
-              
-              // Lanjutkan jika login
-              if (_isFavoritedInDialog == null) return;
               try {
-                bool newStatus = !_isFavoritedInDialog!; 
-                if (newStatus) {
-                  item['type'] = postType;
-                  await _firestoreService.addFavorite(item);
+                if (isCurrentlyFavorited) {
+                  await dbService.removeFavorite(postType, title);
                 } else {
-                  await _firestoreService.removeFavorite(postType, postId);
+                  item['type'] = postType;
+                  await dbService.addFavorite(item);
                 }
-
-                if (ModalRoute.of(dialogBuilderContext)?.isCurrent ?? false) {
-                  setDialogState(() {
-                    _isFavoritedInDialog = newStatus;
-                  });
-                }
-                
-                onFavoriteChanged(postId, newStatus); 
               } catch (e) {
                 print("Error toggling favorite: $e");
               }
             }
-
+            
             List<Widget> mainButtons = [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContextInner),
@@ -385,27 +316,21 @@ class _PublikasiPageState extends State<PublikasiPage> {
 
             Widget favoriteButton = TextButton(
               onPressed: toggleFavorite,
-              child: _isFavoritedInDialog == null
-                  ? Container(
-                      width: 20,
-                      height: 20,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      child: const CircularProgressIndicator(strokeWidth: 2))
-                  : Row(
+              child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          _isFavoritedInDialog!
+                          isCurrentlyFavorited
                               ? Icons.favorite
                               : Icons.favorite_border,
-                          color: _isFavoritedInDialog! ? Colors.red : Colors.grey[600],
+                          color: isCurrentlyFavorited ? Colors.red : Colors.grey[600],
                           size: 20,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _isFavoritedInDialog! ? 'Favorit' : 'Favoritkan',
+                          isCurrentlyFavorited ? 'Favorit' : 'Favoritkan',
                           style: TextStyle(
-                              color: _isFavoritedInDialog!
+                              color: isCurrentlyFavorited
                                   ? Colors.red
                                   : Colors.grey[700]),
                         ),
@@ -475,7 +400,8 @@ class _PublikasiPageState extends State<PublikasiPage> {
     );
   }
 
-  // ... (Fungsi helper tidak berubah) ...
+
+  // ... (Fungsi helper download, checkPermission, openPdf tidak berubah) ...
   Future<void> downloadAndShowConfirmation(
       BuildContext context, String pdfUrl, String fileName) async {
     if (await _checkPermission()) {
@@ -488,10 +414,8 @@ class _PublikasiPageState extends State<PublikasiPage> {
           textColor: Colors.white,
           fontSize: 16.0,
         );
-
         String safeFileName =
             fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-
         FileDownloader.downloadFile(
             url: pdfUrl,
             name: "$safeFileName.pdf",
@@ -503,7 +427,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
                 String newPath = path.replaceAll('.php', '.pdf');
                 downloadedFile.renameSync(newPath);
               }
-
               Fluttertoast.showToast(
                 msg:
                     'Publikasi "$safeFileName.pdf" telah disimpan dalam Folder Download.',
@@ -549,7 +472,6 @@ class _PublikasiPageState extends State<PublikasiPage> {
   Future<bool> _checkPermission() async {
     if (Platform.isAndroid || Platform.isIOS) {
       var permissionStatus = await Permission.storage.status;
-
       if (permissionStatus.isDenied) {
         permissionStatus = await Permission.storage.request();
         try {
@@ -579,9 +501,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
 
 class PDFViewer extends StatelessWidget {
   final String pdfUrl;
-
   const PDFViewer({Key? key, required this.pdfUrl}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

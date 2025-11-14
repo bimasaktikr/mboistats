@@ -79,3 +79,6 @@ build/
 .dart_tool/package_config_subset
 .dart_tool/package_config.json
 .flutter-plugins-dependencies
+
+# Environment variables
+*.env
