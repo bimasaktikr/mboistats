@@ -51,12 +51,30 @@ class _BeritaPageState extends State<BeritaPages> {
     _scrollController.dispose();
     super.dispose();
   }
+  Future<void> _handleRefresh() async {
+    if (mounted) {
+      setState(() {
+        isLoading = true; // Set isLoading agar 'fetchDataBRS' tidak dijalankan ganda
+        hasMore = true;
+        currentPage = 1;
+        dataBRS.clear();
+      });
+    }
+    await fetchDataBRS();
+  }
 
   Future<void> fetchDataBRS() async {
-    if (!hasMore || isLoading) return;
-    setState(() => isLoading = true);
+    if (!hasMore || (isLoading && currentPage > 1)) return;
+    
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
+
     final String apiUrl =
         "http://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/$currentPage/key/9db89e91c3c142df678e65a78c4e547f";
+
     try {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
@@ -93,7 +111,6 @@ class _BeritaPageState extends State<BeritaPages> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
@@ -121,129 +138,143 @@ class _BeritaPageState extends State<BeritaPages> {
       ),
       body: Stack(
         children: [
-          isLoading && dataBRS.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : dataBRS.isEmpty && !isLoading
-                  ? const Center(child: Text("Tidak ada BRS tersedia."))
-                  : GridView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.75,
-                      ),
-                      itemCount: dataBRS.length + (hasMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == dataBRS.length) {
-                          return hasMore
-                              ? const Center(child: CircularProgressIndicator())
-                              : const SizedBox.shrink();
-                        }
-                        
-                        final item = dataBRS[index];
-                        final String title = item['title'] ?? 'BRS Tanpa Judul $index';
-                        return Consumer<SupabaseDbService>(
-                          builder: (consumerContext, dbService, child) {
+          RefreshIndicator(
+            onRefresh: _handleRefresh,
+            color: blue1, // Warna indikator
+            child: isLoading && dataBRS.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : dataBRS.isEmpty && !isLoading
+                    ? Center(
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: const [
+                             SizedBox(height: 200), // Beri jarak dari atas
+                             Center(child: Text("Tidak ada BRS tersedia."))
+                          ],
+                        ),
+                      )
+                    : GridView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(), 
+                        controller: _scrollController,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.75,
+                        ),
+                        itemCount: dataBRS.length + (hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == dataBRS.length) {
+                            return hasMore
+                                ? const Center(child: CircularProgressIndicator())
+                                : const SizedBox.shrink();
+                          }
+                          
+                          final item = dataBRS[index];
+                          final String title = item['title'] ?? 'BRS Tanpa Judul $index';
 
-                            final String favoriteKey = dbService.generateItemId('brs', title);
-                            final bool isFavorited = dbService.favoriteIds.contains(favoriteKey);
+                          return Consumer<SupabaseDbService>(
+                            builder: (consumerContext, dbService, child) {
 
-                            return GestureDetector(
-                              onTap: () {
-                                showDownloadDialog(
-                                  context, // Gunakan context dari itemBuilder
-                                  item,
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.08),
-                                      blurRadius: 10.0,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  child: Stack(
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                                        children: [
-                                          Expanded(
-                                            child: Image.network(
-                                              item['thumbnail'] ?? '',
-                                              width: double.infinity,
-                                              fit: BoxFit.fill,
-                                              loadingBuilder: (context, child, loadingProgress) {
-                                                if (loadingProgress == null) return child;
-                                                return const Center(
-                                                    child: CircularProgressIndicator());
-                                              },
-                                              errorBuilder: (context, error, stackTrace) =>
-                                                  Container(
-                                                      color: Colors.grey[200],
-                                                      child: Icon(Icons.broken_image,
-                                                          color: Colors.grey[400])),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                  title,
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: dark1,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  maxLines: 5,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                const SizedBox(height: 4),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
+                              final String favoriteKey = dbService.generateItemId('brs', title);
+                              final bool isFavorited = dbService.favoriteIds.contains(favoriteKey);
+
+                              return GestureDetector(
+                                onTap: () {
+                                  showDownloadDialog(
+                                    context, 
+                                    item,
+                                  );
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12.0),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 10.0,
+                                        offset: const Offset(0, 4),
                                       ),
-                                      if (isFavorited)
-                                        Positioned(
-                                          top: 8,
-                                          right: 8,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              shape: BoxShape.circle,
-                                              border:
-                                                  Border.all(color: Colors.grey.shade300, width: 1),
-                                            ),
-                                            child: const Icon(
-                                              Icons.favorite,
-                                              color: Colors.red,
-                                              size: 18,
-                                            ),
-                                          ),
-                                        ),
                                     ],
                                   ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12.0),
+                                    child: Stack(
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            Expanded(
+                                              child: Image.network(
+                                                item['thumbnail'] ?? '',
+                                                width: double.infinity,
+                                                fit: BoxFit.fill,
+                                                loadingBuilder: (context, child, loadingProgress) {
+                                                  if (loadingProgress == null) return child;
+                                                  return const Center(
+                                                      child: CircularProgressIndicator());
+                                                },
+                                                errorBuilder: (context, error, stackTrace) =>
+                                                    Container(
+                                                        color: Colors.grey[200],
+                                                        child: Icon(Icons.broken_image,
+                                                            color: Colors.grey[400])),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    title,
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: dark1,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                    maxLines: 5,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (isFavorited)
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                shape: BoxShape.circle,
+                                                border:
+                                                    Border.all(color: Colors.grey.shade300, width: 1),
+                                              ),
+                                              child: const Icon(
+                                                Icons.favorite,
+                                                color: Colors.red,
+                                                size: 18,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+          ),
           const Positioned(
             bottom: 0,
             left: 0,

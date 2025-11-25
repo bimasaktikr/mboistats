@@ -21,6 +21,30 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    # --- Gaya ---
+    - prefer_const_constructors
+    - prefer_const_constructors_in_immutables
+    - prefer_const_declarations
+    - prefer_const_literals_to_create_immutables
+    - prefer_final_locals
+    - prefer_final_fields
+    - prefer_relative_imports
+    - unnecessary_brace_in_string_interps
+    - unnecessary_const
+    - unnecessary_new
+    - unnecessary_this
+    - use_key_in_widget_constructors
+
+    # --- Fungsional ---
+    - avoid_print # Paksa penggunaan logger dalam produksi
+    - avoid_web_libraries_in_flutter
+    - curly_braces_in_flow_control_structures
+    - empty_catches
+    - empty_constructor_bodies
+    - empty_statements
+    - no_duplicate_case_values
+    - valid_regexps
+
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

@@ -32,20 +32,34 @@ class AuthGuardDialog extends StatelessWidget {
             Navigator.of(context).pop();
           },
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: blue1,
-            shape: RoundedRectangleBorder(
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [blue1, blue2],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(8.0), // Sesuaikan radius
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
               borderRadius: BorderRadius.circular(8.0),
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pop(); 
+                navigator.pushNamed('/login'); 
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                child: Text(
+                  'Login Sekarang', 
+                  style: semibold14.copyWith(color: Colors.white)
+                ),
+              ),
             ),
           ),
-          child: Text('Login Sekarang', style: semibold14.copyWith(color: Colors.white)),
-          onPressed: () {
-            final navigator = Navigator.of(context);
-            navigator.pop(); 
-            navigator.pushNamed('/login'); 
-          },
-        ),
+        )
       ],
     );
   }

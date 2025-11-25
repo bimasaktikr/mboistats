@@ -12,7 +12,6 @@ import 'package:mboistats/models/youtube_video.dart';
 import 'dart:async';
 import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// --- TAMBAHAN IMPORT ---
 import 'package:provider/provider.dart';
 
 
@@ -23,19 +22,23 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
+// Tambahkan 'WidgetsBindingObserver' untuk mendeteksi app resume
 class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
-
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final YoutubeService _youtubeService = YoutubeService();
   bool _isLive = false;
   bool _isLoadingLiveStatus = true;
 
   late AnimationController _animationController;
   late Timer _timer;
+  
+  final GlobalKey<CarouselPublikasiState> _publikasiKey = GlobalKey<CarouselPublikasiState>();
+  final GlobalKey<CarouselInfografisState> _infografisKey = GlobalKey<CarouselInfografisState>();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _animationController = AnimationController(
       vsync: this,
@@ -51,9 +54,19 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
     _animationController.dispose();
     _timer.cancel();
     super.dispose();
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      print("DEBUG: App resumed. Checking live status...");
+      _checkLiveStatus();
+    }
   }
 
   Future<void> _checkLiveStatus() async {
@@ -65,10 +78,8 @@ class _HomePageState extends State<HomePage>
 
     try {
       final result = await _youtubeService.getVideos(page: 1);
-      bool liveStatus = false;
-      if (result.videos.isNotEmpty) {
-        liveStatus = result.videos[0].isLive;
-      }
+      bool liveStatus = result.videos.any((video) => video.isLive == true);
+
       if (mounted) {
         setState(() {
           _isLive = liveStatus;
@@ -89,6 +100,12 @@ class _HomePageState extends State<HomePage>
         });
       }
     }
+  }
+
+  Future<void> _handleRefresh() async {
+    await _checkLiveStatus();
+    await _publikasiKey.currentState?.fetchData();
+    await _infografisKey.currentState?.fetchData();
   }
 
   Future<bool> _onWillPop() async {
@@ -137,12 +154,11 @@ class _HomePageState extends State<HomePage>
     );
     return shouldExit ?? false;
   }
-
   Widget _buildYoutubeBanner(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFE62117), Color(0xFFC41106)],
+          colors: [Color(0xFFE62117), Color(0xFF333333)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -156,8 +172,11 @@ class _HomePageState extends State<HomePage>
         ],
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(context, '/youtube_list');
+        onTap: () async { 
+          await Navigator.pushNamed(context, '/youtube_list');
+          if (mounted) { 
+            _checkLiveStatus();
+          }
         },
         borderRadius: BorderRadius.circular(16.0),
         child: Padding(
@@ -168,7 +187,7 @@ class _HomePageState extends State<HomePage>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
                 decoration: BoxDecoration(
-                    color: const Color(0xFFFF0000),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(10.0),
                     boxShadow: [
                       BoxShadow(
@@ -179,7 +198,7 @@ class _HomePageState extends State<HomePage>
                     ]),
                 child: const Icon(
                   Icons.play_arrow,
-                  color: Colors.white,
+                  color: Color(0xFFE62117),
                   size: 32.0,
                 ),
               ),
@@ -254,6 +273,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final authService = context.watch<SupabaseAuthService>();
@@ -294,58 +314,77 @@ class _HomePageState extends State<HomePage>
                   Padding(
                     padding:
                         const EdgeInsets.only(right: 12.0, top: 8, bottom: 8),
-                    child: ElevatedButton(
-                      child: Text(
-                        'Login',
-                        style: semibold14.copyWith(color: Colors.white),
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).pushNamed('/login');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: blue1,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [blue1, blue2],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        elevation: 2,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            Navigator.of(context).pushNamed('/login');
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Center(
+                              child: Text(
+                                'Login',
+                                style: semibold14.copyWith(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
               ],
             ),
             drawer: user != null
-                ? const AppDrawer() // <-- HAPUS PARAMETER
+                ? const AppDrawer()
                 : null,
             body: Stack(
               children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 100.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding:
-                            const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
-                        child: _buildYoutubeBanner(context),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Yuk lebih dekat dengan BPS Kota Malang',
-                                style: bold16.copyWith(color: dark1)),
-                            const SizedBox(height: 8.0),
-                            Text('Mau cari data apa???',
-                                style: regular14.copyWith(color: dark2)),
-                          ],
+                RefreshIndicator(
+                  onRefresh: _handleRefresh,
+                  color: blue1, 
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(), 
+                    padding: const EdgeInsets.only(bottom: 100.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding:
+                              const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
+                          child: _buildYoutubeBanner(context),
                         ),
-                      ),
-                      const Menus(),
-                      ButtonSection(),
-                      CarouselPublikasi(), // <-- HAPUS KEY
-                      CarouselInfografis(), // <-- HAPUS KEY
-                    ],
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Yuk lebih dekat dengan BPS Kota Malang',
+                                  style: bold16.copyWith(color: dark1)),
+                              const SizedBox(height: 8.0),
+                              Text('Mau cari data apa???',
+                                  style: regular14.copyWith(color: dark2)),
+                            ],
+                          ),
+                        ),
+                        const Menus(),
+                        ButtonSection(),
+                        
+                        CarouselPublikasi(key: _publikasiKey),
+                        CarouselInfografis(key: _infografisKey),
+                        
+                      ],
+                    ),
                   ),
                 ),
                 const Positioned(

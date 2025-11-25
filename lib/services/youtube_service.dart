@@ -1,88 +1,64 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'package:http/http.dart' as http;
 import 'package:mboistats/models/youtube_video.dart';
-import 'package:intl/intl.dart'; // Untuk format tanggal
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // <-- 1. TAMBAHKAN IMPORT INI
+import 'package:intl/intl.dart'; 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+// --- IMPORT BARU UNTUK SUPABASE ---
+import 'package:mboistats/main.dart'; // Untuk client 'supabase' global
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class YoutubeService {
-  // --- PERSIAPAN UNTUK API PRODUKSI ---
-  
-  // --- PERUBAHAN DI SINI ---
-  // SEBELUM:
-  // static const String _apiDomain = "api.server-anda.com";
-  
-  // SESUDAH:
-  // Ganti 'const' menjadi 'final' dan baca dari dotenv.env
-  static final String _apiDomain = dotenv.env['API_DOMAIN']!;
-  // --- AKHIR PERUBAHAN ---
-  
-  static const String _apiPath = "/v1/youtube/videos";
-  // --- AKHIR PERSIAPAN ---
-
-  // Format tanggal yang akan kita kirim ke API (standar ISO 8601)
-  final DateFormat _apiDateFormat = DateFormat('yyyy-MM-dd');
-
-  /// Mengambil video dari API Backend (Python)
+  final String _tableName = 'youtube_links';
   Future<YoutubeVideoResult> getVideos({
     int page = 1,
     DateTime? publishedAfter,
     DateTime? publishedBefore,
   }) async {
-    // Siapkan parameter query
-    var params = {
-      'page': page.toString(),
-    };
+    const int pageSize = 10; 
+    final int from = (page - 1) * pageSize;
+    final int to = from + pageSize - 1;
 
-    // Tambahkan filter tanggal jika ada
-    if (publishedAfter != null) {
-      params['after'] = _apiDateFormat.format(publishedAfter);
-    }
-    if (publishedBefore != null) {
-      params['before'] = _apiDateFormat.format(publishedBefore);
-    }
-    if (_apiDomain.isEmpty) {
-      log("FATAL: API Domain tidak terkonfigurasi.", name: "YoutubeService");
-      // Jangan panggil API. Langsung lempar error yang jelas.
-      throw Exception("Konfigurasi server tidak valid. Harap hubungi support.");
-    }
-
-
-    // Gunakan Uri.https karena server produksi pasti aman (HTTPS)
-    final uri = Uri.https(_apiDomain, _apiPath, params);
-
-    log("Memanggil API Produksi: $uri", name: "YoutubeService");
+    log("Memanggil Supabase tabel '$_tableName': Halaman $page (baris $from-$to)", name: "YoutubeService");
 
     try {
-      // Ganti http.get dengan header jika nanti diperlukan (misal: API Key)
-      // final response = await http.get(uri, headers: {
-      //   'X-API-Key': 'KUNCI_API_DARI_BACKEND_ANDA'
-      // });
-      final response = await http.get(uri);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // Cek jika API Python mengembalikan JSON error
-        if (data.containsKey('error')) {
-          log("Error dari API Python: ${data['details'] ?? data['error']}",
-              name: "YoutubeService");
-          throw Exception("Error Server: ${data['error']}");
-        }
-
-        // Parsing data JSON dari server.
-        // INI AKAN BERHASIL JIKA backend Anda mengikuti "Kontrak API"
-        // yang kita tetapkan di 'docs/kontrak_api_youtube.md'
-        return YoutubeVideoResult.fromJson(data);
-      } else {
-        // Tangani error dari server (404, 500, 403, dll.)
-        log(
-            "Error panggil API: Status ${response.statusCode}, Body: ${response.body}",
-            name: "YoutubeService");
-        throw Exception("Server Error: ${response.statusCode}");
+      dynamic query = supabase
+          .from(_tableName)
+          .select('*');
+      query = query.not('title', 'ilike', '%[Private video]%');
+      if (publishedAfter != null) {
+        query = query.gte('created_at', publishedAfter.toIso8601String());
       }
+      if (publishedBefore != null) {
+        query = query.lte('created_at', publishedBefore.toIso8601String());
+      }
+      query = query.order('created_at', ascending: false);
+      query = query.range(from, to);
+      final response = await query.count(CountOption.exact);
+      final int totalResults = response.count ?? 0; 
+      final List<dynamic> data = response.data;
+      final List<YoutubeVideo> videos = data
+          .map((item) => YoutubeVideo.fromSupabase(item as Map<String, dynamic>))
+          .toList();
+      int totalPages = 1;
+      if (totalResults > 0) {
+        totalPages = (totalResults / pageSize).ceil();
+      }
+      return YoutubeVideoResult(
+        videos: videos,
+        currentPage: page,
+        totalPages: totalPages,
+        totalResults: totalResults,
+      );
+
     } catch (e) {
-      log("Error koneksi ke API: $e", name: "YoutubeService");
+      log("Error koneksi ke Supabase: $e", name: "YoutubeService");
+      if (e is PostgrestException) {
+        log("Error Supabase Detail: ${e.message}", name: "YoutubeService");
+        throw Exception(
+            "Gagal mengambil data dari Supabase: ${e.message}. (Cek RLS/Nama Tabel?)");
+      }
       throw Exception(
           "Gagal terhubung ke Server. Periksa koneksi internet Anda.");
     }

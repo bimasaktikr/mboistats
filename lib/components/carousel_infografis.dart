@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_file_downloader/flutter_file_downloader.dart';
+// HAPUS: 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'dart:io';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+// HAPUS: 'dart:io';
+// HAPUS: 'package:permission_handler/permission_handler.dart';
+// HAPUS: 'package:fluttertoast/fluttertoast.dart';
 import 'package:mboistats/services/supabase_db_service.dart';
 import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:mboistats/components/auth_guard.dialog.dart';
 
 import '../theme.dart';
+// --- TAMBAHAN BARU ---
+import 'package:mboistats/utils/download_helper.dart'; // Import helper baru kita
 
 class CarouselInfografis extends StatefulWidget {
   const CarouselInfografis({Key? key}) : super(key: key);
@@ -35,6 +37,7 @@ class CarouselInfografisState extends State<CarouselInfografis> {
     super.dispose();
   }
 
+  // CATATAN: Ini juga nanti akan diganti memanggil BpsApiService
   Future<void> fetchData() async {
     if (mounted && !_isLoadingApi) {
       setState(() => _isLoadingApi = true);
@@ -123,12 +126,43 @@ class CarouselInfografisState extends State<CarouselInfografis> {
                   builder: (BuildContext dialogContext) {
                     return GestureDetector(
                       onTap: () {
-                        openDownloadConfirmation(
-                          dialogContext, 
-                          item,
+                        // --- PERUBAHAN DI SINI ---
+                        // Panggil helper
+                        final authService = consumerContext.read<SupabaseAuthService>();
+
+                        DownloadHelper.showInfografisDialog(
+                          context: consumerContext, 
+                          title: title, 
+                          imageUrl: item['img'] ?? '', 
+                          releaseDate: item['date'] ?? 'N/A', 
+                          onToggleFavorite: () {
+                            // Logika ini dipindahkan dari dalam dialog lama
+                            bool isLoggedIn = authService.isLoggedIn();
+                            if (!isLoggedIn) {
+                              Navigator.pop(consumerContext); // Tutup dialog
+                              showDialog(
+                                context: context, // Tampilkan dialog Auth
+                                builder: (context) => const AuthGuardDialog(),
+                              );
+                              return;
+                            }
+                            try {
+                              if (isFavorited) {
+                                dbService.removeFavorite('infografis', title);
+                              } else {
+                                item['type'] = 'infografis'; 
+                                dbService.addFavorite(item);
+                              }
+                            } catch (e) {
+                              print("Error toggling favorite: $e");
+                            }
+                          }, 
+                          isCurrentlyFavorited: isFavorited
                         );
+                        // --- AKHIR PERUBAHAN ---
                       },
                       child: Container(
+                        // ... (Tampilan card tidak berubah) ...
                         margin: const EdgeInsets.symmetric(horizontal: 8.0),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -200,225 +234,8 @@ class CarouselInfografisState extends State<CarouselInfografis> {
     );
   }
 
-  Future<bool> _checkPermission() async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      var permissionStatus = await Permission.storage.status;
-      if (permissionStatus.isDenied) {
-        permissionStatus = await Permission.storage.request();
-      }
-      return permissionStatus.isGranted;
-    }
-    return true;
-  }
-  void openDownloadConfirmation(
-    BuildContext context, 
-    Map<String, dynamic> item,
-  ) {
-    final String tautan = item['img'] ?? '';
-    final String judul = item['title'] ?? 'Tanpa Judul';
-    final String tglrilis = item['date'] ?? 'N/A';
-    final String postType = 'infografis'; 
-
-    final String favoriteKey = context.read<SupabaseDbService>().generateItemId(postType, judul);
-
-    showDialog(
-      context: context, 
-      builder: (BuildContext dialogContextInner) {
-        return Consumer<SupabaseDbService>(
-          builder: (dialogConsumerContext, dbService, child) {
-
-            final authService = dialogConsumerContext.read<SupabaseAuthService>();
-            final bool isCurrentlyFavorited = dbService.favoriteIds.contains(favoriteKey);
-
-            void toggleFavorite() async {
-              bool isLoggedIn = authService.isLoggedIn();
-              
-              if (!isLoggedIn) {
-                final navigator = Navigator.of(dialogConsumerContext);
-                navigator.pop(); 
-                showDialog(
-                  context: context, 
-                  builder: (context) => const AuthGuardDialog(),
-                );
-                return;
-              }
-
-              try {
-                if (isCurrentlyFavorited) {
-                  await dbService.removeFavorite(postType, judul);
-                } else {
-                  item['type'] = postType; 
-                  await dbService.addFavorite(item);
-                }
-              } catch (e) {
-                print("Error toggling favorite: $e");
-              }
-            }
-            
-            Future<void> handleDownload() async {
-              Navigator.pop(dialogContextInner);
-              await downloadAndShowConfirmation(this.context, tautan, judul);
-            }
-
-            List<Widget> mainButtons = [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContextInner),
-                child: const Text("Tutup"),
-              ),
-              TextButton(
-                onPressed: handleDownload,
-                child: Row(
-                  children: const [
-                    Icon(Icons.download, size: 18),
-                    SizedBox(width: 4),
-                    Text("Unduh"),
-                  ],
-                ),
-              ),
-            ];
-
-            Widget favoriteButton = TextButton(
-              onPressed: toggleFavorite,
-              child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isCurrentlyFavorited
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: isCurrentlyFavorited ? Colors.red : Colors.grey[600],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isCurrentlyFavorited ? 'Favorit' : 'Favoritkan',
-                          style: TextStyle(
-                              color: isCurrentlyFavorited
-                                  ? Colors.red
-                                  : Colors.grey[700]),
-                        ),
-                      ],
-                    ),
-            );
-
-            return AlertDialog(
-              title: Text(
-                judul,
-                textAlign: TextAlign.center,
-                style: bold16.copyWith(color: dark1),
-              ),
-              content: SingleChildScrollView(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Image.network(tautan,
-                              fit: BoxFit.contain,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const SizedBox(
-                                    height: 150,
-                                    child: Center(
-                                        child: CircularProgressIndicator()));
-                              },
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.broken_image,
-                                      size: 100, color: Colors.grey)),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Tanggal Rilis: $tglrilis",
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actionsPadding:
-                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-              actions: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: mainButtons,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [favoriteButton],
-                    )
-                  ],
-                )
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-  Future<void> downloadAndShowConfirmation(BuildContext buildContext,
-      String imgUrl, String fileName) async {
-    if (await _checkPermission()) {
-      try {
-        Fluttertoast.showToast(
-          msg: "Berkas infografis sedang diunduh.",
-        );
-        String safeFileName =
-            fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-        String extension = ".jpg";
-        try {
-          Uri uri = Uri.parse(imgUrl);
-          String path = uri.path;
-          int lastDot = path.lastIndexOf('.');
-          if (lastDot != -1) {
-            extension = path.substring(lastDot);
-            int queryStart = extension.indexOf('?');
-            if (queryStart != -1)
-              extension = extension.substring(0, queryStart);
-          }
-          if (extension.isEmpty ||
-              extension.length > 5 ||
-              extension == '.php') extension = ".jpg";
-        } catch (_) {
-          extension = ".jpg";
-        }
-        FileDownloader.downloadFile(
-            url: imgUrl.trim(),
-            name: "$safeFileName$extension",
-            downloadDestination: DownloadDestinations.publicDownloads,
-            onProgress: (name, progress) {},
-            onDownloadCompleted: (String path) {
-              print('File downloaded to: $path');
-              Fluttertoast.showToast(
-                msg:
-                    'Infografis $safeFileName$extension disimpan di Download.',
-              );
-            },
-            onDownloadError: (String error) {
-              print('Download Error: $error');
-              Fluttertoast.showToast(
-                msg: "Gagal mengunduh: $error",
-              );
-            });
-      } catch (error) {
-        print('Download Exception: $error');
-        Fluttertoast.showToast(
-          msg: "Terjadi kesalahan: $error",
-        );
-      }
-    } else {
-      Fluttertoast.showToast(
-        msg: "Izin penyimpanan ditolak.",
-      );
-    }
-  }
+  // HAPUS: Semua metode di bawah ini telah dipindahkan ke DownloadHelper
+  // Future<bool> _checkPermission() { ... }
+  // void openDownloadConfirmation(...) { ... }
+  // Future<void> downloadAndShowConfirmation(...) { ... }
 }

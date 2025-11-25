@@ -68,20 +68,27 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
       });
     }
   }
-  
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
-    final DateTime initial = isStartDate
-        ? (_startDate ?? DateTime.now())
-        : (_endDate ?? DateTime.now());
-    
-    final DateTime first = DateTime(2010);
-    final DateTime last = DateTime.now();
+    final DateTime now = DateTime.now();
+    DateTime firstDate = DateTime(2010);
+    DateTime lastDate = now;
+    if (isStartDate) {
+      lastDate = _endDate ?? now;
+    } else {
+      firstDate = _startDate ?? firstDate;
+    }
+    DateTime initialDate = isStartDate 
+        ? (_startDate ?? now) 
+        : (_endDate ?? now);
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initial,
-      firstDate: first,
-      lastDate: last,
+      initialDate: initialDate,
+      firstDate: firstDate, // Gunakan firstDate yang dinamis
+      lastDate: lastDate,   // Gunakan lastDate yang dinamis
     );
 
     if (picked != null) {
@@ -104,7 +111,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Filter berdasarkan rentang tanggal:", // Dulu ada '(Boros Kuota)'
+            "Filter berdasarkan rentang tanggal:",
             style: semibold14.copyWith(color: dark2)
           ),
           const SizedBox(height: 8),
@@ -114,7 +121,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
                 child: OutlinedButton.icon(
                   icon: Icon(Icons.calendar_today, size: 16, color: blue1),
                   label: Text(
-                    _startDate == null ? 'Tgl Mulai' : _dateFormatter.format(_startDate!),
+                    _startDate == null ? 'Tanggal Mulai' : _dateFormatter.format(_startDate!),
                     style: regular14.copyWith(color: blue1),
                   ),
                   onPressed: () => _selectDate(context, true),
@@ -129,7 +136,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
                 child: OutlinedButton.icon(
                   icon: Icon(Icons.calendar_today, size: 16, color: blue1),
                   label: Text(
-                    _endDate == null ? 'Tgl Akhir' : _dateFormatter.format(_endDate!),
+                    _endDate == null ? 'Tanggal Akhir' : _dateFormatter.format(_endDate!),
                     style: regular14.copyWith(color: blue1),
                   ),
                   onPressed: () => _selectDate(context, false),
@@ -147,7 +154,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
               child: TextButton.icon(
                 icon: Icon(Icons.close, size: 16, color: Colors.red[700]),
                 label: Text(
-                  'Hapus Filter', // Dulu ada '(Hemat Kuota)'
+                  'Hapus Filter',
                   style: regular14.copyWith(color: Colors.red[700]),
                 ),
                 onPressed: () {
@@ -168,7 +175,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BPS Kota Malang TV'),
+        title: const Text('BPS Kota Malang'),
         leading: IconButton(
           icon: Image.asset('assets/icons/left-arrow.png', height: 25),
           onPressed: () => Navigator.of(context).pop(),
@@ -280,6 +287,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
       ],
     );
   }
+
   Widget _buildPaginationControls() {
     if (_isLoading || _totalPages <= 1) return const SizedBox(height: 48);
 
@@ -288,13 +296,10 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          TextButton.icon(
+          IconButton(
             icon: Icon(Icons.arrow_back_ios,
-                size: 16,
+                size: 18, // Sedikit lebih besar agar mudah disentuh
                 color: _currentPage <= 1 ? Colors.grey : blue1),
-            label: Text('Sebelumnya',
-                style: semibold14.copyWith(
-                    color: _currentPage <= 1 ? Colors.grey : blue1)),
             onPressed: _currentPage <= 1
                 ? null
                 : () {
@@ -306,13 +311,9 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
             'Halaman $_currentPage dari $_totalPages',
             style: regular14.copyWith(color: dark2),
           ),
-          
-          TextButton.icon(
-            icon: Text('Berikutnya',
-                style: semibold14.copyWith(
-                    color: _currentPage >= _totalPages ? Colors.grey : blue1)),
-            label: Icon(Icons.arrow_forward_ios,
-                size: 16,
+          IconButton(
+            icon: Icon(Icons.arrow_forward_ios,
+                size: 18, // Sedikit lebih besar
                 color: _currentPage >= _totalPages ? Colors.grey : blue1),
             onPressed: _currentPage >= _totalPages
                 ? null

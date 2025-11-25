@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mboistats/pages/brs_pages.dart';
 import 'package:mboistats/pages/contact.dart';
 import 'package:mboistats/pages/ekonomi/ekonomi_pages.dart';
-import 'package:mboistats/pages/ekonomi/perekonomian_deteksi_dini_inflasi.dart';
+// HAPUS: import 'package:mboistats/pages/ekonomi/perekonomian_deteksi_dini_inflasi.dart'; // Diganti
 import 'package:mboistats/pages/more_pages.dart';
 import 'package:mboistats/pages/publikasi.dart';
 import 'package:mboistats/pages/tentang_pages.dart';
@@ -16,46 +16,24 @@ import 'package:mboistats/pages/kependudukan/kependudukan_pages.dart';
 import 'package:mboistats/pages/kesejahteraan/kesejahteraan_pages.dart';
 import 'package:mboistats/pages/ketenagakerjaan/ketenagakerjaan_pages.dart';
 import 'package:mboistats/pages/pertanian/pertanian_pages.dart';
-import 'package:mboistats/pages/IPM/ipm.dart';
-import 'package:mboistats/pages/IPM/ipm_uhh.dart';
+// HAPUS: import 'package:mboistats/pages/IPM/ipm.dart'; // Diganti
 import 'package:mboistats/pages/IPM/ipm_pages.dart';
-import 'package:mboistats/pages/IPM/ipm_daya_beli.dart';
-import 'package:mboistats/pages/IPM/ipm_rls.dart';
-import 'package:mboistats/pages/IPM/ipm_hls.dart';
-import 'package:mboistats/pages/kependudukan/kependudukan_jenis_kelamin.dart';
-import 'package:mboistats/pages/kependudukan/kependudukan_kecamatan.dart';
-import 'package:mboistats/pages/kependudukan/kependudukan_blimbing.dart';
-import 'package:mboistats/pages/kependudukan/kependudukan_kedungkandang.dart';
-import 'package:mboistats/pages/kependudukan/kependudukan_klojen.dart';
-import 'package:mboistats/pages/kependudukan/kependudukan_sukun.dart';
-import 'package:mboistats/pages/kependudukan/kependudukan_lowokwaru.dart';
-import 'package:mboistats/pages/ekonomi/perekonomian_inflasi_bulanan.dart';
-import 'package:mboistats/pages/ekonomi/perekonomian_inflasi_tahunan.dart';
-import 'package:mboistats/pages/ekonomi/perekonomian_lpe.dart';
-import 'package:mboistats/pages/ekonomi/perekonomian_pdrb.dart';
-import 'package:mboistats/pages/kemiskinan/kemiskinan_garis.dart';
-import 'package:mboistats/pages/kemiskinan/kemiskinan_indeks_kedalaman.dart';
-import 'package:mboistats/pages/kemiskinan/kemiskinan_indeks_keparahan.dart';
-import 'package:mboistats/pages/kemiskinan/kemiskinan_tingkat.dart';
-import 'package:mboistats/pages/ketenagakerjaan/ketenagakerjaan_ak_pendidikan.dart';
-import 'package:mboistats/pages/ketenagakerjaan/ketenagakerjaan_penganggur_pendidikan.dart';
-import 'package:mboistats/pages/ketenagakerjaan/ketenagakerjaan_tpt.dart';
-import 'package:mboistats/pages/ketenagakerjaan/ketenagakerjaan_tpak.dart';
-import 'package:mboistats/pages/kesejahteraan/kesejahteraan_gini_rasio.dart';
-import 'package:mboistats/pages/kesejahteraan/kesejahteraan_pengeluaran_perkapita.dart';
-import 'package:mboistats/pages/pertanian/pertanian_luas_panen_padi.dart';
-import 'package:mboistats/pages/pertanian/pertanian_produksi_beras.dart';
-import 'package:mboistats/pages/pertanian/pertanian_produksi_padi.dart';
-import 'package:mboistats/pages/pertanian/pertanian_produktivitas_padi.dart';
-import 'package:mboistats/pages/favorit_page.dart'; // <-- TAMBAHKAN IMPORT BARU
-import 'package:mboistats/pages/login_page.dart'; // <-- TAMBAHKAN IMPORT INI
+// HAPUS: Puluhan import halaman WebView ...
+import 'package:mboistats/pages/favorit_page.dart';
+import 'package:mboistats/pages/login_page.dart';
 import 'package:mboistats/pages/youtube_list_page.dart';
 import 'package:mboistats/pages/youtube_player_page.dart';
+
+// --- TAMBAHAN BARU ---
+// Import komponen WebView generik kita
+import 'package:mboistats/components/generic_webview_page.dart';
+import 'package:mboistats/pages/ekonomi/perekonomian_deteksi_dini_inflasi.dart';
+
 
 class RouteManager {
   static Map<String, Widget Function(BuildContext)> routes = {
     '/splash': (context) => SplashScreen(),
-    '/login': (context) => const LoginPage(), // <-- TAMBAHKAN RUTE INI
+    '/login': (context) => const LoginPage(),
     '/main': (context) => const HomePage(),
     '/berita': (context) => const BeritaPages(),
     '/infografis': (context) => const InfografisPages(),
@@ -72,57 +50,175 @@ class RouteManager {
     '/pertanian': (context) => PertanianPages(),
     '/more': (context) => MorePages(),
 
+    // --- SEMUA ROUTE DI BAWAH INI TELAH DI-REFACTOR ---
+
     //IPM
-    '/PendudukBekerja': (context) => IndexPembangunanManusiaPage(),
-    '/UsiaHarapanHidup': (context) => UsiaHarapanHidupPage(),
-    '/HarapanLamaSekolah': (context) => HarapanLamaSekolahPage(),
-    '/RataRataLamaSekolah': (context) => RataRataLamaSekolahPage(),
-    '/DayaBeli': (context) => DayaBeliPage(),
+    '/PendudukBekerja': (context) => const GenericWebViewPage(
+          title: 'IPM',
+          htmlAssetPath: 'assets/web/ipm.html',
+          backgroundImagePath: 'assets/images/back_ipm.png',
+        ),
+    '/UsiaHarapanHidup': (context) => const GenericWebViewPage(
+          title: 'Usia Harapan Hidup',
+          htmlAssetPath: 'assets/web/ipm_uhh.html',
+          backgroundImagePath: 'assets/images/back_ipm.png',
+        ),
+    '/HarapanLamaSekolah': (context) => const GenericWebViewPage(
+          title: 'Harapan Lama Sekolah',
+          htmlAssetPath: 'assets/web/ipm_hls.html',
+          backgroundImagePath: 'assets/images/back_ipm.png',
+        ),
+    '/RataRataLamaSekolah': (context) => const GenericWebViewPage(
+          title: 'Rata - Rata Lama Sekolah',
+          htmlAssetPath: 'assets/web/ipm_rls.html',
+          backgroundImagePath: 'assets/images/back_ipm.png',
+        ),
+    '/DayaBeli': (context) => const GenericWebViewPage(
+          title: 'Daya Beli',
+          htmlAssetPath: 'assets/web/ipm_daya_beli.html',
+          backgroundImagePath: 'assets/images/back_ipm.png',
+        ),
 
     //Kependudukan
-    '/PendudukJK': (context) => KependudukanMenurutJKPage(),
-    '/PendudukKec': (context) => KependudukanMenurutKecamatanPage(),
-    '/PKedungkandang': (context) => PendudukKedungkandangPage(),
-    '/PSukun': (context) => PendudukSukunPage(),
-    '/PKlojen': (context) => PendudukKlojenPage(),
-    '/PBlimbing': (context) => PendudukBlimbingPage(),
-    '/PLowokwaru': (context) => PendudukLowokwaruPage(),
+    '/PendudukJK': (context) => const GenericWebViewPage(
+          title: 'Kependudukan',
+          htmlAssetPath: 'assets/web/kependudukan_jenis_kelamin.html',
+          backgroundImagePath: 'assets/images/back_kependudukan.png',
+        ),
+    '/PendudukKec': (context) => const GenericWebViewPage(
+          title: 'Kependudukan',
+          htmlAssetPath: 'assets/web/kependudukan_kecamatan.html',
+          backgroundImagePath: 'assets/images/back_kependudukan.png',
+        ),
+    '/PKedungkandang': (context) => const GenericWebViewPage(
+          title: 'Kependudukan',
+          htmlAssetPath: 'assets/web/kependudukan_kedungkandang.html',
+          backgroundImagePath: 'assets/images/back_kependudukan.png',
+        ),
+    '/PSukun': (context) => const GenericWebViewPage(
+          title: 'Kependudukan',
+          htmlAssetPath: 'assets/web/kependudukan_sukun.html',
+          backgroundImagePath: 'assets/images/back_kependudukan.png',
+        ),
+    '/PKlojen': (context) => const GenericWebViewPage(
+          title: 'Kependudukan',
+          htmlAssetPath: 'assets/web/kependudukan_klojen.html',
+          backgroundImagePath: 'assets/images/back_kependudukan.png',
+        ),
+    '/PBlimbing': (context) => const GenericWebViewPage(
+          title: 'Kependudukan',
+          htmlAssetPath: 'assets/web/kependudukan_blimbing.html',
+          backgroundImagePath: 'assets/images/back_kependudukan.png',
+        ),
+    '/PLowokwaru': (context) => const GenericWebViewPage(
+          title: 'Kependudukan',
+          htmlAssetPath: 'assets/web/kependudukan_lowokwaru.html',
+          backgroundImagePath: 'assets/images/back_kependudukan.png',
+        ),
 
     //Ekonomi
-    '/LajuPertumbuhan': (context) => LajuPertumbuhan(),
-    '/Ekonomi': (context) => EkonomiPages(),
-    '/PDRB': (context) => PDRB(),
-    '/InflasiTahunKalender': (context) => InflasiTahunanPage(),
-    '/InflasiBulanan': (context) => InflasiBulananPage(),
-    '/DeteksiDiniInflasi': (context) => DeteksiDiniInflasiPage(),
+    '/LajuPertumbuhan': (context) => const GenericWebViewPage(
+          title: 'Laju Pertumbuhan Ekonomi',
+          htmlAssetPath: 'assets/web/perekonomian_lpe.html',
+          backgroundImagePath: 'assets/images/back_perekonomian.png',
+        ),
+    '/PDRB': (context) => const GenericWebViewPage(
+          title: 'PDRB',
+          htmlAssetPath: 'assets/web/perekonomian_pdrb_lapus.html',
+          backgroundImagePath: 'assets/images/back_perekonomian.png',
+        ),
+    '/InflasiTahunKalender': (context) => const GenericWebViewPage(
+          title: 'Inflasi Tahun Kalender',
+          htmlAssetPath: 'assets/web/perekonomian_inflasi_tahunan.html',
+          backgroundImagePath: 'assets/images/back_perekonomian.png',
+        ),
+    '/InflasiBulanan': (context) => const GenericWebViewPage(
+          title: 'Inflasi Bulanan',
+          htmlAssetPath: 'assets/web/perekonomian_inflasi_bulanan.html',
+          backgroundImagePath: 'assets/images/back_perekonomian.png',
+        ),
+    '/DeteksiDiniInflasi': (context) => const DeteksiDiniInflasiPage(), // Ini halaman khusus (bukan WebView lokal), jadi biarkan
 
     //Kemiskinan
     '/kemiskinan': (context) => KemiskinanPages(),
-    '/TingkatKemiskinan': (context) => TingkatKemiskinanPage(),
-    '/IndeksKedalamanKemiskinan': (context) => IndeksKedalamanKemiskinanPage(),
-    '/IndeksKeparahanKemiskinan': (context) => IndeksKeparahanKemiskinan(),
-    '/GarisKemiskinan': (context) => GarisKemiskinanPage(),
+    '/TingkatKemiskinan': (context) => const GenericWebViewPage(
+          title: 'Tingkat Kemiskinan',
+          htmlAssetPath: 'assets/web/kemiskinan_tingkat.html',
+          backgroundImagePath: 'assets/images/back_kemiskinan.png',
+        ),
+    '/IndeksKedalamanKemiskinan': (context) => const GenericWebViewPage(
+          title: 'Indeks Kedalaman Kemiskinan',
+          htmlAssetPath: 'assets/web/kemiskinan_indeks_kedalaman.html',
+          backgroundImagePath: 'assets/images/back_kemiskinan.png',
+        ),
+    '/IndeksKeparahanKemiskinan': (context) => const GenericWebViewPage(
+          title: 'Indeks Keparahan Kemiskinan',
+          htmlAssetPath: 'assets/web/kemiskinan_indeks_keparahan.html',
+          backgroundImagePath: 'assets/images/back_kemiskinan.png',
+        ),
+    '/GarisKemiskinan': (context) => const GenericWebViewPage(
+          title: 'Garis Kemiskinan',
+          htmlAssetPath: 'assets/web/kemiskinan_garis.html',
+          backgroundImagePath: 'assets/images/back_kemiskinan.png',
+        ),
 
     //Ketenagakerjaan
-    '/AKMenurutPendidikan': (context) => AngkatanKerjaMenurutPendidikanPage(),
-    '/PartisipasiAngkatanKerja': (context) =>
-        TingkatPartisipasiAngkatanKerjaPage(),
-    '/TingkatPengangguran': (context) =>
-        PersentasePengangguranMenurutPendidikanPage(),
-    '/PengangguranMenurutPendidikan': (context) => PengangguranMenurutPendidikan(),
+    '/AKMenurutPendidikan': (context) => const GenericWebViewPage(
+          title: 'Angkatan Kerja Pendidikan',
+          htmlAssetPath: 'assets/web/ketenagakerjaan_ak_pendidikan.html',
+          backgroundImagePath: 'assets/images/back_ketenagakerjaan.png',
+        ),
+    '/PartisipasiAngkatanKerja': (context) => const GenericWebViewPage(
+          title: 'TPAK',
+          htmlAssetPath: 'assets/web/ketenagakerjaan_tpak.html',
+          backgroundImagePath: 'assets/images/back_ketenagakerjaan.png',
+        ),
+    '/TingkatPengangguran': (context) => const GenericWebViewPage(
+          title: 'TPT',
+          htmlAssetPath: 'assets/web/ketenagakerjaan_tpt.html',
+          backgroundImagePath: 'assets/images/back_ketenagakerjaan.png',
+        ),
+    '/PengangguranMenurutPendidikan': (context) => const GenericWebViewPage(
+          title: 'Pengangguran',
+          htmlAssetPath: 'assets/web/ketenagakerjaan_penganggur_pendidikan.html',
+          backgroundImagePath: 'assets/images/back_ketenagakerjaan.png',
+        ),
 
     //Kesejahteraan
-    '/GiniRasio': (context) => GiniRasioPage(),
-    '/PengeluaranPerkapita': (context) => PengeluaranPerkapitaPage(),
+    '/GiniRasio': (context) => const GenericWebViewPage(
+          title: 'Gini Rasio',
+          htmlAssetPath: 'assets/web/kesejahteraan_gini_rasio.html',
+          backgroundImagePath: 'assets/images/back_kesejahteraan.png',
+        ),
+    '/PengeluaranPerkapita': (context) => const GenericWebViewPage(
+          title: 'Pengeluaran Perkapita',
+          htmlAssetPath: 'assets/web/kesejahteraan_pengeluaran_perkapita.html',
+          backgroundImagePath: 'assets/images/back_kesejahteraan.png',
+        ),
 
     //Pertanian
-    '/LuasPanenPadi': (context) => LuasPanenPadiPage(),
-    '/ProduksiPadi': (context) => ProduksiPadiPage(),
-    '/ProduktivitasPadi': (context) => ProduktivitasPadiPage(),
-    '/ProduksiBeras': (context) => const ProduksiBerasPage(),
-    '/favorit': (context) => const FavoritPage(), // <-- TAMBAHKAN RUTE BARU
-
-    //Youtube
+    '/LuasPanenPadi': (context) => const GenericWebViewPage(
+          title: 'Luas Panen Padi',
+          htmlAssetPath: 'assets/web/pertanian_luas_panen_padi.html',
+          backgroundImagePath: 'assets/images/back_pertanian.png',
+        ),
+    '/ProduksiPadi': (context) => const GenericWebViewPage(
+          title: 'Produksi Padi',
+          htmlAssetPath: 'assets/web/pertanian_produksi_padi.html',
+          backgroundImagePath: 'assets/images/back_pertanian.png',
+        ),
+    '/ProduktivitasPadi': (context) => const GenericWebViewPage(
+          title: 'Produktivitas Padi',
+          htmlAssetPath: 'assets/web/pertanian_produktivitas_padi.html',
+          backgroundImagePath: 'assets/images/back_pertanian.png',
+        ),
+    '/ProduksiBeras': (context) => const GenericWebViewPage(
+          title: 'Produksi Beras',
+          htmlAssetPath: 'assets/web/pertanian_produksi_beras.html',
+          backgroundImagePath: 'assets/images/back_pertanian.png',
+        ),
+        
+    '/favorit': (context) => const FavoritPage(),
     '/youtube_list': (context) => const YoutubeListPage(),
     '/youtube_player': (context) => const YoutubePlayerPage(),
   };

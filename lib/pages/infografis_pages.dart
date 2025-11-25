@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_file_downloader/flutter_file_downloader.dart';
+// HAPUS: 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:mboistats/theme.dart';
-import 'dart:io';
-import 'package:permission_handler/permission_handler.dart';
+// HAPUS: 'dart:io';
+// HAPUS: 'package:permission_handler/permission_handler.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:mboistats/services/supabase_db_service.dart';
 import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:mboistats/components/auth_guard.dialog.dart';
+
+// --- TAMBAHAN BARU ---
+import 'package:mboistats/utils/download_helper.dart'; // Import helper baru kita
 
 class InfografisPages extends StatefulWidget {
   const InfografisPages({Key? key}) : super(key: key);
@@ -46,6 +49,7 @@ class _InfografisPagesState extends State<InfografisPages> {
     super.dispose();
   }
 
+  // CATATAN: Ini juga nanti akan diganti memanggil BpsApiService
   Future<void> fetchDataInfografis() async {
     if (!hasMore || isLoading) return;
     setState(() => isLoading = true);
@@ -102,6 +106,7 @@ class _InfografisPagesState extends State<InfografisPages> {
           : dataInfografis.isEmpty && !isLoading
               ? const Center(child: Text("Tidak ada infografis tersedia."))
               : GridView.builder(
+                  // ... (GridView tidak berubah) ...
                   controller: _scrollController,
                   itemCount: dataInfografis.length + (hasMore ? 1 : 0),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -130,12 +135,43 @@ class _InfografisPagesState extends State<InfografisPages> {
 
                         return GestureDetector(
                           onTap: () {
-                            openDownloadConfirmation(
-                              context, // Gunakan context dari itemBuilder
-                              item,
+                            // --- PERUBAHAN DI SINI ---
+                            // Panggil helper
+                            final authService = consumerContext.read<SupabaseAuthService>();
+
+                            DownloadHelper.showInfografisDialog(
+                              context: consumerContext, 
+                              title: title, 
+                              imageUrl: item['img'] ?? '', 
+                              releaseDate: item['date'] ?? 'N/A', 
+                              onToggleFavorite: () {
+                                // Logika ini dipindahkan dari dalam dialog lama
+                                bool isLoggedIn = authService.isLoggedIn();
+                                if (!isLoggedIn) {
+                                  Navigator.pop(consumerContext); // Tutup dialog
+                                  showDialog(
+                                    context: context, // Tampilkan dialog Auth
+                                    builder: (context) => const AuthGuardDialog(),
+                                  );
+                                  return;
+                                }
+                                try {
+                                  if (isFavorited) {
+                                    dbService.removeFavorite('infografis', title);
+                                  } else {
+                                    item['type'] = 'infografis'; 
+                                    dbService.addFavorite(item);
+                                  }
+                                } catch (e) {
+                                  print("Error toggling favorite: $e");
+                                }
+                              }, 
+                              isCurrentlyFavorited: isFavorited
                             );
+                            // --- AKHIR PERUBAHAN ---
                           },
                           child: Container(
+                            // ... (Tampilan card tidak berubah) ...
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12.0),
@@ -239,254 +275,9 @@ class _InfografisPagesState extends State<InfografisPages> {
                 ),
     );
   }
-  void openDownloadConfirmation(
-    BuildContext context,
-    Map<String, dynamic> item,
-  ) {
-    final String tautan = item['img'] ?? '';
-    final String judul = item['title'] ?? 'Tanpa Judul';
-    final String tglrilis = item['date'] ?? 'N/A';
-    final String postType = 'infografis'; 
 
-    final String favoriteKey = context.read<SupabaseDbService>().generateItemId(postType, judul);
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContextInner) {
-        return Consumer<SupabaseDbService>(
-          builder: (dialogConsumerContext, dbService, child) {
-          
-            final authService = dialogConsumerContext.read<SupabaseAuthService>();
-            final bool isCurrentlyFavorited = dbService.favoriteIds.contains(favoriteKey);
-
-            void toggleFavorite() async {
-              bool isLoggedIn = authService.isLoggedIn();
-              
-              if (!isLoggedIn) {
-                final navigator = Navigator.of(dialogConsumerContext);
-                navigator.pop();
-                showDialog(
-                  context: context,
-                  builder: (context) => const AuthGuardDialog(),
-                );
-                return;
-              }
-              
-              try {
-                if (isCurrentlyFavorited) {
-                  await dbService.removeFavorite(postType, judul);
-                } else {
-                  item['type'] = postType; 
-                  await dbService.addFavorite(item);
-                }
-              } catch (e) {
-                print("Error toggling favorite: $e");
-              }
-            }
-            
-            Future<void> handleDownload() async {
-              Navigator.pop(dialogContextInner);
-              await downloadAndShowConfirmation(context, tautan, judul);
-            }
-
-            List<Widget> mainButtons = [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContextInner),
-                child: const Text("Tutup"),
-              ),
-              TextButton(
-                onPressed: handleDownload,
-                child: Row(
-                  children: const [
-                    Icon(Icons.download, size: 18),
-                    SizedBox(width: 4),
-                    Text("Unduh"),
-                  ],
-                ),
-              ),
-            ];
-
-            Widget favoriteButton = TextButton(
-              onPressed: toggleFavorite,
-              child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isCurrentlyFavorited
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: isCurrentlyFavorited ? Colors.red : Colors.grey[600],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isCurrentlyFavorited ? 'Favorit' : 'Favoritkan',
-                          style: TextStyle(
-                              color: isCurrentlyFavorited
-                                  ? Colors.red
-                                  : Colors.grey[700]),
-                        ),
-                      ],
-                    ),
-            );
-
-            return AlertDialog(
-              title: Text(
-                judul,
-                textAlign: TextAlign.center,
-                style: bold16.copyWith(color: dark1),
-              ),
-              content: SingleChildScrollView(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Image.network(tautan,
-                              fit: BoxFit.contain,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const SizedBox(
-                                    height: 150,
-                                    child: Center(
-                                        child: CircularProgressIndicator()));
-                              },
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.broken_image,
-                                      size: 100, color: Colors.grey)),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Tanggal Rilis: $tglrilis",
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actionsPadding:
-                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-              actions: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: mainButtons,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [favoriteButton],
-                    )
-                  ],
-                )
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-  Future<void> downloadAndShowConfirmation(
-      BuildContext context, String imgUrl, String fileName) async {
-    if (await _checkPermission()) {
-      try {
-        Fluttertoast.showToast(
-          msg: "Berkas infografis sedang diunduh.",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-        String safeFileName =
-            fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-        String extension = ".jpg";
-        try {
-          Uri uri = Uri.parse(imgUrl);
-          String path = uri.path;
-          int lastDot = path.lastIndexOf('.');
-          if (lastDot != -1) {
-            extension = path.substring(lastDot);
-            int queryStart = extension.indexOf('?');
-            if (queryStart != -1)
-              extension = extension.substring(0, queryStart);
-          }
-          if (extension.isEmpty ||
-              extension.length > 5 ||
-              extension.contains('/') ||
-              extension == '.php') extension = ".jpg";
-        } catch (_) {
-          extension = ".jpg";
-        }
-        FileDownloader.downloadFile(
-            url: imgUrl.trim(),
-            name: "$safeFileName$extension",
-            downloadDestination: DownloadDestinations.publicDownloads,
-            onProgress: (name, double progress) {},
-            onDownloadCompleted: (String path) {
-              Fluttertoast.showToast(
-                msg:
-                    'Infografis $safeFileName$extension disimpan di Download.',
-                toastLength: Toast.LENGTH_LONG,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.blue,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-            },
-            onDownloadError: (String error) {
-              Fluttertoast.showToast(
-                msg: "Gagal mengunduh berkas: $error",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-            });
-      } catch (error) {
-        Fluttertoast.showToast(
-          msg: "Terjadi kesalahan saat mengunduh: $error",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-      }
-    } else {
-      Fluttertoast.showToast(
-        msg: "Izin penyimpanan ditolak.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.orange,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    }
-  }
-
-  Future<bool> _checkPermission() async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      var permissionStatus = await Permission.storage.status;
-      if (permissionStatus.isDenied) {
-        permissionStatus = await Permission.storage.request();
-      }
-      return permissionStatus.isGranted;
-    }
-    return true;
-  }
+  // HAPUS: Semua metode di bawah ini telah dipindahkan ke DownloadHelper
+  // void openDownloadConfirmation(...) { ... }
+  // Future<void> downloadAndShowConfirmation(...) { ... }
+  // Future<bool> _checkPermission() { ... }
 }

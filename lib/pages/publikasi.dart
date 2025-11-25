@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:mboistats/theme.dart';
-import 'package:saf/saf.dart';
+// HAPUS: 'package:saf/saf.dart';
 import 'dart:convert';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'dart:io';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_file_downloader/flutter_file_downloader.dart';
-import 'package:html_unescape/html_unescape.dart';
-import 'package:html/parser.dart' show parse;
+// HAPUS: 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+// HAPUS: 'dart:io';
+// HAPUS: 'package:permission_handler/permission_handler.dart';
+// HAPUS: 'package:flutter_file_downloader/flutter_file_downloader.dart';
+// HAPUS: 'package:html_unescape/html_unescape.dart';
+// HAPUS: 'package:html/parser.dart' show parse;
 import 'package:mboistats/services/supabase_db_service.dart';
 import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:mboistats/components/auth_guard.dialog.dart';
+
+// --- TAMBAHAN BARU ---
+import 'package:mboistats/utils/download_helper.dart'; // Import helper baru kita
 
 class PublikasiPage extends StatefulWidget {
   const PublikasiPage({Key? key}) : super(key: key);
@@ -23,7 +26,7 @@ class PublikasiPage extends StatefulWidget {
 }
 
 class _PublikasiPageState extends State<PublikasiPage> {
-  late Saf saf;
+  // HAPUS: late Saf saf;
   List<Map<String, dynamic>> dataPublikasi = [];
   int currentPage = 1;
   bool isLoading = false;
@@ -33,7 +36,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
   @override
   void initState() {
     super.initState();
-    saf = Saf("mboistats_saf");
+    // HAPUS: saf = Saf("mboistats_saf");
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
               _scrollController.position.maxScrollExtent - 200 &&
@@ -51,6 +54,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
     super.dispose();
   }
   
+  // CATATAN: Ini juga nanti akan diganti memanggil BpsApiService
   Future<void> fetchDataPublikasi() async {
     if (!hasMore || isLoading) return;
     setState(() => isLoading = true);
@@ -106,6 +110,7 @@ class _PublikasiPageState extends State<PublikasiPage> {
           : dataPublikasi.isEmpty && !isLoading
               ? const Center(child: Text("Tidak ada publikasi tersedia."))
               : GridView.builder(
+                  // ... (GridView tidak berubah) ...
                   controller: _scrollController,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -134,12 +139,46 @@ class _PublikasiPageState extends State<PublikasiPage> {
 
                         return GestureDetector(
                           onTap: () {
-                            showDownloadDialog(
-                              context, // Gunakan context dari itemBuilder
-                              item,
+                            // --- PERUBAHAN DI SINI ---
+                            // Panggil helper
+                            final authService = consumerContext.read<SupabaseAuthService>();
+
+                            DownloadHelper.showPublikasiDialog(
+                              context: consumerContext, 
+                              title: title, 
+                              postType: 'publikasi', 
+                              pdfUrl: item["pdf"] ?? "", 
+                              abstract: item["abstract"] ?? "", 
+                              size: item["size"] ?? "N/A", 
+                              releaseDate: item["rl_date"] ?? "N/A", 
+                              onToggleFavorite: () {
+                                // Logika ini dipindahkan dari dalam dialog lama
+                                bool isLoggedIn = authService.isLoggedIn();
+                                if (!isLoggedIn) {
+                                  Navigator.pop(consumerContext); // Tutup dialog
+                                  showDialog(
+                                    context: context, // Tampilkan dialog Auth
+                                    builder: (context) => const AuthGuardDialog(),
+                                  );
+                                  return;
+                                }
+                                try {
+                                  if (isFavorited) {
+                                    dbService.removeFavorite('publikasi', title);
+                                  } else {
+                                    item['type'] = 'publikasi'; 
+                                    dbService.addFavorite(item);
+                                  }
+                                } catch (e) {
+                                  print("Error toggling favorite: $e");
+                                }
+                              }, 
+                              isCurrentlyFavorited: isFavorited,
                             );
+                            // --- AKHIR PERUBAHAN ---
                           },
                           child: Container(
+                            // ... (Tampilan card tidak berubah) ...
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12.0),
@@ -236,277 +275,11 @@ class _PublikasiPageState extends State<PublikasiPage> {
                 ),
     );
   }
-  void showDownloadDialog(
-      BuildContext context, 
-      Map<String, dynamic> item,
-  ) {
-        
-    final String title = item["title"] ?? "Tanpa Judul";
-    final String postType = 'publikasi'; 
-    final String pdfUrl = item["pdf"] ?? "";
-    final String abstract = item["abstract"] ?? "";
-    final String size = item["size"] ?? "N/A";
-    final String rlDate = item["rl_date"] ?? "N/A";
-    
-    final String favoriteKey = context.read<SupabaseDbService>().generateItemId(postType, title);
 
-    showDialog(
-      context: context, 
-      builder: (BuildContext dialogContextInner) {
-        return Consumer<SupabaseDbService>(
-          builder: (dialogConsumerContext, dbService, child) {
-            
-            final authService = dialogConsumerContext.read<SupabaseAuthService>();
-            final bool isCurrentlyFavorited = dbService.favoriteIds.contains(favoriteKey);
-
-            void toggleFavorite() async {
-              bool isLoggedIn = authService.isLoggedIn();
-              if (!isLoggedIn) {
-                final navigator = Navigator.of(dialogConsumerContext);
-                navigator.pop(); 
-                showDialog(
-                  context: context, 
-                  builder: (context) => const AuthGuardDialog(),
-                );
-                return;
-              }
-              try {
-                if (isCurrentlyFavorited) {
-                  await dbService.removeFavorite(postType, title);
-                } else {
-                  item['type'] = postType;
-                  await dbService.addFavorite(item);
-                }
-              } catch (e) {
-                print("Error toggling favorite: $e");
-              }
-            }
-            
-            List<Widget> mainButtons = [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContextInner),
-                child: const Text("Tutup"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(dialogContextInner);
-                  String fileName = title;
-                  await downloadAndShowConfirmation(context, pdfUrl, fileName);
-                },
-                child: const Text("Unduh"),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContextInner);
-                  openPdfDirectly(context, pdfUrl);
-                },
-                child: const Text("Buka PDF"),
-              ),
-            ];
-
-            Widget favoriteButton = TextButton(
-              onPressed: toggleFavorite,
-              child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isCurrentlyFavorited
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: isCurrentlyFavorited ? Colors.red : Colors.grey[600],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isCurrentlyFavorited ? 'Favorit' : 'Favoritkan',
-                          style: TextStyle(
-                              color: isCurrentlyFavorited
-                                  ? Colors.red
-                                  : Colors.grey[700]),
-                        ),
-                      ],
-                    ),
-            );
-
-            return AlertDialog(
-              title: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: bold16.copyWith(color: dark1),
-              ),
-              content: SingleChildScrollView(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            parse(HtmlUnescape().convert(abstract))
-                                    .body
-                                    ?.text ??
-                                '',
-                            style: TextStyle(fontSize: 13, color: dark1),
-                            textAlign: TextAlign.justify,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Ukuran Berkas: ${size.replaceAll('.', ',')}",
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
-                          ),
-                          Text(
-                            "Tanggal Rilis: $rlDate",
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actionsPadding:
-                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-              actions: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: mainButtons,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [favoriteButton],
-                    )
-                  ],
-                )
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-  Future<void> downloadAndShowConfirmation(
-      BuildContext context, String pdfUrl, String fileName) async {
-    if (await _checkPermission()) {
-      try {
-        Fluttertoast.showToast(
-          msg: "Berkas publikasi sedang diunduh.",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.CENTER,
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-        String safeFileName =
-            fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-        FileDownloader.downloadFile(
-            url: pdfUrl,
-            name: "$safeFileName.pdf",
-            downloadDestination: DownloadDestinations.publicDownloads,
-            onProgress: (fileName, double progress) {},
-            onDownloadCompleted: (String path) {
-              if (path.toLowerCase().endsWith('.php')) {
-                File downloadedFile = File(path);
-                String newPath = path.replaceAll('.php', '.pdf');
-                downloadedFile.renameSync(newPath);
-              }
-              Fluttertoast.showToast(
-                msg:
-                    'Publikasi "$safeFileName.pdf" telah disimpan dalam Folder Download.',
-                toastLength: Toast.LENGTH_LONG,
-                gravity: ToastGravity.CENTER,
-                backgroundColor: Colors.blue,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-            },
-            onDownloadError: (String error) {
-              Fluttertoast.showToast(
-                msg: "Gagal mengunduh berkas.",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.CENTER,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
-            });
-      } catch (error) {
-        Fluttertoast.showToast(
-          msg: "Terjadi kesalahan saat mengunduh. $error",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-      }
-    } else {
-      Fluttertoast.showToast(
-        msg: "Aplikasi belum diizinkan untuk mengakses penyimpanan.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.orange,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    }
-  }
-
-  Future<bool> _checkPermission() async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      var permissionStatus = await Permission.storage.status;
-      if (permissionStatus.isDenied) {
-        permissionStatus = await Permission.storage.request();
-        try {
-          await saf.getDirectoryPermission(isDynamic: true);
-        } catch (e) {
-          print("Error minta izin SAF (mungkin tidak disupport): $e");
-        }
-      }
-      return permissionStatus.isGranted;
-    }
-    return true;
-  }
-
-  void openPdfDirectly(BuildContext context, String pdfUrl) {
-    if (pdfUrl.isEmpty) {
-      Fluttertoast.showToast(msg: "URL PDF tidak valid.");
-      return;
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PDFViewer(pdfUrl: pdfUrl),
-      ),
-    );
-  }
-}
-
-class PDFViewer extends StatelessWidget {
-  final String pdfUrl;
-  const PDFViewer({Key? key, required this.pdfUrl}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('PDF Viewer'),
-        leading: IconButton(
-          icon: Image.asset('assets/icons/left-arrow.png', height: 25),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SfPdfViewer.network(
-        pdfUrl,
-        onDocumentLoadFailed: (details) {
-          print("PDF Load Failed: ${details.description}");
-          Fluttertoast.showToast(
-              msg: "Gagal memuat PDF: ${details.description}");
-        },
-      ),
-    );
-  }
+  // HAPUS: Semua metode di bawah ini telah dipindahkan ke DownloadHelper
+  // void showDownloadDialog(...) { ... }
+  // Future<void> downloadAndShowConfirmation(...) { ... }
+  // Future<bool> _checkPermission() { ... }
+  // void openPdfDirectly(...) { ... }
+  // HAPUS: class PDFViewer { ... }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mboistats/route-manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:webview_flutter_plus/webview_flutter_plus.dart';
+// HAPUS: 'package:webview_flutter_plus/webview_flutter_plus.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,7 +11,13 @@ import 'package:provider/provider.dart';
 import 'package:mboistats/services/supabase_auth_service.dart';
 import 'package:mboistats/services/supabase_db_service.dart';
 
-LocalhostServer localhostServer = LocalhostServer();
+// --- TAMBAHAN BARU UNTUK ARSITEKTUR JANGKA PANJANG ---
+import 'package:mboistats/services/local_server_service.dart';
+import 'package:mboistats/services/bps_api_service.dart';
+
+
+// HAPUS: Variabel global. Ini sekarang dikelola oleh LocalServerService.
+// LocalhostServer localhostServer = LocalhostServer();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,10 +26,29 @@ void main() async {
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-  await localhostServer.start(port: 0);
+
+  // --- PERUBAHAN ---
+  // 1. Buat instance service server lokal
+  final localServerService = LocalServerService();
+  // 2. Mulai server
+  await localServerService.start(); 
+  // 3. Buat instance BpsApiService
+  final bpsApiService = BpsApiService();
+
   runApp(
     MultiProvider(
       providers: [
+        // --- TAMBAHAN BARU UNTUK SERVICE ---
+        // Sediakan service sebagai nilai (value) karena sudah diinisialisasi
+        Provider<LocalServerService>.value(
+          value: localServerService,
+        ),
+        // Sediakan service yang dibuat langsung (create)
+        Provider<BpsApiService>(
+          create: (_) => bpsApiService,
+        ),
+        
+        // Service yang sudah ada sebelumnya
         Provider<SupabaseAuthService>(
           create: (_) => SupabaseAuthService(),
         ),
@@ -57,6 +82,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// ... (Kelas ConnectivityWrapper tidak berubah) ...
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
   const ConnectivityWrapper({Key? key, required this.child}) : super(key: key);
