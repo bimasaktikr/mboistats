@@ -3,6 +3,7 @@ import 'package:mboistats/models/youtube_video.dart';
 import 'package:mboistats/services/youtube_service.dart';
 import 'package:mboistats/theme.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher_string.dart'; // <-- Pastikan import ini ada
 
 class YoutubeListPage extends StatefulWidget {
   const YoutubeListPage({Key? key}) : super(key: key);
@@ -15,6 +16,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
   late YoutubeService _youtubeService;
 
   final List<YoutubeVideo> _videos = [];
+  
   int _currentPage = 1;
   int _totalPages = 1;
   int _totalResults = 0;
@@ -27,26 +29,29 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
   String _errorMessage = '';
 
   final DateFormat _dateFormatter = DateFormat('dd MMM yyyy');
+  final String _youtubeChannelUrl = 'https://www.youtube.com/@bpskotamalang';
 
   @override
   void initState() {
     super.initState();
-    _youtubeService = YoutubeService(); // Buat instance service
+    _youtubeService = YoutubeService(); 
     _fetchPage(1); 
   }
+
   Future<void> _fetchPage(int pageNumber, {bool isRefresh = false}) async {
     setState(() {
       _isLoading = true;
       _isError = false;
       _errorMessage = '';
     });
+
     int pageToFetch = isRefresh ? 1 : pageNumber;
 
     try {
       final result = await _youtubeService.getVideos(
         page: pageToFetch,
-        publishedAfter: _startDate,  // Kirim tanggal mulai
-        publishedBefore: _endDate, // Kirim tanggal akhir
+        publishedAfter: _startDate, 
+        publishedBefore: _endDate,
       );
       
       if (!mounted) return;
@@ -68,27 +73,30 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
       });
     }
   }
+  
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime now = DateTime.now();
     DateTime firstDate = DateTime(2010);
     DateTime lastDate = now;
+
     if (isStartDate) {
       lastDate = _endDate ?? now;
     } else {
       firstDate = _startDate ?? firstDate;
     }
+
     DateTime initialDate = isStartDate 
         ? (_startDate ?? now) 
         : (_endDate ?? now);
+    
     if (initialDate.isAfter(lastDate)) initialDate = lastDate;
     if (initialDate.isBefore(firstDate)) initialDate = firstDate;
-
 
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: firstDate, // Gunakan firstDate yang dinamis
-      lastDate: lastDate,   // Gunakan lastDate yang dinamis
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
 
     if (picked != null) {
@@ -205,28 +213,69 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
         ),
       );
     }
-
     if (_isError) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.warning_amber_rounded,
-                  color: Colors.orange[700], size: 50),
+              Icon(Icons.wifi_off_rounded,
+                  color: Colors.grey[400], size: 80),
+              const SizedBox(height: 24),
+              
+              Text(
+                'Gagal Memuat Video',
+                style: bold18.copyWith(color: dark1),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              
+              Text(
+                'Mohon maaf, sepertinya ada gangguan koneksi ke server kami. Anda tetap dapat menonton video terbaru langsung di YouTube.',
+                style: regular14.copyWith(color: dark2, height: 1.5),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              Container(
+                width: double.infinity,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [blue1, blue2],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      launchUrlString(_youtubeChannelUrl, mode: LaunchMode.externalApplication);
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.play_circle_fill, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Buka Channel YouTube',
+                          style: semibold14.copyWith(color: Colors.white, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 16),
-              Text(
-                'Gagal memuat video',
-                style: bold16.copyWith(color: dark1),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Terjadi kesalahan: $_errorMessage. Tarik layar ke bawah untuk memuat ulang.',
-                style: regular14.copyWith(color: dark2),
-                textAlign: TextAlign.center,
-              ),
+              TextButton.icon(
+                onPressed: () => _fetchPage(1, isRefresh: true),
+                icon: Icon(Icons.refresh, color: blue1),
+                label: Text("Coba Muat Ulang", style: semibold14.copyWith(color: blue1)),
+              )
             ],
           ),
         ),
@@ -261,6 +310,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
         ),
       );
     }
+
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -298,7 +348,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
         children: [
           IconButton(
             icon: Icon(Icons.arrow_back_ios,
-                size: 18, // Sedikit lebih besar agar mudah disentuh
+                size: 18, 
                 color: _currentPage <= 1 ? Colors.grey : blue1),
             onPressed: _currentPage <= 1
                 ? null
@@ -311,9 +361,10 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
             'Halaman $_currentPage dari $_totalPages',
             style: regular14.copyWith(color: dark2),
           ),
+          
           IconButton(
             icon: Icon(Icons.arrow_forward_ios,
-                size: 18, // Sedikit lebih besar
+                size: 18, 
                 color: _currentPage >= _totalPages ? Colors.grey : blue1),
             onPressed: _currentPage >= _totalPages
                 ? null
@@ -372,7 +423,7 @@ class _YoutubeListPageState extends State<YoutubeListPage> {
                       ),
                       child: Image.network(
                         video.thumbnailUrl.isEmpty 
-                            ? 'https://via.placeholder.com/320x180.png?text=No+Image' // Fallback
+                            ? 'https://via.placeholder.com/320x180.png?text=No+Image' 
                             : video.thumbnailUrl,
                         width: double.infinity,
                         fit: BoxFit.cover,
