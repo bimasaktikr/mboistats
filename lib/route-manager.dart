@@ -1,36 +1,42 @@
-//import 'dart:js';
 import 'package:flutter/material.dart';
+import 'package:mboistats/splash-screen.dart';
+import 'package:mboistats/pages/home_page.dart';
+import 'package:mboistats/pages/login_page.dart';
 import 'package:mboistats/pages/brs_pages.dart';
-import 'package:mboistats/pages/contact.dart';
-import 'package:mboistats/pages/ekonomi/ekonomi_pages.dart';
-// HAPUS: import 'package:mboistats/pages/ekonomi/perekonomian_deteksi_dini_inflasi.dart'; // Diganti
-import 'package:mboistats/pages/more_pages.dart';
+import 'package:mboistats/pages/infografis_pages.dart';
 import 'package:mboistats/pages/publikasi.dart';
 import 'package:mboistats/pages/tentang_pages.dart';
 import 'package:mboistats/pages/informasi_pelayanan_pages.dart';
-import 'package:mboistats/splash-screen.dart';
-import 'package:mboistats/pages/home_page.dart';
-import 'package:mboistats/pages/infografis_pages.dart';
-import 'package:mboistats/pages/kemiskinan/kemiskinan.dart';
-import 'package:mboistats/pages/kependudukan/kependudukan_pages.dart';
-import 'package:mboistats/pages/kesejahteraan/kesejahteraan_pages.dart';
-import 'package:mboistats/pages/ketenagakerjaan/ketenagakerjaan_pages.dart';
-import 'package:mboistats/pages/pertanian/pertanian_pages.dart';
-// HAPUS: import 'package:mboistats/pages/IPM/ipm.dart'; // Diganti
-import 'package:mboistats/pages/IPM/ipm_pages.dart';
-// HAPUS: Puluhan import halaman WebView ...
+import 'package:mboistats/pages/contact.dart';
 import 'package:mboistats/pages/favorit_page.dart';
-import 'package:mboistats/pages/login_page.dart';
 import 'package:mboistats/pages/youtube_list_page.dart';
 import 'package:mboistats/pages/youtube_player_page.dart';
 
-// --- TAMBAHAN BARU ---
-// Import komponen WebView generik kita
+// --- KOMPONEN GENERIK BARU ---
 import 'package:mboistats/components/generic_webview_page.dart';
-import 'package:mboistats/pages/ekonomi/perekonomian_deteksi_dini_inflasi.dart';
+import 'package:mboistats/pages/generic_menu_page.dart';
 
+// --- DATA UNTUK MENU (Diimport agar bisa dipassing ke GenericMenuPage) ---
+import 'package:mboistats/datas/ekonomi.dart';
+import 'package:mboistats/datas/ipm.dart';
+import 'package:mboistats/datas/kemiskinan.dart';
+import 'package:mboistats/datas/kependudukan.dart';
+import 'package:mboistats/datas/kesejahteraan.dart';
+import 'package:mboistats/datas/ketenagakerjaan.dart';
+import 'package:mboistats/datas/pertanian.dart';
+import 'package:mboistats/datas/more.dart';
 
 class RouteManager {
+  static List<GenericMenuItem> _mapItems(List<dynamic> sourceList) {
+    return sourceList.map((item) {
+      return GenericMenuItem(
+        title: item.title,
+        iconPath: 'assets/icons/${item.icons}',
+        route: item.route,
+      );
+    }).toList();
+  }
+
   static Map<String, Widget Function(BuildContext)> routes = {
     '/splash': (context) => SplashScreen(),
     '/login': (context) => const LoginPage(),
@@ -41,18 +47,53 @@ class RouteManager {
     '/informasipelayanan': (context) => InformasiPelayananPages(),
     '/publikasi': (context) => const PublikasiPage(),
     '/contact': (context) => const Contact(),
-    '/kependudukan': (context) => const KependudukanPages(),
-
-    '/ekonomi': (context) => EkonomiPages(),
-    '/ipm': (context) => IPMPages(),
-    '/kesejahteraan': (context) => KesejahteraanPages(),
-    '/ketenagakerjaan': (context) => KetenagakerjaanPages(),
-    '/pertanian': (context) => PertanianPages(),
-    '/more': (context) => MorePages(),
-
-    // --- SEMUA ROUTE DI BAWAH INI TELAH DI-REFACTOR ---
-
-    //IPM
+    '/ekonomi': (context) => GenericMenuPage(
+          pageTitle: 'Data Perekonomian',
+          items: _mapItems(ekonomi),
+        ),
+    '/ipm': (context) => GenericMenuPage(
+          pageTitle: 'Data IPM',
+          items: _mapItems(ipm),
+        ),
+    '/kemiskinan': (context) => GenericMenuPage(
+          pageTitle: 'Data Kemiskinan',
+          items: _mapItems(kemiskinan),
+        ),
+    '/kependudukan': (context) => GenericMenuPage(
+          pageTitle: 'Data Kependudukan',
+          items: _mapItems(kependudukan),
+        ),
+    '/kesejahteraan': (context) => GenericMenuPage(
+          pageTitle: 'Data Kesejahteraan',
+          items: _mapItems(kesejahteraan),
+        ),
+    '/ketenagakerjaan': (context) => GenericMenuPage(
+          pageTitle: 'Data Ketenagakerjaan',
+          items: _mapItems(ketenagakerjaan),
+        ),
+    '/pertanian': (context) => GenericMenuPage(
+          pageTitle: 'Data Pertanian',
+          items: _mapItems(pertanian),
+        ),
+    '/more': (context) => GenericMenuPage(
+      pageTitle: 'Menu Lainnya',
+      items: more.map((item) {
+        String? url;
+        if (item.title == 'Galeri InovaZI') url = 'https://s.bps.go.id/mboistats_galeri_inovazi';
+        if (item.title == 'PENGADUAN') url = 'https://s.bps.go.id/mboistats_lapor3573';
+        if (item.title == 'Feedback') url = 'https://s.bps.go.id/mboistats_feedback';
+        
+        return GenericMenuItem(
+          title: item.title,
+          iconPath: 'assets/icons/${item.icons}',
+          externalUrl: url,
+        );
+      }).toList(),
+    ),
+    '/DeteksiDiniInflasi': (context) => const GenericWebViewPage(
+          title: 'Deteksi Dini Inflasi',
+          url: 'https://s.bps.go.id/deteksi_dini_inflasi', 
+        ),
     '/PendudukBekerja': (context) => const GenericWebViewPage(
           title: 'IPM',
           htmlAssetPath: 'assets/web/ipm.html',
@@ -78,8 +119,6 @@ class RouteManager {
           htmlAssetPath: 'assets/web/ipm_daya_beli.html',
           backgroundImagePath: 'assets/images/back_ipm.png',
         ),
-
-    //Kependudukan
     '/PendudukJK': (context) => const GenericWebViewPage(
           title: 'Kependudukan',
           htmlAssetPath: 'assets/web/kependudukan_jenis_kelamin.html',
@@ -115,8 +154,6 @@ class RouteManager {
           htmlAssetPath: 'assets/web/kependudukan_lowokwaru.html',
           backgroundImagePath: 'assets/images/back_kependudukan.png',
         ),
-
-    //Ekonomi
     '/LajuPertumbuhan': (context) => const GenericWebViewPage(
           title: 'Laju Pertumbuhan Ekonomi',
           htmlAssetPath: 'assets/web/perekonomian_lpe.html',
@@ -137,10 +174,6 @@ class RouteManager {
           htmlAssetPath: 'assets/web/perekonomian_inflasi_bulanan.html',
           backgroundImagePath: 'assets/images/back_perekonomian.png',
         ),
-    '/DeteksiDiniInflasi': (context) => const DeteksiDiniInflasiPage(), // Ini halaman khusus (bukan WebView lokal), jadi biarkan
-
-    //Kemiskinan
-    '/kemiskinan': (context) => KemiskinanPages(),
     '/TingkatKemiskinan': (context) => const GenericWebViewPage(
           title: 'Tingkat Kemiskinan',
           htmlAssetPath: 'assets/web/kemiskinan_tingkat.html',
@@ -161,8 +194,6 @@ class RouteManager {
           htmlAssetPath: 'assets/web/kemiskinan_garis.html',
           backgroundImagePath: 'assets/images/back_kemiskinan.png',
         ),
-
-    //Ketenagakerjaan
     '/AKMenurutPendidikan': (context) => const GenericWebViewPage(
           title: 'Angkatan Kerja Pendidikan',
           htmlAssetPath: 'assets/web/ketenagakerjaan_ak_pendidikan.html',
@@ -183,8 +214,6 @@ class RouteManager {
           htmlAssetPath: 'assets/web/ketenagakerjaan_penganggur_pendidikan.html',
           backgroundImagePath: 'assets/images/back_ketenagakerjaan.png',
         ),
-
-    //Kesejahteraan
     '/GiniRasio': (context) => const GenericWebViewPage(
           title: 'Gini Rasio',
           htmlAssetPath: 'assets/web/kesejahteraan_gini_rasio.html',
@@ -195,8 +224,6 @@ class RouteManager {
           htmlAssetPath: 'assets/web/kesejahteraan_pengeluaran_perkapita.html',
           backgroundImagePath: 'assets/images/back_kesejahteraan.png',
         ),
-
-    //Pertanian
     '/LuasPanenPadi': (context) => const GenericWebViewPage(
           title: 'Luas Panen Padi',
           htmlAssetPath: 'assets/web/pertanian_luas_panen_padi.html',
