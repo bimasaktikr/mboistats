@@ -51,9 +51,24 @@
 			const kolomA = data.turvar;
 			const kolomB = kolomA.map(d => d.label);
 			var pjKolom = kolomB.length;
+			const bulanA = data.turtahun;
+			const bulanB = bulanA.map(e => e.label);
 			const thA = data.tahun;
 			const thB = thA.map(e => e.label);
 			var pjThData = thB.length;
+			
+			var dataAll = [];
+			const keyData = Object.keys(data.datacontent);
+			const thAwal = keyData[0].slice(5,8);
+			var valData = Object.values(data.datacontent);
+			for(i=0;i<keyData.length;i++){
+				if(keyData[i].length==11){
+					keyData[i] = "0"+keyData[i];
+				}
+				
+				dataAll.push([keyData[i],valData[i]]);
+			}
+			dataAll.sort(); 
 			
 			var maxThData=[], maxData;
 			if(pjThData > 10){
@@ -65,7 +80,7 @@
 				maxThData = thB;
 			}
 
-			const valData = Object.values(data.datacontent);
+			valData = dataAll.map(kolom => kolom[1]);
 			var pjData = valData.length;
 			//alert('Count: ' + valData.length + " data: " + pjThData+ " data: " + barisB[0].substr(0, barisB[0].indexOf(' ')));
 	</script>

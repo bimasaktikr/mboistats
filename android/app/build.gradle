@@ -75,13 +75,6 @@ flutter {
 }
 
 dependencies {
-    // --- INI PERBAIKANNYA ---
-    // Baris yang error (implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
-    // telah DIHAPUS.
-    // --- AKHIR PERBAIKAN ---
 
-    // Kita juga menghapus multidex yang lama (com.android.support:multidex:1.0.3)
-    
-    // Ini adalah dependensi asli dari file Anda
 }
 
