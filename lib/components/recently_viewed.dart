@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/theme.dart';
 
+import 'package:mboistats/main.dart';
+
 class RecentlyViewedSection extends StatefulWidget {
   const RecentlyViewedSection({Key? key}) : super(key: key);
 
@@ -9,13 +11,35 @@ class RecentlyViewedSection extends StatefulWidget {
   _RecentlyViewedSectionState createState() => _RecentlyViewedSectionState();
 }
 
-class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
+class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with RouteAware {
   late Future<List<Map<String, dynamic>>> _recentlyViewedFuture;
 
   @override
   void initState() {
     super.initState();
     _recentlyViewedFuture = RecommendationService.getRecentlyViewed(limit: 3);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalRoute = ModalRoute.of(context);
+    if (modalRoute != null) {
+      MyApp.routeObserver.subscribe(this, modalRoute);
+    }
+  }
+
+  @override
+  void dispose() {
+    MyApp.routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    setState(() {
+      _recentlyViewedFuture = RecommendationService.getRecentlyViewed(limit: 3);
+    });
   }
 
   // Helper Mapper Rute & Icon untuk Sektor

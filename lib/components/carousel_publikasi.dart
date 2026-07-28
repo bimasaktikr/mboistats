@@ -16,6 +16,7 @@ import 'package:mboistats/services/logger_service.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'package:mboistats/components/global_pdf_viewer.dart';
 import '../theme.dart';
 
 class CarouselPublikasi extends StatefulWidget {
@@ -203,7 +204,16 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    openPdfDirectly(context, tautan);
+                    final item = dataPublikasi.firstWhere((x) => x['pdf'] == tautan, orElse: () => {});
+                    final coverUrl = item['cover'] as String?;
+                    LoggerService.logActivity(
+                      actionType: 'view_pdf',
+                      sectorCategory: 'publikasi',
+                      itemName: judul,
+                      coverUrl: coverUrl,
+                      contentUrl: tautan,
+                    );
+                    openPdfDirectly(context, tautan, judul);
                   },
                   child: const Text("Buka PDF"),
                 ),
@@ -368,11 +378,11 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
       );
     }
   }
-  void openPdfDirectly(BuildContext context, String pdfUrl) {
+  void openPdfDirectly(BuildContext context, String pdfUrl, String title) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PDFViewer(pdfUrl: pdfUrl),
+        builder: (context) => GlobalPDFViewer(pdfUrl: pdfUrl, title: title),
       ),
     );
   }

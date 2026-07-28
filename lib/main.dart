@@ -20,6 +20,8 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
+  static final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -47,6 +49,7 @@ class MyApp extends StatelessWidget {
           },
           navigatorObservers: [
             ActivityLoggingObserver(),
+            routeObserver,
           ],
         ),
       ),
