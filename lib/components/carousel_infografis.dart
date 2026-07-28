@@ -227,6 +227,8 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
             actionType: 'download_file',
             sectorCategory: 'infografis',
             itemName: fileName,
+            coverUrl: imgUrl,
+            contentUrl: imgUrl,
           );
 
           await OpenFile.open(filePath);
@@ -298,6 +300,8 @@ class _CarouselInfografisState extends State<CarouselInfografis> {
                 actionType: 'download_file',
                 sectorCategory: 'infografis',
                 itemName: fileName,
+                coverUrl: imgUrl,
+                contentUrl: imgUrl,
               );
 
               Fluttertoast.showToast(

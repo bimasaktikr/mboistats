@@ -89,7 +89,24 @@ class _RecommendationSectionState extends State<RecommendationSection> {
                   padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
                   child: InkWell(
                     onTap: () {
-                      Navigator.of(context).pushNamed(item.route);
+                      final contentUrl = item.contentUrl;
+                      if (contentUrl != null && contentUrl.isNotEmpty) {
+                        if (contentUrl.toLowerCase().contains('.pdf') || item.route == '/berita' || item.route == '/publikasi') {
+                          Navigator.of(context).pushNamed(
+                            '/pdf_viewer',
+                            arguments: {
+                              'pdfUrl': contentUrl,
+                              'title': item.title,
+                            },
+                          );
+                        } else if (contentUrl.toLowerCase().contains('.jpg') || contentUrl.toLowerCase().contains('.png') || contentUrl.toLowerCase().contains('.jpeg') || item.route == '/infografis') {
+                          Navigator.of(context).pushNamed('/image_viewer', arguments: contentUrl);
+                        } else {
+                          Navigator.of(context).pushNamed(item.route);
+                        }
+                      } else {
+                        Navigator.of(context).pushNamed(item.route);
+                      }
                     },
                     child: Container(
                       clipBehavior: Clip.hardEdge,
@@ -111,17 +128,24 @@ class _RecommendationSectionState extends State<RecommendationSection> {
                         leading: Container(
                           width: 40,
                           height: 40,
-                          padding: const EdgeInsets.all(6),
+                          clipBehavior: Clip.hardEdge,
+                          padding: item.coverUrl != null && item.coverUrl!.isNotEmpty ? EdgeInsets.zero : const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: Colors.blue.shade50,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Image.asset(
-                            'assets/icons/${item.icon}',
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(Icons.analytics, color: Colors.blue);
-                            },
-                          ),
+                          child: item.coverUrl != null && item.coverUrl!.isNotEmpty
+                              ? Image.network(
+                                  item.coverUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Image.asset('assets/icons/${item.icon}'),
+                                )
+                              : Image.asset(
+                                  'assets/icons/${item.icon}',
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.analytics, color: Colors.blue);
+                                  },
+                                ),
                         ),
                         title: Text(
                           item.title,

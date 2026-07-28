@@ -217,6 +217,9 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
   }
 
   Future<void> downloadAndShowConfirmation(BuildContext context, String pdfUrl, String fileName) async {
+    final item = dataPublikasi.firstWhere((x) => x['pdf'] == pdfUrl, orElse: () => {});
+    final coverUrl = item['cover'] as String?;
+
     if (Platform.isIOS) {
       try {
         Fluttertoast.showToast(
@@ -240,6 +243,8 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
             actionType: 'download_file',
             sectorCategory: 'publikasi',
             itemName: fileName,
+            coverUrl: coverUrl,
+            contentUrl: pdfUrl,
           );
 
           await OpenFile.open(filePath);
@@ -311,6 +316,8 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
                 actionType: 'download_file',
                 sectorCategory: 'publikasi',
                 itemName: fileName,
+                coverUrl: coverUrl,
+                contentUrl: pdfUrl,
               );
 
               Fluttertoast.showToast(

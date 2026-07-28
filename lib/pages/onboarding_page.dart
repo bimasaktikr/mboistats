@@ -1,0 +1,329 @@
+import 'package:flutter/material.dart';
+import 'package:mboistats/theme.dart';
+import 'package:mboistats/services/recommendation_service.dart';
+
+class OnboardingPage extends StatefulWidget {
+  const OnboardingPage({Key? key}) : super(key: key);
+
+  @override
+  _OnboardingPageState createState() => _OnboardingPageState();
+}
+
+class _OnboardingPageState extends State<OnboardingPage> {
+  final PageController _pageController = PageController();
+  int _currentStep = 0;
+
+  // State Pilihan
+  String? _selectedMajor;
+  final List<String> _selectedSectors = [];
+  bool _isLoading = false;
+
+  // Daftar Jurusan
+  final List<String> _majors = [
+    'Teknik Informatika',
+    'Sistem Informasi',
+    'Teknik Sipil',
+    'Ekonomi',
+    'Akuntansi',
+    'Ilmu Komunikasi',
+    'Pendidikan',
+    'Pertanian',
+    'Lainnya'
+  ];
+
+  // Daftar Sektor & Info Label Visual
+  final List<Map<String, String>> _sectors = [
+    {'key': 'perekonomian', 'title': 'Perekonomian', 'desc': 'LPE, PDRB & Laju Ekonomi'},
+    {'key': 'tenaga_kerja', 'title': 'Tenaga Kerja', 'desc': 'TPAK, TPT & Ketenagakerjaan'},
+    {'key': 'ipm', 'title': 'IPM', 'desc': 'Indeks Pembangunan Manusia'},
+    {'key': 'kemiskinan', 'title': 'Kemiskinan', 'desc': 'Tingkat & Indeks Kemiskinan'},
+    {'key': 'kependudukan', 'title': 'Kependudukan', 'desc': 'Penduduk & Demografi Wilayah'},
+    {'key': 'kesejahteraan', 'title': 'Kesejahteraan', 'desc': 'Gini Rasio & Pengeluaran Perkapita'},
+    {'key': 'pertanian', 'title': 'Pertanian', 'desc': 'Produksi Padi & Hasil Panen'},
+  ];
+
+  // Mengubah Pilihan Jurusan & Pre-Select Sektor
+  void _onMajorSelected(String major) async {
+    setState(() {
+      _selectedMajor = major;
+    });
+
+    // Ambil default sektor yang relevan (offline/online)
+    final sectors = await RecommendationService.getRelevantSectorsForMajor(major);
+    
+    setState(() {
+      _selectedSectors.clear();
+      _selectedSectors.addAll(sectors);
+    });
+
+    // Pindah ke slide berikutnya dengan delay kecil agar animasi halus
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  // Toggle Sektor Pilihan secara Manual
+  void _toggleSector(String sectorKey) {
+    setState(() {
+      if (_selectedSectors.contains(sectorKey)) {
+        _selectedSectors.remove(sectorKey);
+      } else {
+        _selectedSectors.add(sectorKey);
+      }
+    });
+  }
+
+  // Menyimpan data onboarding & Keluar
+  void _submitOnboarding() async {
+    if (_selectedMajor == null) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Simpan ke Supabase via device_id
+    await RecommendationService.saveProfile(_selectedMajor!, _selectedSectors);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    // Pindah ke Halaman Utama dan bersihkan stack navigasi
+    Navigator.pushReplacementNamed(context, '/main');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: _currentStep > 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87, size: 20),
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeInOut,
+                  );
+                },
+              )
+            : null,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _currentStep == 0 ? blue1 : Colors.grey.shade300,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _currentStep == 1 ? blue1 : Colors.grey.shade300,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: true,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : PageView(
+              controller: _pageController,
+              onPageChanged: (page) {
+                setState(() {
+                  _currentStep = page;
+                });
+              },
+              physics: const NeverScrollableScrollPhysics(), // Mencegah geser manual tanpa memilih
+              children: [
+                _buildMajorStep(),
+                _buildSectorStep(),
+              ],
+            ),
+    );
+  }
+
+  // Slide 1: Pemilihan Jurusan
+  Widget _buildMajorStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Selamat Datang di Mboisstats+",
+            style: bold18.copyWith(color: dark1, fontSize: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Pilih latar belakang akademik Anda untuk memetakan visualisasi awal yang relevan.",
+            style: regular14.copyWith(color: dark3),
+          ),
+          const SizedBox(height: 24),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _majors.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final major = _majors[index];
+              final isSelected = _selectedMajor == major;
+              return InkWell(
+                onTap: () => _onMajorSelected(major),
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: isSelected ? blue1.withOpacity(0.05) : Colors.white,
+                    border: Border.all(
+                      color: isSelected ? blue1 : Colors.grey.shade200,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        major,
+                        style: semibold14.copyWith(
+                          color: isSelected ? blue1 : dark1,
+                        ),
+                      ),
+                      if (isSelected)
+                        Icon(Icons.check_circle_rounded, color: blue1)
+                      else
+                        const Icon(Icons.circle_outlined, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Slide 2: Pemilihan & Kustomisasi Sektor
+  Widget _buildSectorStep() {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Personalisasikan Minat Anda",
+                  style: bold18.copyWith(color: dark1, fontSize: 24),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Sektor di bawah telah kami tandai berdasarkan jurusan Anda. Anda bebas menambah atau menghilangkannya.",
+                  style: regular14.copyWith(color: dark3),
+                ),
+                const SizedBox(height: 24),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _sectors.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final sector = _sectors[index];
+                    final key = sector['key']!;
+                    final isSelected = _selectedSectors.contains(key);
+                    return InkWell(
+                      onTap: () => _toggleSector(key),
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isSelected ? blue1.withOpacity(0.05) : Colors.white,
+                          border: Border.all(
+                            color: isSelected ? blue1 : Colors.grey.shade200,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    sector['title']!,
+                                    style: semibold14.copyWith(
+                                      color: isSelected ? blue1 : dark1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    sector['desc']!,
+                                    style: regular12_5.copyWith(color: dark3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Checkbox(
+                              value: isSelected,
+                              activeColor: blue1,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              onChanged: (val) => _toggleSector(key),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Tombol Submit / Simpan
+        Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: blue1,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              onPressed: _selectedSectors.isEmpty ? null : _submitOnboarding,
+              child: Text(
+                "Selesai & Masuk Aplikasi",
+                style: bold16.copyWith(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

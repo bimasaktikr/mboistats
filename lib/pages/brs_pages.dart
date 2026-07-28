@@ -3,6 +3,7 @@ import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:mboistats/components/footer.dart';
+import 'package:mboistats/components/global_pdf_viewer.dart';
 import 'package:mboistats/theme.dart';
 import 'package:saf/saf.dart';
 import 'dart:convert';
@@ -241,8 +242,10 @@ class _BeritaPageState extends State<BeritaPages> {
                       actionType: 'view_pdf',
                       sectorCategory: 'berita',
                       itemName: fileName,
+                      coverUrl: dataBRS[index]["thumbnail"],
+                      contentUrl: pdfUrl,
                     );
-                    openPdfDirectly(context, pdfUrl);
+                    openPdfDirectly(context, pdfUrl, fileName);
                   },
                   child: const Text("Buka PDF"),
                 ),
@@ -255,6 +258,9 @@ class _BeritaPageState extends State<BeritaPages> {
   }
 
   Future<void> downloadAndShowConfirmation(BuildContext context, String pdfUrl, String fileName) async {
+    final item = dataBRS.firstWhere((x) => x['pdf'] == pdfUrl, orElse: () => {});
+    final coverUrl = item['thumbnail'] as String?;
+
     if (Platform.isIOS) {
       try {
         Fluttertoast.showToast(
@@ -278,6 +284,8 @@ class _BeritaPageState extends State<BeritaPages> {
             actionType: 'download_file',
             sectorCategory: 'berita',
             itemName: fileName,
+            coverUrl: coverUrl,
+            contentUrl: pdfUrl,
           );
 
           await OpenFile.open(filePath);
@@ -345,6 +353,8 @@ class _BeritaPageState extends State<BeritaPages> {
               actionType: 'download_file',
               sectorCategory: 'berita',
               itemName: fileName,
+              coverUrl: coverUrl,
+              contentUrl: pdfUrl,
             );
 
             Fluttertoast.showToast(
@@ -405,11 +415,11 @@ class _BeritaPageState extends State<BeritaPages> {
     return true;
   }
 
-  void openPdfDirectly(BuildContext context, String pdfUrl) {
+  void openPdfDirectly(BuildContext context, String pdfUrl, String title) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PDFViewer(pdfUrl: pdfUrl),
+        builder: (context) => GlobalPDFViewer(pdfUrl: pdfUrl, title: title),
       ),
     );
   }

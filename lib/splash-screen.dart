@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/services/recommendation_service.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -15,15 +16,22 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     // Menggunakan Future.delayed untuk mengatur animasi
-    Future.delayed(Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 2), () async {
       setState(() {
-        opacity =
-            0.0; // Mengubah opasitas menjadi 0 untuk menghilangkan tulisan
+        opacity = 0.0; // Mengubah opasitas menjadi 0 untuk menghilangkan tulisan
       });
 
-      // Navigasi ke halaman beranda setelah animasi selesai
-      Future.delayed(Duration(seconds: 1), () {
-        Navigator.pushReplacementNamed(context, '/main');
+      // Cek apakah perangkat sudah menyelesaikan onboarding sebelumnya
+      final hasProfile = await RecommendationService.checkProfileExists();
+
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          if (hasProfile) {
+            Navigator.pushReplacementNamed(context, '/main');
+          } else {
+            Navigator.pushReplacementNamed(context, '/onboarding');
+          }
+        }
       });
     });
 

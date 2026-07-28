@@ -1,5 +1,7 @@
 //import 'dart:js';
 import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:mboistats/components/global_pdf_viewer.dart';
 import 'package:mboistats/pages/brs_pages.dart';
 import 'package:mboistats/pages/contact.dart';
 import 'package:mboistats/pages/ekonomi/ekonomi_pages.dart';
@@ -10,6 +12,7 @@ import 'package:mboistats/pages/tentang_pages.dart';
 import 'package:mboistats/pages/informasi_pelayanan_pages.dart';
 import 'package:mboistats/splash-screen.dart';
 import 'package:mboistats/pages/home_page.dart';
+import 'package:mboistats/pages/onboarding_page.dart';
 import 'package:mboistats/pages/infografis_pages.dart';
 import 'package:mboistats/pages/kemiskinan/kemiskinan.dart';
 import 'package:mboistats/pages/kependudukan/kependudukan_pages.dart';
@@ -52,6 +55,33 @@ class RouteManager {
   static Map<String, Widget Function(BuildContext)> routes = {
     '/splash': (context) => SplashScreen(),
     '/main': (context) => HomePage(),
+    '/onboarding': (context) => const OnboardingPage(),
+    '/pdf_viewer': (context) {
+      final args = ModalRoute.of(context)!.settings.arguments;
+      if (args is Map<String, String>) {
+        return GlobalPDFViewer(
+          pdfUrl: args['pdfUrl'] ?? '',
+          title: args['title'] ?? 'Dokumen Statistik',
+        );
+      } else if (args is String) {
+        return GlobalPDFViewer(
+          pdfUrl: args,
+          title: 'Dokumen Statistik',
+        );
+      }
+      return const Scaffold(body: Center(child: Text('Invalid Arguments')));
+    },
+    '/image_viewer': (context) {
+      final imageUrl = ModalRoute.of(context)!.settings.arguments as String;
+      return Scaffold(
+        appBar: AppBar(title: const Text('Visualisasi Infografis')),
+        body: Center(
+          child: InteractiveViewer(
+            child: Image.network(imageUrl),
+          ),
+        ),
+      );
+    },
     '/berita': (context) => BeritaPages(),
     '/infografis': (context) => InfografisPages(),
     '/tentang': (context) => TentangPages(),

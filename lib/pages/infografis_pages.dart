@@ -166,6 +166,8 @@ class _InfografisPagesState extends State<InfografisPages> {
             actionType: 'download_file',
             sectorCategory: 'infografis',
             itemName: fileName,
+            coverUrl: pdfUrl,
+            contentUrl: pdfUrl,
           );
 
           await OpenFile.open(filePath);
@@ -233,6 +235,8 @@ class _InfografisPagesState extends State<InfografisPages> {
                 actionType: 'download_file',
                 sectorCategory: 'infografis',
                 itemName: fileName,
+                coverUrl: pdfUrl,
+                contentUrl: pdfUrl,
               );
 
               Fluttertoast.showToast(

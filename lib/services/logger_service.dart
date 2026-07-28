@@ -63,12 +63,14 @@ class LoggerService {
     required String itemName,
     required String actionType,
     String? userId,
+    String? coverUrl,
+    String? contentUrl,
   }) async {
     final deviceId = await getDeviceId();
     final platformName = Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'unknown');
 
     // Selalu cetak log lokal untuk keperluan debugging pengembang
-    print('Activity Logged -> Platform: $platformName | Device: $deviceId | Sektor: $sectorCategory | Item: $itemName | Aksi: $actionType | User ID (SSO): ${userId ?? "Anonymous"}');
+    print('Activity Logged -> Platform: $platformName | Device: $deviceId | Sektor: $sectorCategory | Item: $itemName | Aksi: $actionType | User ID (SSO): ${userId ?? "Anonymous"} | Cover: $coverUrl | Content: $contentUrl');
 
     if (!_isInitialized) {
       return;
@@ -82,6 +84,8 @@ class LoggerService {
       'item_name': itemName,
       'platform': platformName,
       'user_id': userId,
+      'cover_url': coverUrl,
+      'content_url': contentUrl,
     }).then((_) {
       print('Activity successfully synced with Supabase.');
     }).catchError((error) {
