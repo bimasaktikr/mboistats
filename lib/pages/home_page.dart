@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mboistats/components/buttonSection.dart';
-import 'package:mboistats/components/carousel_infografis.dart';
-import 'package:mboistats/components/carousel_publikasi.dart';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/components/menus.dart';
 import 'package:mboistats/components/recommendations.dart';
@@ -17,9 +14,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  @override
-  void initState() {
-    super.initState();
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Selamat pagi';
+    if (hour < 15) return 'Selamat siang';
+    if (hour < 18) return 'Selamat sore';
+    return 'Selamat malam';
   }
 
   Future<bool> _onWillPop() async {
@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context) => AlertDialog(
         title: const Text(
           'Konfirmasi Keluar',
-          style: TextStyle(color: Colors.blue),
+          style: TextStyle(color: blueNormal),
           textAlign: TextAlign.center,
         ),
         content: const Text(
@@ -40,24 +40,24 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                width: 100, // Set your desired width
+                width: 100,
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blue),
+                    side: const BorderSide(color: blueNormal),
                   ),
-                  child: const Text('Tidak', style: TextStyle(color: Colors.blue)),
+                  child: const Text('Tidak', style: TextStyle(color: blueNormal)),
                 ),
               ),
-              const SizedBox(width: 16), // space between buttons
+              const SizedBox(width: 16),
               SizedBox(
-                width: 100, // Set your desired width
+                width: 100,
                 child: OutlinedButton(
                   onPressed: () => SystemNavigator.pop(),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blue),
+                    side: const BorderSide(color: blueNormal),
                   ),
-                  child: const Text('Ya', style: TextStyle(color: Colors.blue)),
+                  child: const Text('Ya', style: TextStyle(color: blueNormal)),
                 ),
               ),
             ],
@@ -70,48 +70,88 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          toolbarHeight: 50,
-          title: const Text(
-            'MBOIStatS+',
-            style: TextStyle(color: Colors.black),
-          ),
-          leading: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Image.asset('assets/images/Mbois-stat Logo_Fix Putih.png',
-                  width: 40, height: 40),
-            ],
-          ),
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Yuk lebih dekat dengan BPS Kota Malang', style: bold16.copyWith(color: dark1)),
-                    const SizedBox(height: 8.0),
-                    Text('Mau cari data apa???', style: regular14.copyWith(color: dark2)),
-                  ],
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Teal Gradient
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.only(
+                    top: 50,
+                    left: 20,
+                    right: 20,
+                    bottom: 30,
+                  ),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF1B84B1), Color(0xFF2AA9E1)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(28),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_getGreeting()}, Sahabat Data',
+                              style: pjsBold20.copyWith(color: Colors.white),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Kamu mau cari data apa hari ini?',
+                              style: pjsRegular14.copyWith(
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 70,
+                        height: 70,
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Image.asset(
+                          'assets_v2/icons/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Image.asset('assets/images/Mbois-stat Logo_Fix Putih.png'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Menus(),
-              ButtonSection(),
-              const RecentlyViewedSection(),
-              const RecommendationSection(),
-              const CarouselPublikasi(),
-              const CarouselInfografis(),
-            ],
+                const SizedBox(height: 12),
+                // Category Menus Card
+                const Menus(),
+                const SizedBox(height: 8),
+                // Section Rekomendasi Sektoral
+                const RecommendationSection(),
+                const SizedBox(height: 8),
+                // Section Baru Saja Dilihat
+                const RecentlyViewedSection(),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
         bottomNavigationBar: const Footer(),

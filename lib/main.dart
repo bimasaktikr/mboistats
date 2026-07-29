@@ -6,8 +6,12 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/services/activity_observer.dart';
+import 'package:mboistats/theme.dart';
 
 LocalhostServer localhostServer = LocalhostServer();
+
+// Global theme notifier for dark mode
+final AppThemeNotifier appThemeNotifier = AppThemeNotifier();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,35 +28,42 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: ConnectivityWrapper(
-        child: MaterialApp(
+    return ListenableBuilder(
+      listenable: appThemeNotifier,
+      builder: (context, _) {
+        return MaterialApp(
           debugShowCheckedModeBanner: false,
-          initialRoute: '/splash',
-          onGenerateRoute: (settings) {
-            final builder = RouteManager.routes[settings.name];
-            if (builder != null) {
-              return PageRouteBuilder(
-                settings: settings,
-                pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
+          theme: appThemeNotifier.currentTheme,
+          home: ConnectivityWrapper(
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: appThemeNotifier.currentTheme,
+              initialRoute: '/splash',
+              onGenerateRoute: (settings) {
+                final builder = RouteManager.routes[settings.name];
+                if (builder != null) {
+                  return PageRouteBuilder(
+                    settings: settings,
+                    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 200),
                   );
-                },
-                transitionDuration: const Duration(milliseconds: 200),
-              );
-            }
-            return null;
-          },
-          navigatorObservers: [
-            ActivityLoggingObserver(),
-            routeObserver,
-          ],
-        ),
-      ),
+                }
+                return null;
+              },
+              navigatorObservers: [
+                ActivityLoggingObserver(),
+                routeObserver,
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

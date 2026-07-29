@@ -50,12 +50,24 @@ import 'package:mboistats/pages/pertanian/pertanian_luas_panen_padi.dart';
 import 'package:mboistats/pages/pertanian/pertanian_produksi_beras.dart';
 import 'package:mboistats/pages/pertanian/pertanian_produksi_padi.dart';
 import 'package:mboistats/pages/pertanian/pertanian_produktivitas_padi.dart';
+import 'package:mboistats/pages/data_page.dart';
+import 'package:mboistats/pages/profil_page.dart';
+import 'package:mboistats/pages/edit_profil_page.dart';
+import 'package:mboistats/pages/login_page.dart';
+import 'package:mboistats/pages/infografis_full_page.dart';
+import 'package:mboistats/pages/publikasi_full_page.dart';
 
 class RouteManager {
   static Map<String, Widget Function(BuildContext)> routes = {
     '/splash': (context) => SplashScreen(),
     '/main': (context) => HomePage(),
     '/onboarding': (context) => const OnboardingPage(),
+    '/data': (context) => const DataPage(),
+    '/profil': (context) => const ProfilPage(),
+    '/edit_profil': (context) => const EditProfilPage(),
+    '/login': (context) => const LoginPage(),
+    '/infografis_full': (context) => const InfografisFullPage(),
+    '/publikasi_full': (context) => const PublikasiFullPage(),
     '/pdf_viewer': (context) {
       final args = ModalRoute.of(context)!.settings.arguments;
       if (args is Map<String, String>) {

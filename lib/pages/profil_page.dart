@@ -1,0 +1,317 @@
+import 'package:flutter/material.dart';
+import 'package:mboistats/components/footer.dart';
+import 'package:mboistats/main.dart';
+import 'package:mboistats/services/logger_service.dart';
+import 'package:mboistats/theme.dart';
+
+class ProfilPage extends StatefulWidget {
+  const ProfilPage({Key? key}) : super(key: key);
+
+  @override
+  State<ProfilPage> createState() => _ProfilPageState();
+}
+
+class _ProfilPageState extends State<ProfilPage> {
+  bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    LoggerService.logActivity(
+      actionType: 'view_page',
+      sectorCategory: 'profil',
+      itemName: 'Halaman Profil',
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Konfirmasi Logout', style: pjsBold18),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari akun Anda?',
+          style: pjsRegular14,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal', style: pjsMedium14),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: blueNormal,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              LoggerService.logActivity(
+                actionType: 'logout',
+                sectorCategory: 'profil',
+                itemName: 'Logout Akun',
+              );
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Hapus Akun', style: pjsBold18),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus akun? Tindakan ini tidak dapat dibatalkan.',
+          style: pjsRegular14,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal', style: pjsMedium14),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              LoggerService.logActivity(
+                actionType: 'delete_account',
+                sectorCategory: 'profil',
+                itemName: 'Hapus Akun',
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Permintaan hapus akun telah diproses.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : bgColor,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Teal Gradient Header
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(
+                20,
+                MediaQuery.of(context).padding.top + 24,
+                20,
+                28,
+              ),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [headerTealStart, headerTealEnd],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const CircleAvatar(
+                      backgroundColor: Color(0xFFE2F3FC),
+                      child: Icon(
+                        Icons.person_rounded,
+                        size: 52,
+                        color: blueNormal,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Jennie Klavsky',
+                    style: pjsBold20.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'jennie.klavsky@gmail.com',
+                    style: pjsRegular14.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Card Menu Items
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                children: [
+                  _buildMenuCard(
+                    context: context,
+                    iconPath: 'assets_v2/icons/edit_profil.png',
+                    title: 'Edit Profil',
+                    onTap: () {
+                      LoggerService.logActivity(
+                        actionType: 'click_menu',
+                        sectorCategory: 'profil',
+                        itemName: 'Edit Profil',
+                      );
+                      Navigator.pushNamed(context, '/edit_profil');
+                    },
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    iconPath: 'assets_v2/icons/mode_gelap.png',
+                    title: 'Mode Gelap',
+                    trailing: Switch(
+                      value: appThemeNotifier.isDarkMode,
+                      activeColor: blueNormal,
+                      onChanged: (val) {
+                        LoggerService.logActivity(
+                          actionType: 'toggle_dark_mode',
+                          sectorCategory: 'profil',
+                          itemName: val ? 'Enable Dark Mode' : 'Disable Dark Mode',
+                        );
+                        appThemeNotifier.toggleDarkMode();
+                      },
+                    ),
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    iconPath: 'assets_v2/icons/notifikasi.png',
+                    title: 'Notifikasi',
+                    trailing: Switch(
+                      value: _notificationsEnabled,
+                      activeColor: blueNormal,
+                      onChanged: (val) {
+                        setState(() {
+                          _notificationsEnabled = val;
+                        });
+                        LoggerService.logActivity(
+                          actionType: 'toggle_notification',
+                          sectorCategory: 'profil',
+                          itemName: val ? 'Enable Notification' : 'Disable Notification',
+                        );
+                      },
+                    ),
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    iconPath: 'assets_v2/icons/logout.png',
+                    title: 'Logout',
+                    onTap: _showLogoutDialog,
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    iconPath: 'assets_v2/icons/hapus_akun.png',
+                    title: 'Hapus Akun',
+                    onTap: _showDeleteAccountDialog,
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: const Footer(),
+    );
+  }
+
+  Widget _buildMenuCard({
+    required BuildContext context,
+    required String iconPath,
+    required String title,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFEDEDED),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 40,
+          height: 40,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF2F9FD),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Image.asset(
+            iconPath,
+            width: 24,
+            height: 24,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.settings, color: blueNormal, size: 20),
+          ),
+        ),
+        title: Text(
+          title,
+          style: pjsSemiBold14.copyWith(
+            color: isDark ? Colors.white : dark1,
+          ),
+        ),
+        trailing: trailing ??
+            Icon(
+              Icons.chevron_right,
+              color: isDark ? Colors.white54 : dark3,
+            ),
+      ),
+    );
+  }
+}

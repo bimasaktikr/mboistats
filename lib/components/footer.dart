@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/theme.dart';
 
 class Footer extends StatefulWidget {
   const Footer({Key? key}) : super(key: key);
@@ -8,41 +9,36 @@ class Footer extends StatefulWidget {
 }
 
 class _FooterState extends State<Footer> {
-  int _selectedIndex = 0; // Indeks awal (Beranda)
+  int _selectedIndex = 0;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    // Ambil nama rute halaman yang sedang aktif
     final currentRoute = ModalRoute.of(context)!.settings.name;
 
-    // Tentukan _selectedIndex berdasarkan nama rute halaman yang sedang aktif
-    if (currentRoute == '/berita') {
+    if (currentRoute == '/data' || currentRoute == '/berita') {
       _selectedIndex = 1;
     } else if (currentRoute == '/contact') {
       _selectedIndex = 2;
+    } else if (currentRoute == '/profil' || currentRoute == '/edit_profil') {
+      _selectedIndex = 3;
     } else {
-      _selectedIndex = 0; // Default ke Beranda jika tidak ada rute yang cocok
+      _selectedIndex = 0; // Beranda default
     }
   }
 
   void _onItemTapped(int index) {
-    if (index == _selectedIndex) {
-      return; // Jangan lakukan apa-apa jika menekan tab yang saat ini aktif
-    }
+    if (index == _selectedIndex) return;
 
     switch (index) {
       case 0:
-        // Kembali ke Beranda dan bersihkan semua tumpukan halaman sebelumnya
         Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
         break;
       case 1:
-        // Ganti rute aktif jika kita berpindah di antara halaman tab non-beranda
         if (_selectedIndex != 0) {
-          Navigator.of(context).pushReplacementNamed('/berita');
+          Navigator.of(context).pushReplacementNamed('/data');
         } else {
-          Navigator.of(context).pushNamed('/berita');
+          Navigator.of(context).pushNamed('/data');
         }
         break;
       case 2:
@@ -50,6 +46,13 @@ class _FooterState extends State<Footer> {
           Navigator.of(context).pushReplacementNamed('/contact');
         } else {
           Navigator.of(context).pushNamed('/contact');
+        }
+        break;
+      case 3:
+        if (_selectedIndex != 0) {
+          Navigator.of(context).pushReplacementNamed('/profil');
+        } else {
+          Navigator.of(context).pushNamed('/profil');
         }
         break;
     }
@@ -60,40 +63,77 @@ class _FooterState extends State<Footer> {
     return WillPopScope(
       onWillPop: () async {
         if (_selectedIndex != 0) {
-          // Jika ditekan tombol kembali di luar Beranda, kembali ke Beranda dan bersihkan stack
           Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
           return false;
         }
-        return true; // Keluar dari aplikasi jika sudah berada di Beranda
+        return true;
       },
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.home,
-              color: _selectedIndex == 0 ? Colors.blue : null, // Home
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 10,
+              offset: Offset(0, -2),
             ),
-            label: 'Beranda',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.newspaper_outlined,
-              color: _selectedIndex == 1 ? Colors.blue : null, // News
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor ?? Colors.white,
+          selectedItemColor: blueNormal,
+          unselectedItemColor: const Color(0xFF8E8E93),
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+          selectedLabelStyle: pjsSemiBold12,
+          unselectedLabelStyle: pjsRegular12,
+          items: [
+            BottomNavigationBarItem(
+              icon: Image.asset(
+                _selectedIndex == 0
+                    ? 'assets_v2/navbar/beranda_on.png'
+                    : 'assets_v2/navbar/beranda_off.png',
+                width: 24,
+                height: 24,
+              ),
+              label: 'Beranda',
             ),
-            label: 'BRS',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.contacts,
-              color: _selectedIndex == 2 ? Colors.blue : null, // Contact
+            BottomNavigationBarItem(
+              icon: Image.asset(
+                _selectedIndex == 1
+                    ? 'assets_v2/navbar/data_on.png'
+                    : 'assets_v2/navbar/data_off.png',
+                width: 24,
+                height: 24,
+              ),
+              label: 'Data',
             ),
-            label: 'Kontak',
-          ),
-        ],
+            BottomNavigationBarItem(
+              icon: Image.asset(
+                _selectedIndex == 2
+                    ? 'assets_v2/navbar/kontak_on.png'
+                    : 'assets_v2/navbar/kontak_off.png',
+                width: 24,
+                height: 24,
+              ),
+              label: 'Kontak',
+            ),
+            BottomNavigationBarItem(
+              icon: Image.asset(
+                _selectedIndex == 3
+                    ? 'assets_v2/navbar/profil_on.png'
+                    : 'assets_v2/navbar/profil_off.png',
+                width: 24,
+                height: 24,
+              ),
+              label: 'Profil',
+            ),
+          ],
+        ),
       ),
     );
   }
-  }
-
+}

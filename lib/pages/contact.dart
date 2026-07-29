@@ -1,223 +1,256 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:mboistats/components/footer.dart';
-import 'package:mboistats/datas/contact.dart';
+import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-class Contact extends StatefulWidget {
+class Contact extends StatelessWidget {
   const Contact({Key? key}) : super(key: key);
 
-  @override
-  _ContactState createState() => _ContactState();
-}
-
-class _ContactState extends State<Contact> {
-  String appVersion = '';
-  String buildNumber = '';
-
-  @override
-  void initState() {
-    super.initState();
-    getAppInfo();
+  void _logAndLaunch(String action, String item, String? url) {
+    LoggerService.logActivity(
+      actionType: 'click_contact',
+      sectorCategory: 'kontak',
+      itemName: item,
+    );
+    if (url != null && url.isNotEmpty) {
+      launchUrlString(url, mode: LaunchMode.externalApplication);
+    }
   }
 
-  Future<void> getAppInfo() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    setState(() {
-      appVersion = packageInfo.version;
-      buildNumber = packageInfo.buildNumber;
-    });
+  void _logAndNavigate(BuildContext context, String action, String item, String route) {
+    LoggerService.logActivity(
+      actionType: 'click_contact_menu',
+      sectorCategory: 'kontak',
+      itemName: item,
+    );
+    Navigator.pushNamed(context, route);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        toolbarHeight: 50,
-        title: const Text(
-          'MBOIStatS+',
-          style: TextStyle(color: Colors.black),
-        ),
-        leading: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Image.asset(
-              'assets/images/Mbois-stat Logo_Fix Putih.png',
-              width: 40,
-              height: 40,
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0), // Padding di dalam ScrollView
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // const SizedBox(height: 10),
-              Center(
-                child: Container(
-                  width: 200, // Lebar container sesuai dengan lebar ikon telepon
-                  height: 200, // Tinggi container sesuai dengan tinggi ikon telepon
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/icons/communication.png'), // Path ikon telepon
-                      fit: BoxFit.cover, // Sesuaikan dengan tata letak gambar
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10), // Tambahkan SizedBox dengan ketinggian yang diinginkan
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0), // Jarak di bawah judul
-                  child: Column(
-                    children: [
-                      Text(
-                        'Kontak Kami', // Ganti dengan judul yang sesuai
-                        style: bold16.copyWith(color: dark1, height: 1.5),
-                        textAlign: TextAlign.center, // Sesuaikan gaya teks
-                      ),
-                      Text(
-                        'Kami siap membantu Anda. Hubungi kami untuk informasi lebih lanjut', // Teks tambahan di bawah judul
-                        style: regular14.copyWith(color: dark2, height: 1.5),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16), // Tambahkan SizedBox dengan ketinggian yang diinginkan
-              ...contact.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
-                child: InkWell(
-                  onTap: () {
-                    if (item.title == 'Telepon') {
-                      // Menampilkan konfirmasi sebelum meluncurkan panggilan telepon
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text(
-                            'Konfirmasi Panggilan',
-                            style: TextStyle(color: Colors.blue),
-                            textAlign: TextAlign.center,
-                          ),
-                          content: Text(
-                              'Apakah Anda ingin menghubungi BPS Kota Malang pada nomor telepon ${item.description}?',
-                              textAlign: TextAlign.justify,
-                          ),
-                            actions: <Widget>[
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 120, // Set desired width
-                                    child: OutlinedButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop(false);
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        side: const BorderSide(color: Colors.blue),
-                                      ),
-                                      child: const Text('Batal', style: TextStyle(color: Colors.blue)),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16), // Space between buttons
-                                  SizedBox(
-                                    width: 120, // Set desired width
-                                    child: OutlinedButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop(); // Tutup dialog
-                                        launchUrlString('tel:${item.description}'); // Meluncurkan panggilan telepon
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        side: const BorderSide(color: Colors.blue),
-                                      ),
-                                      child: const Text('Hubungi', style: TextStyle(color: Colors.blue)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ]
-                        ),
-                      );
-                    } else if (item.title == 'Alamat') {
-                      launchUrlString('https://www.google.com/maps/place/Jl.+Janti+Barat+No+47,+Sukun');
-                    } else if (item.title == 'Email') {
-                      launchUrlString('mailto:bps3573@bps.go.id');
-                    } else if (item.title == 'Instagram') {
-                      launchUrlString('https://instagram.com/bpskotamalang');
-                    } else if (item.title == 'WhatsApp') {
-                      launchUrlString('https://wa.me/+6281250503573');
-                    } else if (item.title == 'Website') {
-                      launchUrlString ('https://malangkota.bps.go.id/');
-                    }
-                  },
-                  child: Container(
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: dark4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withAlpha((0.2 * 255).round()),
-                          spreadRadius: 2,
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ListTile(
-                      leading: Image.asset(
-                        'assets/icons/${item.icons}',
-                      ),
-                      title: Text(
-                        item.title,
-                        style: bold16.copyWith(color: dark1),
-                      ),
-                      subtitle: Row(
-                        children: [
-                          Text(
-                            item.description,
-                            style: regular14.copyWith(color: dark2),
-                          ),
-                          const Spacer(),
-                          Align(
-                            alignment: Alignment.center,
-                            child: Image.asset(
-                              'assets/icons/right-arrow.png',
-                              height: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              )),
-              const SizedBox(height: 16),
-            Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        'App Version: $appVersion + $buildNumber',
-                        style: regular14.copyWith(color: dark2),
-                      ),
-      
-                    ],
-                  ),
-                ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // Cream Banner Container
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20.0),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2A261F) : const Color(0xFFFFF8ED),
+                  borderRadius: BorderRadius.circular(16.0),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Kontak Kami',
+                      style: pjsBold20.copyWith(
+                        color: isDark ? const Color(0xFFFFD59E) : const Color(0xFF5E4010),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Kami siap membantu Anda. Hubungi kami untuk informasi lebih lanjut.',
+                      textAlign: TextAlign.center,
+                      style: pjsRegular14.copyWith(
+                        color: isDark ? const Color(0xFFD6C5B0) : const Color(0xFF8A6B3D),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 2x3 Grid Kontak
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.15,
+                children: [
+                  _buildContactCard(
+                    context: context,
+                    icon: 'assets_v2/icons/alamat.png',
+                    title: 'Alamat',
+                    subtitle: 'Jl. Janti Barat No.47, Sukun',
+                    onTap: () => _logAndLaunch('click_alamat', 'Alamat BPS Malang', 'https://maps.google.com/?q=BPS+Kota+Malang'),
+                  ),
+                  _buildContactCard(
+                    context: context,
+                    icon: 'assets_v2/icons/telepon.png',
+                    title: 'Telepon',
+                    subtitle: '(0341) 801164',
+                    onTap: () => _logAndLaunch('click_telepon', 'Telepon BPS Malang', 'tel:0341801164'),
+                  ),
+                  _buildContactCard(
+                    context: context,
+                    icon: 'assets_v2/icons/email.png',
+                    title: 'Email',
+                    subtitle: 'bps3573@bps.go.id',
+                    onTap: () => _logAndLaunch('click_email', 'Email BPS Malang', 'mailto:bps3573@bps.go.id'),
+                  ),
+                  _buildContactCard(
+                    context: context,
+                    icon: 'assets_v2/icons/Whatsapp.png',
+                    title: 'WhatsApp',
+                    subtitle: '+62 81250503573',
+                    onTap: () => _logAndLaunch('click_whatsapp', 'WhatsApp BPS Malang', 'https://wa.me/6281250503573'),
+                  ),
+                  _buildContactCard(
+                    context: context,
+                    icon: 'assets_v2/icons/Instagram.png',
+                    title: 'Instagram',
+                    subtitle: '@bpskotamalang',
+                    onTap: () => _logAndLaunch('click_instagram', 'Instagram BPS Malang', 'https://instagram.com/bpskotamalang'),
+                  ),
+                  _buildContactCard(
+                    context: context,
+                    icon: 'assets_v2/icons/website.png',
+                    title: 'Website',
+                    subtitle: 'malangkota.bps.go.id',
+                    onTap: () => _logAndLaunch('click_website', 'Website BPS Malang', 'https://malangkota.bps.go.id'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Menu List Tiles
+              _buildMenuItem(
+                context: context,
+                icon: 'assets_v2/icons/informasi_pelayanan.png',
+                title: 'Informasi Pelayanan',
+                onTap: () => _logAndNavigate(context, 'click_informasi_pelayanan', 'Informasi Pelayanan', '/informasi_pelayanan'),
+              ),
+              _buildMenuItem(
+                context: context,
+                icon: 'assets_v2/icons/tentang_kami.png',
+                title: 'Tentang Kami',
+                onTap: () => _logAndNavigate(context, 'click_tentang_kami', 'Tentang Kami', '/tentang'),
+              ),
+              _buildMenuItem(
+                context: context,
+                icon: 'assets_v2/icons/galeri_inovazi.png',
+                title: 'Galeri InovaZI',
+                onTap: () => _logAndNavigate(context, 'click_galeri_inovazi', 'Galeri InovaZI', '/more'),
+              ),
+              _buildMenuItem(
+                context: context,
+                icon: 'assets_v2/icons/pengaduan.png',
+                title: 'Pengaduan',
+                onTap: () => _logAndNavigate(context, 'click_pengaduan', 'Pengaduan', '/more'),
+              ),
+              _buildMenuItem(
+                context: context,
+                icon: 'assets_v2/icons/feedback.png',
+                title: 'Feedback',
+                onTap: () => _logAndNavigate(context, 'click_feedback', 'Feedback', '/more'),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
       ),
       bottomNavigationBar: const Footer(),
+    );
+  }
+
+  Widget _buildContactCard({
+    required BuildContext context,
+    required String icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDark ? Colors.white12 : const Color(0xFFEDEDED)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              icon,
+              width: 36,
+              height: 36,
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.contact_phone, color: blueNormal, size: 36),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: pjsBold14.copyWith(color: isDark ? Colors.white : dark1),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: pjsRegular12.copyWith(color: isDark ? Colors.white70 : dark2),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required BuildContext context,
+    required String icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDark ? Colors.white12 : const Color(0xFFEDEDED)),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Image.asset(
+          icon,
+          width: 32,
+          height: 32,
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.info, color: blueNormal),
+        ),
+        title: Text(
+          title,
+          style: pjsSemiBold14.copyWith(color: isDark ? Colors.white : dark1),
+        ),
+        trailing: const Icon(
+          Icons.play_arrow,
+          size: 14,
+          color: blueNormal,
+        ),
+      ),
     );
   }
 }
