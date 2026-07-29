@@ -60,6 +60,11 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/web/
+    - assests_v2/fonts/
+    - assests_v2/navbar/
+    - assests_v2/icons/
+    - assests_v2/pages/
+    - assests_v2/colors/
     # - assets/icons/mboistatsLogo.png
     # - assets/icons/ekonomi.png
     # - assets/icons/ipm.png
@@ -82,6 +87,14 @@ flutter:
         - asset: assets/fonts/SF-Pro-Display-Semibold.otf
           weight: 600
         - asset: assets/fonts/SF-Pro-Display-Bold.otf
+          weight: 700
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets_v2/fonts/PlusJakartaSans-Bold.ttf
+        - asset: assets_v2/fonts/PlusJakartaSans-ExtraBold.ttf
+        - asset: assets_v2/fonts/PlusJakartaSans-Medium.ttf
+        - asset: assets_v2/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets_v2/fonts/PlusJakartaSans-SemiBold.ttf
           weight: 700
 
 flutter_launcher_icons:
