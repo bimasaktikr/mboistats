@@ -145,7 +145,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Menus(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       const RecommendationSection(),
                       const SizedBox(height: 8),
                       const RecentlyViewedSection(),
