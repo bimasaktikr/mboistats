@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
 
 class Menus extends StatefulWidget {
@@ -26,7 +27,14 @@ class _MenusState extends State<Menus> {
 
   Widget _buildCategoryItem(Map<String, String> cat, bool isDark) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, cat['route']!),
+      onTap: () {
+        LoggerService.logActivity(
+          actionType: 'view_page',
+          sectorCategory: cat['title']!,
+          itemName: cat['title']!,
+        );
+        Navigator.pushNamed(context, cat['route']!);
+      },
       child: SizedBox(
         width: 72,
         child: Column(

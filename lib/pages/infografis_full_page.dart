@@ -22,11 +22,6 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
   @override
   void initState() {
     super.initState();
-    LoggerService.logActivity(
-      actionType: 'view_page',
-      sectorCategory: 'infografis',
-      itemName: 'Halaman Utama Infografis',
-    );
     _fetchDataInfografis();
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
@@ -137,7 +132,7 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
                           onTap: () {
                             if (imageUrl.isNotEmpty) {
                               LoggerService.logActivity(
-                                actionType: 'view_infografis_item',
+                                actionType: 'view_pdf',
                                 sectorCategory: 'infografis',
                                 itemName: title,
                                 coverUrl: imageUrl,

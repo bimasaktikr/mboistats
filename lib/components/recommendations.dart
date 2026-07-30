@@ -15,12 +15,13 @@ class _RecommendationSectionState extends State<RecommendationSection> {
   @override
   void initState() {
     super.initState();
-    // Memanggil recommendation service (Device ID dihandle otomatis)
     _recommendationsFuture = RecommendationService.getSectorRecommendations();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -31,7 +32,9 @@ class _RecommendationSectionState extends State<RecommendationSection> {
             children: [
               Text(
                 'Rekomendasi Sektoral Untuk Anda',
-                style: bold16.copyWith(color: dark1),
+                style: pjsBold16.copyWith(
+                  color: isDark ? Colors.white : dark1,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -71,7 +74,7 @@ class _RecommendationSectionState extends State<RecommendationSection> {
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
                   'Gagal memuat rekomendasi',
-                  style: regular14.copyWith(color: Colors.red),
+                  style: pjsRegular14.copyWith(color: Colors.red),
                 ),
               );
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -82,16 +85,19 @@ class _RecommendationSectionState extends State<RecommendationSection> {
             return ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final item = items[index];
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                  padding: const EdgeInsets.only(bottom: 10.0),
                   child: InkWell(
                     onTap: () {
                       final contentUrl = item.contentUrl;
                       if (contentUrl != null && contentUrl.isNotEmpty) {
-                        if (contentUrl.toLowerCase().contains('.pdf') || item.route == '/berita' || item.route == '/publikasi') {
+                        if (contentUrl.toLowerCase().contains('.pdf') ||
+                            item.route == '/berita' ||
+                            item.route == '/publikasi') {
                           Navigator.of(context).pushNamed(
                             '/pdf_viewer',
                             arguments: {
@@ -99,7 +105,10 @@ class _RecommendationSectionState extends State<RecommendationSection> {
                               'title': item.title,
                             },
                           );
-                        } else if (contentUrl.toLowerCase().contains('.jpg') || contentUrl.toLowerCase().contains('.png') || contentUrl.toLowerCase().contains('.jpeg') || item.route == '/infografis') {
+                        } else if (contentUrl.toLowerCase().contains('.jpg') ||
+                            contentUrl.toLowerCase().contains('.png') ||
+                            contentUrl.toLowerCase().contains('.jpeg') ||
+                            item.route == '/infografis') {
                           Navigator.of(context).pushNamed('/image_viewer', arguments: contentUrl);
                         } else {
                           Navigator.of(context).pushNamed(item.route);
@@ -108,62 +117,79 @@ class _RecommendationSectionState extends State<RecommendationSection> {
                         Navigator.of(context).pushNamed(item.route);
                       }
                     },
+                    borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      clipBehavior: Clip.hardEdge,
+                      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: dark4),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey.withOpacity(0.06),
+                            blurRadius: 4,
                             spreadRadius: 1,
-                            blurRadius: 3,
                             offset: const Offset(0, 1),
                           ),
                         ],
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          clipBehavior: Clip.hardEdge,
-                          padding: item.coverUrl != null && item.coverUrl!.isNotEmpty ? EdgeInsets.zero : const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            clipBehavior: Clip.hardEdge,
+                            padding: item.coverUrl != null && item.coverUrl!.isNotEmpty
+                                ? EdgeInsets.zero
+                                : const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: item.coverUrl != null && item.coverUrl!.isNotEmpty
+                                ? Image.network(
+                                    item.coverUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Image.asset('assets/icons/${item.icon}'),
+                                  )
+                                : Image.asset(
+                                    'assets/icons/${item.icon}',
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(Icons.analytics, color: Colors.blue, size: 20);
+                                    },
+                                  ),
                           ),
-                          child: item.coverUrl != null && item.coverUrl!.isNotEmpty
-                              ? Image.network(
-                                  item.coverUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Image.asset('assets/icons/${item.icon}'),
-                                )
-                              : Image.asset(
-                                  'assets/icons/${item.icon}',
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(Icons.analytics, color: Colors.blue);
-                                  },
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  style: pjsSemiBold14.copyWith(
+                                    color: isDark ? Colors.white : dark1,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                        ),
-                        title: Text(
-                          item.title,
-                          style: semibold14.copyWith(color: dark1),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Text(
-                            item.description,
-                            style: regular12_5.copyWith(color: dark2),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                                const SizedBox(height: 3),
+                                Text(
+                                  item.description,
+                                  style: pjsRegular12.copyWith(color: dark3),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        trailing: Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey.shade400,
-                        ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.play_arrow,
+                            size: 16,
+                            color: Colors.grey.shade400,
+                          ),
+                        ],
                       ),
                     ),
                   ),

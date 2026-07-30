@@ -70,10 +70,10 @@ class RouteManager {
     '/publikasi_full': (context) => const PublikasiFullPage(),
     '/pdf_viewer': (context) {
       final args = ModalRoute.of(context)!.settings.arguments;
-      if (args is Map<String, String>) {
+      if (args is Map) {
         return GlobalPDFViewer(
-          pdfUrl: args['pdfUrl'] ?? '',
-          title: args['title'] ?? 'Dokumen Statistik',
+          pdfUrl: args['pdfUrl']?.toString() ?? '',
+          title: args['title']?.toString() ?? 'Dokumen Statistik',
         );
       } else if (args is String) {
         return GlobalPDFViewer(

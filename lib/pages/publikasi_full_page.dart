@@ -22,11 +22,6 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
   @override
   void initState() {
     super.initState();
-    LoggerService.logActivity(
-      actionType: 'view_page',
-      sectorCategory: 'publikasi',
-      itemName: 'Halaman Utama Publikasi',
-    );
     _fetchDataPublikasi();
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=

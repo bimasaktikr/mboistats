@@ -50,9 +50,6 @@ class ActivityLoggingObserver extends NavigatorObserver {
     '/ProduksiBeras': {'sector': 'pertanian', 'item': 'Produksi Beras'},
     
     // Fitur Tambahan Lainnya
-    '/berita': {'sector': 'berita', 'item': 'Halaman Berita BPS'},
-    '/infografis': {'sector': 'infografis', 'item': 'Halaman Galeri Infografis'},
-    '/publikasi': {'sector': 'publikasi', 'item': 'Halaman Unduh Publikasi'},
     '/contact': {'sector': 'contact', 'item': 'Halaman Kontak Layanan'},
   };
 

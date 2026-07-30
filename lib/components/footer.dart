@@ -16,7 +16,12 @@ class _FooterState extends State<Footer> {
     super.didChangeDependencies();
     final currentRoute = ModalRoute.of(context)!.settings.name;
 
-    if (currentRoute == '/data' || currentRoute == '/berita') {
+    if (currentRoute == '/data' ||
+        currentRoute == '/berita' ||
+        currentRoute == '/infografis_full' ||
+        currentRoute == '/publikasi_full' ||
+        currentRoute == '/infografis' ||
+        currentRoute == '/publikasi') {
       _selectedIndex = 1;
     } else if (currentRoute == '/contact') {
       _selectedIndex = 2;

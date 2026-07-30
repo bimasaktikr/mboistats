@@ -246,7 +246,7 @@ class _DataPageState extends State<DataPage> {
               _buildSectionHeader(
                 context: context,
                 title: 'Berita Resmi Statistik (BRS)',
-                linkText: 'Temukan BRS lainnya ▶',
+                linkText: 'Lainnya ▶',
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_brs_list',
@@ -264,7 +264,7 @@ class _DataPageState extends State<DataPage> {
               _buildSectionHeader(
                 context: context,
                 title: 'Infografis',
-                linkText: 'Temukan Infografis lainnya ▶',
+                linkText: 'Lainnya ▶',
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_infografis_list',
@@ -282,7 +282,7 @@ class _DataPageState extends State<DataPage> {
               _buildSectionHeader(
                 context: context,
                 title: 'Publikasi',
-                linkText: 'Temukan Publikasi lainnya ▶',
+                linkText: 'Lainnya ▶',
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_publikasi_list',
@@ -410,12 +410,23 @@ class _DataPageState extends State<DataPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
+                final pdfUrl = item['pdf'] as String? ?? '';
                 LoggerService.logActivity(
-                  actionType: 'view_brs_item',
+                  actionType: 'view_pdf',
                   sectorCategory: 'berita',
                   itemName: title,
+                  coverUrl: thumbnail,
+                  contentUrl: pdfUrl,
                 );
-                Navigator.pushNamed(context, '/berita');
+                if (pdfUrl.isNotEmpty) {
+                  Navigator.pushNamed(
+                    context,
+                    '/pdf_viewer',
+                    arguments: {'pdfUrl': pdfUrl, 'title': title},
+                  );
+                } else {
+                  Navigator.pushNamed(context, '/berita');
+                }
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -493,9 +504,11 @@ class _DataPageState extends State<DataPage> {
               onTap: () {
                 if (imgUrl.isNotEmpty) {
                   LoggerService.logActivity(
-                    actionType: 'view_infografis_item',
+                    actionType: 'view_pdf',
                     sectorCategory: 'infografis',
                     itemName: title,
+                    coverUrl: imgUrl,
+                    contentUrl: imgUrl,
                   );
                   Navigator.pushNamed(context, '/image_viewer', arguments: imgUrl);
                 } else {
@@ -582,6 +595,8 @@ class _DataPageState extends State<DataPage> {
                     actionType: 'view_pdf',
                     sectorCategory: 'publikasi',
                     itemName: title,
+                    coverUrl: coverUrl,
+                    contentUrl: pdfUrl,
                   );
                   Navigator.pushNamed(
                     context,
