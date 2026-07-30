@@ -25,7 +25,7 @@ class _RecommendationSectionState extends State<RecommendationSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 4.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -78,7 +78,7 @@ class _RecommendationSectionState extends State<RecommendationSection> {
               return const SizedBox.shrink();
             }
 
-            final items = snapshot.data!;
+            final items = snapshot.data!.take(3).toList();
             return ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

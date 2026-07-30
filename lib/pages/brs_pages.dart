@@ -88,86 +88,98 @@ class _BeritaPageState extends State<BeritaPages> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        toolbarHeight: 50,
-        title: const Text('MBOIStatS+', style: TextStyle(color: Colors.black)),
-        leading: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+      backgroundColor: isDark ? const Color(0xFF121212) : bgColor,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset('assets/images/Mbois-stat Logo_Fix Putih.png', width: 40, height: 40),
-          ],
-        ),
-      ),
-      body: GridView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.75,
-        ),
-        itemCount: dataBRS.length + (hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == dataBRS.length) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return InkWell(
-            onTap: () => showDownloadDialog(context, dataBRS[index]["pdf"], index),
-            child: Container(
-              clipBehavior: Clip.hardEdge,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: dark4),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.transparent,
-                    spreadRadius: 2,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            // Custom header matching mockup: back arrow + title text
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+              child: Row(
                 children: [
-                  Expanded(
-                    child: Image.network(
-                      dataBRS[index]['thumbnail'],
-                      width: double.infinity,
-                      fit: BoxFit.fill,
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
-                    ),
+                  IconButton(
+                    icon: Icon(Icons.arrow_back,
+                        color: isDark ? blueLighter : blueHover),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          dataBRS[index]["title"],
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: dark1,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 5,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 4),
-                      ],
+                  const SizedBox(width: 4),
+                  Text(
+                    'Berita Resmi Statistik',
+                    style: pjsBold20.copyWith(
+                      color: isDark ? blueLighter : blueHover,
                     ),
                   ),
                 ],
               ),
             ),
-          );
-        },
+            // Grid content
+            Expanded(
+              child: dataBRS.isEmpty && isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : GridView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 20,
+                        childAspectRatio: 0.58,
+                      ),
+                      itemCount: dataBRS.length + (hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == dataBRS.length) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        return InkWell(
+                          onTap: () => showDownloadDialog(context, dataBRS[index]["pdf"], index),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  clipBehavior: Clip.hardEdge,
+                                  child: Image.network(
+                                    dataBRS[index]['thumbnail'],
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Center(
+                                      child: Icon(
+                                        Icons.newspaper,
+                                        color: dark3,
+                                        size: 40,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                dataBRS[index]["title"],
+                                style: pjsRegular14.copyWith(
+                                  color: isDark ? Colors.white : dark1,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: const Footer(),
     );

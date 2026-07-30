@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context) => AlertDialog(
         title: const Text(
           'Konfirmasi Keluar',
-          style: TextStyle(color: blueNormal),
+          style: TextStyle(color: blueActive),
           textAlign: TextAlign.center,
         ),
         content: const Text(
@@ -82,18 +82,18 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Teal Gradient
+                // Teal gradient header
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.only(
-                    top: 50,
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 20,
                     left: 20,
                     right: 20,
-                    bottom: 30,
+                    bottom: 50,
                   ),
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF1B84B1), Color(0xFF2AA9E1)],
+                      colors: [Color(0xFF1F7BA4), Color(0xFF2AA9E1)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -107,8 +107,9 @@ class _HomePageState extends State<HomePage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const SizedBox(height: 6),
                             Text(
-                              '${_getGreeting()}, Sahabat Data',
+                              '${_getGreeting()}, Jennie',
                               style: pjsBold20.copyWith(color: Colors.white),
                             ),
                             const SizedBox(height: 6),
@@ -121,35 +122,37 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 70,
-                        height: 70,
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Image.asset(
-                          'assets_v2/icons/logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Image.asset('assets/images/Mbois-stat Logo_Fix Putih.png'),
+                      const SizedBox(width: 8),
+                      Image.asset(
+                        'assets_v2/icons/bps_2.png',
+                        width: 110,
+                        height: 110,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset(
+                          'assets/images/Mbois-stat Logo_Fix Putih.png',
+                          width: 80,
+                          height: 80,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                // Category Menus Card
-                const Menus(),
-                const SizedBox(height: 8),
-                // Section Rekomendasi Sektoral
-                const RecommendationSection(),
-                const SizedBox(height: 8),
-                // Section Baru Saja Dilihat
-                const RecentlyViewedSection(),
-                const SizedBox(height: 20),
+                // Body content shifted up by 35px to overlap header bottom smoothly
+                Transform.translate(
+                  offset: const Offset(0, -35),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Menus(),
+                      const SizedBox(height: 8),
+                      const RecommendationSection(),
+                      const SizedBox(height: 8),
+                      const RecentlyViewedSection(),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

@@ -86,129 +86,129 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : bgColor,
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [headerTealStart, headerTealEnd],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-          ),
-        ),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Publikasi',
-          style: pjsBold18.copyWith(color: Colors.white),
-        ),
-        centerTitle: false,
-      ),
-      body: _dataPublikasi.isEmpty && _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.65,
-              ),
-              itemCount: _dataPublikasi.length + (_hasMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _dataPublikasi.length) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final item = _dataPublikasi[index];
-                final String coverUrl = item['cover'] ?? '';
-                final String pdfUrl = item['pdf'] ?? '';
-                final String title = item['title'] ?? 'Publikasi BPS';
-
-                return InkWell(
-                  onTap: () {
-                    if (pdfUrl.isNotEmpty) {
-                      LoggerService.logActivity(
-                        actionType: 'view_pdf',
-                        sectorCategory: 'publikasi',
-                        itemName: title,
-                        coverUrl: coverUrl,
-                        contentUrl: pdfUrl,
-                      );
-                      Navigator.pushNamed(
-                        context,
-                        '/pdf_viewer',
-                        arguments: {
-                          'pdfUrl': pdfUrl,
-                          'title': title,
-                        },
-                      );
-                    }
-                  },
-                  child: Container(
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: dark4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          spreadRadius: 1,
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: coverUrl.isNotEmpty
-                              ? Image.network(
-                                  coverUrl,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Center(
-                                    child: Icon(
-                                      Icons.book,
-                                      color: dark3,
-                                      size: 40,
-                                    ),
-                                  ),
-                                )
-                              : Center(
-                                  child: Icon(
-                                    Icons.book,
-                                    color: dark3,
-                                    size: 40,
-                                  ),
-                                ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(10.0),
-                          child: Text(
-                            title,
-                            style: pjsBold14.copyWith(
-                              fontSize: 11,
-                              color: isDark ? Colors.white : dark1,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Custom header matching mockup: back arrow + title text
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back,
+                        color: isDark ? blueLighter : blueHover),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Publikasi',
+                    style: pjsBold20.copyWith(
+                      color: isDark ? blueLighter : blueHover,
                     ),
                   ),
-                );
-              },
+                ],
+              ),
             ),
+            // Grid content
+            Expanded(
+              child: _dataPublikasi.isEmpty && _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : GridView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 20,
+                        childAspectRatio: 0.58,
+                      ),
+                      itemCount: _dataPublikasi.length + (_hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == _dataPublikasi.length) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        final item = _dataPublikasi[index];
+                        final String coverUrl = item['cover'] ?? '';
+                        final String pdfUrl = item['pdf'] ?? '';
+                        final String title = item['title'] ?? 'Publikasi BPS';
+
+                        return InkWell(
+                          onTap: () {
+                            if (pdfUrl.isNotEmpty) {
+                              LoggerService.logActivity(
+                                actionType: 'view_pdf',
+                                sectorCategory: 'publikasi',
+                                itemName: title,
+                                coverUrl: coverUrl,
+                                contentUrl: pdfUrl,
+                              );
+                              Navigator.pushNamed(
+                                context,
+                                '/pdf_viewer',
+                                arguments: {
+                                  'pdfUrl': pdfUrl,
+                                  'title': title,
+                                },
+                              );
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Image card — gray rounded rectangle
+                              Expanded(
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  clipBehavior: Clip.hardEdge,
+                                  child: coverUrl.isNotEmpty
+                                      ? Image.network(
+                                          coverUrl,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          errorBuilder: (context, error, stackTrace) =>
+                                              Center(
+                                            child: Icon(
+                                              Icons.menu_book,
+                                              color: dark3,
+                                              size: 40,
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Icon(
+                                            Icons.menu_book,
+                                            color: dark3,
+                                            size: 40,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              // Title text below — max 3 lines with ellipsis
+                              const SizedBox(height: 8),
+                              Text(
+                                title,
+                                style: pjsRegular14.copyWith(
+                                  color: isDark ? Colors.white : dark1,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
       bottomNavigationBar: const Footer(),
     );
   }

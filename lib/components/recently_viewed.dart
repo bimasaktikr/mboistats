@@ -112,116 +112,126 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 4.0),
               child: Text(
-                'Baru Saja Dilihat',
-                style: bold16.copyWith(color: dark1),
+                'Terakhir Dilihat',
+                style: pjsBold16.copyWith(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : dark1),
               ),
             ),
-            SizedBox(
-              height: 90,
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                scrollDirection: Axis.horizontal,
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  final title = item['item_name'] as String? ?? 'Berkas Data';
-                  final sector = item['sector_category'] as String? ?? 'umum';
-                  final iconName = _getIconForSector(sector);
-                  final targetRoute = _getRouteForSector(sector);
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                final title = item['item_name'] as String? ?? 'Berkas Data';
+                final sector = item['sector_category'] as String? ?? 'umum';
+                final description = item['item_name'] as String? ?? '';
+                final iconName = _getIconForSector(sector);
+                final targetRoute = _getRouteForSector(sector);
 
-                  return Container(
-                    width: 250,
-                    margin: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
-                    child: InkWell(
-                      onTap: () {
-                        final contentUrl = item['content_url'] as String?;
-                        if (contentUrl != null && contentUrl.isNotEmpty) {
-                          if (contentUrl.toLowerCase().contains('.pdf') || sector.toLowerCase() == 'berita' || sector.toLowerCase() == 'publikasi') {
-                            Navigator.of(context).pushNamed(
-                              '/pdf_viewer',
-                              arguments: {
-                                'pdfUrl': contentUrl,
-                                'title': title,
-                              },
-                            );
-                          } else if (contentUrl.toLowerCase().contains('.jpg') || contentUrl.toLowerCase().contains('.png') || contentUrl.toLowerCase().contains('.jpeg') || sector.toLowerCase() == 'infografis') {
-                            Navigator.of(context).pushNamed('/image_viewer', arguments: contentUrl);
-                          } else {
-                            Navigator.of(context).pushNamed(targetRoute);
-                          }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: InkWell(
+                    onTap: () {
+                      final contentUrl = item['content_url'] as String?;
+                      if (contentUrl != null && contentUrl.isNotEmpty) {
+                        if (contentUrl.toLowerCase().contains('.pdf') || sector.toLowerCase() == 'berita' || sector.toLowerCase() == 'publikasi') {
+                          Navigator.of(context).pushNamed(
+                            '/pdf_viewer',
+                            arguments: {
+                              'pdfUrl': contentUrl,
+                              'title': title,
+                            },
+                          );
+                        } else if (contentUrl.toLowerCase().contains('.jpg') || contentUrl.toLowerCase().contains('.png') || contentUrl.toLowerCase().contains('.jpeg') || sector.toLowerCase() == 'infografis') {
+                          Navigator.of(context).pushNamed('/image_viewer', arguments: contentUrl);
                         } else {
                           Navigator.of(context).pushNamed(targetRoute);
                         }
-                      },
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.all(10.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: dark4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.05),
-                              blurRadius: 2,
-                              spreadRadius: 1,
-                            )
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              clipBehavior: Clip.hardEdge,
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: item['cover_url'] != null && (item['cover_url'] as String).isNotEmpty
-                                  ? Image.network(
-                                      item['cover_url'],
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Image.asset('assets/icons/$iconName'),
-                                    )
-                                  : Image.asset(
-                                      'assets/icons/$iconName',
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return const Icon(Icons.description, color: Colors.blue, size: 16);
-                                      },
-                                    ),
+                      } else {
+                        Navigator.of(context).pushNamed(targetRoute);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF1E1E1E)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: dark4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.06),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            clipBehavior: Clip.hardEdge,
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: semibold14.copyWith(fontSize: 12.5, color: dark1),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                            child: item['cover_url'] != null && (item['cover_url'] as String).isNotEmpty
+                                ? Image.network(
+                                    item['cover_url'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Image.asset('assets/icons/$iconName'),
+                                  )
+                                : Image.asset(
+                                    'assets/icons/$iconName',
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(Icons.description, color: Colors.blue, size: 20);
+                                    },
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    sector.toUpperCase(),
-                                    style: regular12_5.copyWith(fontSize: 10, color: dark3),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: pjsSemiBold14.copyWith(
+                                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : dark1,
                                   ),
-                                ],
-                              ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  description,
+                                  style: pjsRegular12.copyWith(color: dark3),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.play_arrow,
+                            size: 16,
+                            color: Colors.grey.shade400,
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
           ],
         );
       },

@@ -186,7 +186,7 @@ class _DataPageState extends State<DataPage> {
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.only(top: 20.0, left: 12.0, right: 12.0, bottom: 16.0),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -198,61 +198,47 @@ class _DataPageState extends State<DataPage> {
                     ),
                   ],
                 ),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _filteredCategories.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemBuilder: (context, index) {
-                    final cat = _filteredCategories[index];
-                    return GestureDetector(
-                      onTap: () {
-                        LoggerService.logActivity(
-                          actionType: 'view_page',
-                          sectorCategory: cat['title']!,
-                          itemName: cat['title']!,
-                        );
-                        Navigator.pushNamed(context, cat['route']!);
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                child: _searchQuery.isNotEmpty
+                    ? GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _filteredCategories.length,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 0.80,
+                        ),
+                        itemBuilder: (context, index) {
+                          final cat = _filteredCategories[index];
+                          return _buildCategoryGridTile(context, cat, isDark);
+                        },
+                      )
+                    : Column(
                         children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF7FDFF),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Image.asset(
-                              cat['icon']!,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.category, color: blueNormal),
-                            ),
+                          // Row 1: 4 items
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: _categories
+                                .take(4)
+                                .map((cat) => _buildCategoryGridTile(context, cat, isDark))
+                                .toList(),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            cat['title']!,
-                            style: pjsMedium12.copyWith(
-                              color: isDark ? Colors.white : dark2,
-                              fontSize: 11,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          const SizedBox(height: 16),
+                          // Row 2: 3 items (centered)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              const SizedBox(width: 20),
+                              ..._categories
+                                  .skip(4)
+                                  .map((cat) => _buildCategoryGridTile(context, cat, isDark))
+                                  .toList(),
+                              const SizedBox(width: 20),
+                            ],
                           ),
                         ],
                       ),
-                    );
-                  },
-                ),
               ),
               const SizedBox(height: 24),
 
@@ -314,6 +300,45 @@ class _DataPageState extends State<DataPage> {
         ),
       ),
       bottomNavigationBar: const Footer(),
+    );
+  }
+
+  Widget _buildCategoryGridTile(BuildContext context, Map<String, String> cat, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        LoggerService.logActivity(
+          actionType: 'view_page',
+          sectorCategory: cat['title']!,
+          itemName: cat['title']!,
+        );
+        Navigator.pushNamed(context, cat['route']!);
+      },
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              cat['icon']!,
+              width: 52,
+              height: 52,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.category, color: blueNormal, size: 44),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              cat['title']!,
+              style: pjsMedium12.copyWith(
+                color: isDark ? Colors.white : dark2,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
