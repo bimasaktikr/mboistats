@@ -46,6 +46,7 @@ dependencies:
 # package_info: ^2.0.3
   supabase_flutter: ^2.8.0
   device_info_plus: ^11.0.0
+  google_sign_in: ^7.2.0
 
  
   

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mboistats/services/recommendation_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -18,6 +21,21 @@ class _LoginPageState extends State<LoginPage> {
       sectorCategory: 'auth',
       itemName: 'Halaman Login',
     );
+
+    // Dengarkan perubahan state autentikasi (berguna untuk deep link callback)
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      final AuthChangeEvent event = data.event;
+      if (event == AuthChangeEvent.signedIn) {
+        final hasProfile = await RecommendationService.checkProfileExists();
+        if (mounted) {
+          if (hasProfile) {
+            Navigator.pushReplacementNamed(context, '/main');
+          } else {
+            Navigator.pushReplacementNamed(context, '/onboarding');
+          }
+        }
+      }
+    });
   }
 
   Widget _buildGoogleIcon() {
@@ -56,7 +74,8 @@ class _LoginPageState extends State<LoginPage> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -135,20 +154,52 @@ class _LoginPageState extends State<LoginPage> {
                       elevation: 3,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(28),
-                        onTap: () {
+                        onTap: () async {
                           LoggerService.logActivity(
                             actionType: 'click_login_google',
                             sectorCategory: 'auth',
                             itemName: 'Masuk dengan Google',
                           );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Berhasil masuk dengan Google'),
-                              backgroundColor: blueNormal,
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                          Navigator.pushReplacementNamed(context, '/main');
+
+                          try {
+                            // Web Client ID dari Google Cloud Console
+                            const webClientId =
+                                '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
+
+                            await GoogleSignIn.instance.initialize(
+                              serverClientId: webClientId,
+                            );
+
+                            final googleUser =
+                                await GoogleSignIn.instance.authenticate();
+                            if (googleUser == null) {
+                              return; // User membatalkan login (tutup popup)
+                            }
+
+                            final googleAuth = await googleUser.authentication;
+                            final idToken = googleAuth.idToken;
+
+                            if (idToken == null) {
+                              throw 'Gagal mendapatkan ID token dari Google.';
+                            }
+
+                            await Supabase.instance.client.auth
+                                .signInWithIdToken(
+                              provider: OAuthProvider.google,
+                              idToken: idToken,
+                            );
+                            // Redirection ditangani oleh onAuthStateChange di atas
+                          } catch (e) {
+                            print('ERROR LOGIN GOOGLE: $e');
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal masuk: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
                         },
                         child: Container(
                           height: 54,

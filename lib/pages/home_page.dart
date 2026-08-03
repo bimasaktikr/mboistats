@@ -5,6 +5,7 @@ import 'package:mboistats/components/menus.dart';
 import 'package:mboistats/components/recommendations.dart';
 import 'package:mboistats/components/recently_viewed.dart';
 import 'package:mboistats/theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -14,6 +15,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  String _getUserName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final metadata = user.userMetadata;
+      if (metadata != null && metadata.containsKey('full_name')) {
+        final name = metadata['full_name'].toString();
+        if (name.isNotEmpty) {
+          return name.split(' ').first; // Mengambil nama depan saja
+        }
+      }
+      return 'Pengguna';
+    }
+    return 'Tamu';
+  }
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 11) return 'Selamat pagi';
@@ -109,7 +125,7 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             const SizedBox(height: 6),
                             Text(
-                              '${_getGreeting()}, Jennie',
+                              '${_getGreeting()}, ${_getUserName()}',
                               style: pjsBold20.copyWith(color: Colors.white),
                             ),
                             const SizedBox(height: 6),

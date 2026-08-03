@@ -7,6 +7,8 @@ import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/services/activity_observer.dart';
 import 'package:mboistats/theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:mboistats/config/supabase_config.dart';
 
 LocalhostServer localhostServer = LocalhostServer();
 
@@ -16,6 +18,11 @@ final AppThemeNotifier appThemeNotifier = AppThemeNotifier();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LoggerService.init();
+
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
 
   await localhostServer.start(port: 0);
   runApp(const MyApp());

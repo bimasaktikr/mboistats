@@ -232,7 +232,9 @@ class Contact extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: isDark ? Colors.white12 : const Color(0xFFEDEDED)),
       ),
-      child: ListTile(
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
         onTap: onTap,
         leading: Image.asset(
           icon,
@@ -249,6 +251,7 @@ class Contact extends StatelessWidget {
           Icons.play_arrow,
           size: 14,
           color: blueNormal,
+        ),
         ),
       ),
     );
