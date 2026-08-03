@@ -4,6 +4,9 @@ import 'package:mboistats/main.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:mboistats/services/recommendation_service.dart';
+
 class ProfilPage extends StatefulWidget {
   const ProfilPage({Key? key}) : super(key: key);
 
@@ -13,6 +16,11 @@ class ProfilPage extends StatefulWidget {
 
 class _ProfilPageState extends State<ProfilPage> {
   bool _notificationsEnabled = true;
+  String _userName = 'Pengguna';
+  String _userEmail = '';
+  String? _userAvatar;
+  String? _userMajor;
+  bool _isLoadingProfile = true;
 
   @override
   void initState() {
@@ -22,6 +30,25 @@ class _ProfilPageState extends State<ProfilPage> {
       sectorCategory: 'profil',
       itemName: 'Halaman Profil',
     );
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      setState(() {
+        _userEmail = user.email ?? '';
+        _userName = user.userMetadata?['full_name'] ?? 'Pengguna';
+        _userAvatar = user.userMetadata?['avatar_url'];
+      });
+    }
+    final major = await RecommendationService.getMajor();
+    if (mounted) {
+      setState(() {
+        _userMajor = major;
+        _isLoadingProfile = false;
+      });
+    }
   }
 
   void _showLogoutDialog() {
@@ -152,27 +179,52 @@ class _ProfilPageState extends State<ProfilPage> {
                         ),
                       ],
                     ),
-                    child: const CircleAvatar(
-                      backgroundColor: Color(0xFFE2F3FC),
-                      child: Icon(
-                        Icons.person_rounded,
-                        size: 52,
-                        color: blueNormal,
-                      ),
+                    child: CircleAvatar(
+                      backgroundColor: const Color(0xFFE2F3FC),
+                      backgroundImage: _userAvatar != null ? NetworkImage(_userAvatar!) : null,
+                      child: _userAvatar == null
+                          ? const Icon(
+                              Icons.person_rounded,
+                              size: 52,
+                              color: blueNormal,
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Jennie Klavsky',
+                    _userName,
                     style: pjsBold20.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'jennie.klavsky@gmail.com',
+                    _userEmail,
                     style: pjsRegular14.copyWith(
                       color: Colors.white.withOpacity(0.9),
                     ),
                   ),
+                  if (_userMajor != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.school_rounded, color: Colors.white, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            _userMajor!,
+                            style: pjsSemiBold12.copyWith(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -281,7 +333,9 @@ class _ProfilPageState extends State<ProfilPage> {
           ),
         ],
       ),
-      child: ListTile(
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
@@ -311,6 +365,7 @@ class _ProfilPageState extends State<ProfilPage> {
               Icons.chevron_right,
               color: isDark ? Colors.white54 : dark3,
             ),
+      ),
       ),
     );
   }

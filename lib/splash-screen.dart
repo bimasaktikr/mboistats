@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mboistats/services/recommendation_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -21,15 +22,21 @@ class _SplashScreenState extends State<SplashScreen>
         opacity = 0.0; // Mengubah opasitas menjadi 0 untuk menghilangkan tulisan
       });
 
-      // Cek apakah perangkat sudah menyelesaikan onboarding sebelumnya
-      final hasProfile = await RecommendationService.checkProfileExists();
+      final session = Supabase.instance.client.auth.currentSession;
 
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(const Duration(seconds: 1), () async {
         if (mounted) {
-          if (hasProfile) {
-            Navigator.pushReplacementNamed(context, '/main');
+          if (session == null) {
+            Navigator.pushReplacementNamed(context, '/login');
           } else {
-            Navigator.pushReplacementNamed(context, '/onboarding');
+            // Cek apakah perangkat sudah menyelesaikan onboarding sebelumnya
+            final hasProfile = await RecommendationService.checkProfileExists();
+            
+            if (hasProfile) {
+              Navigator.pushReplacementNamed(context, '/main');
+            } else {
+              Navigator.pushReplacementNamed(context, '/onboarding');
+            }
           }
         }
       });

@@ -38,6 +38,24 @@ class RecommendationService {
     }
   }
 
+  // 2. Mengambil profil jurusan (major) perangkat saat ini
+  static Future<String?> getMajor() async {
+    try {
+      final deviceId = await LoggerService.getDeviceId();
+      final data = await _client
+          .from('device_profiles')
+          .select('major')
+          .eq('device_id', deviceId)
+          .maybeSingle();
+      if (data != null && data['major'] != null) {
+        return data['major'] as String;
+      }
+      return null;
+    } catch (e) {
+      print("Error fetching device major: $e");
+      return null;
+    }
+  }
   // 2. Simpan atau perbarui profil perangkat (Jurusan & Sektor Pilihan)
   static Future<void> saveProfile(String major, List<String> onboardingSectors) async {
     try {
