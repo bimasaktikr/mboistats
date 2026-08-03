@@ -5,6 +5,7 @@ import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mboistats/services/recommendation_service.dart';
 
 class ProfilPage extends StatefulWidget {
@@ -52,9 +53,11 @@ class _ProfilPageState extends State<ProfilPage> {
   }
 
   void _showLogoutDialog() {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Konfirmasi Logout', style: pjsBold18),
         content: const Text(
@@ -63,7 +66,7 @@ class _ProfilPageState extends State<ProfilPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Batal', style: pjsMedium14),
           ),
           ElevatedButton(
@@ -73,14 +76,22 @@ class _ProfilPageState extends State<ProfilPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            onPressed: () {
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
               LoggerService.logActivity(
                 actionType: 'logout',
                 sectorCategory: 'profil',
                 itemName: 'Logout Akun',
               );
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              try {
+                await GoogleSignIn.instance.signOut();
+                await Supabase.instance.client.auth.signOut();
+              } catch (e) {
+                print("Logout error: $e");
+              }
+              if (mounted) {
+                navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+              }
             },
             child: const Text('Logout', style: TextStyle(color: Colors.white)),
           ),
@@ -90,9 +101,11 @@ class _ProfilPageState extends State<ProfilPage> {
   }
 
   void _showDeleteAccountDialog() {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hapus Akun', style: pjsBold18),
         content: const Text(
@@ -101,7 +114,7 @@ class _ProfilPageState extends State<ProfilPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Batal', style: pjsMedium14),
           ),
           ElevatedButton(
@@ -111,20 +124,29 @@ class _ProfilPageState extends State<ProfilPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            onPressed: () {
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
               LoggerService.logActivity(
                 actionType: 'delete_account',
                 sectorCategory: 'profil',
                 itemName: 'Hapus Akun',
               );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Permintaan hapus akun telah diproses.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              try {
+                await RecommendationService.deleteProfile();
+                await GoogleSignIn.instance.signOut();
+                await Supabase.instance.client.auth.signOut();
+              } catch (e) {
+                print("Delete account error: $e");
+              }
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Permintaan hapus akun telah diproses.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+              }
             },
             child: const Text('Hapus', style: TextStyle(color: Colors.white)),
           ),

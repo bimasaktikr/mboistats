@@ -22,14 +22,23 @@ class RecommendedItem {
 class RecommendationService {
   static final SupabaseClient _client = Supabase.instance.client;
 
+  // Mendapatkan identifier yang unik: Gunakan User ID jika login, jika tidak gunakan Device ID
+  static Future<String> _getProfileIdentifier() async {
+    final user = _client.auth.currentUser;
+    if (user != null) {
+      return user.id;
+    }
+    return await LoggerService.getDeviceId();
+  }
+
   // 1. Cek apakah profil perangkat sudah terdaftar di Supabase
   static Future<bool> checkProfileExists() async {
     try {
-      final deviceId = await LoggerService.getDeviceId();
+      final profileId = await _getProfileIdentifier();
       final data = await _client
           .from('device_profiles')
           .select('device_id')
-          .eq('device_id', deviceId)
+          .eq('device_id', profileId)
           .maybeSingle();
       return data != null;
     } catch (e) {
@@ -41,11 +50,11 @@ class RecommendationService {
   // 2. Mengambil profil jurusan (major) perangkat saat ini
   static Future<String?> getMajor() async {
     try {
-      final deviceId = await LoggerService.getDeviceId();
+      final profileId = await _getProfileIdentifier();
       final data = await _client
           .from('device_profiles')
           .select('major')
-          .eq('device_id', deviceId)
+          .eq('device_id', profileId)
           .maybeSingle();
       if (data != null && data['major'] != null) {
         return data['major'] as String;
@@ -59,15 +68,25 @@ class RecommendationService {
   // 2. Simpan atau perbarui profil perangkat (Jurusan & Sektor Pilihan)
   static Future<void> saveProfile(String major, List<String> onboardingSectors) async {
     try {
-      final deviceId = await LoggerService.getDeviceId();
+      final profileId = await _getProfileIdentifier();
       await _client.from('device_profiles').upsert({
-        'device_id': deviceId,
+        'device_id': profileId,
         'major': major,
         'onboarding_sectors': onboardingSectors,
       });
       print("Device profile successfully saved: $major");
     } catch (e) {
       print("Error saving device profile: $e");
+    }
+  }
+
+  static Future<void> deleteProfile() async {
+    try {
+      final profileId = await _getProfileIdentifier();
+      await _client.from('device_profiles').delete().eq('device_id', profileId);
+      print("Device profile successfully deleted");
+    } catch (e) {
+      print("Error deleting device profile: $e");
     }
   }
 

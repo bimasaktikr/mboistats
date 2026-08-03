@@ -3,6 +3,7 @@ import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mboistats/services/recommendation_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -22,11 +23,16 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     // Dengarkan perubahan state autentikasi (berguna untuk deep link callback)
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final AuthChangeEvent event = data.event;
       if (event == AuthChangeEvent.signedIn) {
+        final hasProfile = await RecommendationService.checkProfileExists();
         if (mounted) {
-          Navigator.pushReplacementNamed(context, '/main');
+          if (hasProfile) {
+            Navigator.pushReplacementNamed(context, '/main');
+          } else {
+            Navigator.pushReplacementNamed(context, '/onboarding');
+          }
         }
       }
     });
@@ -158,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
                           try {
                             // Web Client ID dari Google Cloud Console
                             const webClientId =
-                                '514445291536-psdck6puupstf9p2l3ohhd92v3oeekth.apps.googleusercontent.com';
+                                '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
 
                             await GoogleSignIn.instance.initialize(
                               serverClientId: webClientId,
