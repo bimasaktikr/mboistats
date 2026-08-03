@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mboistats/services/logger_service.dart';
+import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/theme.dart';
 
 class Menus extends StatefulWidget {
@@ -12,18 +13,50 @@ class Menus extends StatefulWidget {
 class _MenusState extends State<Menus> {
   bool _isExpanded = false;
 
-  final List<Map<String, String>> _mainCategories = [
-    {'title': 'Tenaga Kerja', 'icon': 'assets_v2/icons/tenaga_kerja.png', 'route': '/ketenagakerjaan'},
-    {'title': 'IPM', 'icon': 'assets_v2/icons/IPM.png', 'route': '/ipm'},
-    {'title': 'Perekonomian', 'icon': 'assets_v2/icons/perekonomian.png', 'route': '/ekonomi'},
-    {'title': 'Kemiskinan', 'icon': 'assets_v2/icons/kemiskinan.png', 'route': '/kemiskinan'},
+  final List<Map<String, String>> _allCategories = [
+    {'key': 'tenaga_kerja', 'title': 'Tenaga Kerja', 'icon': 'assets_v2/icons/tenaga_kerja.png', 'route': '/ketenagakerjaan'},
+    {'key': 'ipm', 'title': 'IPM', 'icon': 'assets_v2/icons/IPM.png', 'route': '/ipm'},
+    {'key': 'perekonomian', 'title': 'Perekonomian', 'icon': 'assets_v2/icons/perekonomian.png', 'route': '/ekonomi'},
+    {'key': 'kemiskinan', 'title': 'Kemiskinan', 'icon': 'assets_v2/icons/kemiskinan.png', 'route': '/kemiskinan'},
+    {'key': 'kependudukan', 'title': 'Kependudukan', 'icon': 'assets_v2/icons/kependudukan.png', 'route': '/kependudukan'},
+    {'key': 'pertanian', 'title': 'Pertanian', 'icon': 'assets_v2/icons/pertanian.png', 'route': '/pertanian'},
+    {'key': 'kesejahteraan', 'title': 'Kesejahteraan', 'icon': 'assets_v2/icons/kesejahteraan.png', 'route': '/kesejahteraan'},
   ];
 
-  final List<Map<String, String>> _extraCategories = [
-    {'title': 'Kependudukan', 'icon': 'assets_v2/icons/kependudukan.png', 'route': '/kependudukan'},
-    {'title': 'Pertanian', 'icon': 'assets_v2/icons/pertanian.png', 'route': '/pertanian'},
-    {'title': 'Kesejahteraan', 'icon': 'assets_v2/icons/kesejahteraan.png', 'route': '/kesejahteraan'},
-  ];
+  List<Map<String, String>> _mainCategories = [];
+  List<Map<String, String>> _extraCategories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Default order first
+    _mainCategories = _allCategories.take(4).toList();
+    _extraCategories = _allCategories.skip(4).toList();
+    _loadDynamicOrder();
+  }
+
+  Future<void> _loadDynamicOrder() async {
+    try {
+      final sectorScores = await RecommendationService.getSectorScoresForDevice();
+      if (sectorScores.isEmpty) return;
+      
+      final sorted = List<Map<String, String>>.from(_allCategories);
+      sorted.sort((a, b) {
+        final scoreA = sectorScores[a['key']] ?? 0.0;
+        final scoreB = sectorScores[b['key']] ?? 0.0;
+        return scoreB.compareTo(scoreA);
+      });
+      
+      if (mounted) {
+        setState(() {
+          _mainCategories = sorted.take(4).toList();
+          _extraCategories = sorted.skip(4).toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading dynamic category order: $e');
+    }
+  }
 
   Widget _buildCategoryItem(Map<String, String> cat, bool isDark) {
     return GestureDetector(

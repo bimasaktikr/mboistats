@@ -89,6 +89,8 @@ class RecommendationService {
         return ['ipm'];
       case 'Pertanian':
         return ['pertanian', 'perekonomian'];
+      case 'Umum':
+        return [];
       default:
         return [];
     }
@@ -109,6 +111,26 @@ class RecommendationService {
     } catch (e) {
       print("Error fetching personalized recommendations: $e");
       return [];
+    }
+  }
+
+  /// Mengambil skor preferensi per sektor untuk perangkat ini.
+  /// Digunakan untuk mengurutkan 7 ikon kategori di beranda secara dinamis.
+  static Future<Map<String, double>> getSectorScoresForDevice() async {
+    try {
+      final deviceId = await LoggerService.getDeviceId();
+      final List<dynamic> response = await _client.rpc(
+        'get_sector_scores_for_device',
+        params: {'input_device_id': deviceId},
+      );
+      final map = <String, double>{};
+      for (var row in response) {
+        map[row['sector_name'] as String] = (row['score'] as num).toDouble();
+      }
+      return map;
+    } catch (e) {
+      print("Error fetching sector scores: $e");
+      return {};
     }
   }
 

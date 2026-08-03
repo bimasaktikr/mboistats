@@ -12,6 +12,7 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
+  String _userType = '';
 
   // State Pilihan
   String? _selectedMajor;
@@ -106,7 +107,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87, size: 20),
                 onPressed: () {
-                  _pageController.previousPage(
+                  int targetPage = _currentStep - 1;
+                  if (_userType == 'umum' && _currentStep == 2) {
+                    targetPage = 0;
+                  }
+                  _pageController.animateToPage(
+                    targetPage,
                     duration: const Duration(milliseconds: 350),
                     curve: Curves.easeInOut,
                   );
@@ -116,25 +122,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentStep == 0 ? blue1 : Colors.grey.shade300,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentStep == 1 ? blue1 : Colors.grey.shade300,
-              ),
-            ),
-          ],
+          children: List.generate(
+            _userType == 'mahasiswa' ? 3 : 2,
+            (index) {
+              int displayStep = _currentStep;
+              if (_userType != 'mahasiswa' && _currentStep == 2) {
+                displayStep = 1;
+              }
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: displayStep == index ? blue1 : Colors.grey.shade300,
+                ),
+              );
+            },
+          ),
         ),
         centerTitle: true,
       ),
@@ -149,10 +154,117 @@ class _OnboardingPageState extends State<OnboardingPage> {
               },
               physics: const NeverScrollableScrollPhysics(), // Mencegah geser manual tanpa memilih
               children: [
+                _buildUserTypeStep(),
                 _buildMajorStep(),
                 _buildSectorStep(),
               ],
             ),
+    );
+  }
+
+  // Slide 0: Tipe Pengguna
+  Widget _buildUserTypeStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Selamat Datang di Mboisstats+",
+            style: bold18.copyWith(color: dark1, fontSize: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Pilih tipe pengguna Anda untuk mempersonalisasi pengalaman Mboisstats+.",
+            style: regular14.copyWith(color: dark3),
+          ),
+          const SizedBox(height: 24),
+          _buildUserTypeCard(
+            type: 'umum',
+            title: 'Umum',
+            icon: Icons.public,
+            desc: 'Saya masyarakat umum yang ingin mengakses data statistik',
+          ),
+          const SizedBox(height: 16),
+          _buildUserTypeCard(
+            type: 'mahasiswa',
+            title: 'Mahasiswa',
+            icon: Icons.school,
+            desc: 'Saya mahasiswa yang membutuhkan data untuk penelitian',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserTypeCard({
+    required String type,
+    required String title,
+    required IconData icon,
+    required String desc,
+  }) {
+    final isSelected = _userType == type;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _userType = type;
+        });
+        if (type == 'umum') {
+          setState(() {
+            _selectedMajor = 'Umum';
+            _selectedSectors.clear();
+          });
+          Future.delayed(const Duration(milliseconds: 300), () {
+            _pageController.animateToPage(
+              2, // Skip jurusan, jump to sector
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+            );
+          });
+        } else {
+          Future.delayed(const Duration(milliseconds: 300), () {
+            _pageController.nextPage(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+            );
+          });
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isSelected ? blue1.withOpacity(0.05) : Colors.white,
+          border: Border.all(
+            color: isSelected ? blue1 : Colors.grey.shade200,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 40, color: isSelected ? blue1 : dark3),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: bold16.copyWith(color: isSelected ? blue1 : dark1),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    desc,
+                    style: regular14.copyWith(color: dark3),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -164,7 +276,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Selamat Datang di Mboisstats+",
+            "Pilih Jurusan Anda",
             style: bold18.copyWith(color: dark1, fontSize: 24),
           ),
           const SizedBox(height: 8),
@@ -235,10 +347,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Sektor di bawah telah kami tandai berdasarkan jurusan Anda. Anda bebas menambah atau menghilangkannya.",
+                  _userType == 'umum'
+                      ? "Pilih sektor statistik yang Anda minati. Minimum 2 pilihan."
+                      : "Sektor di bawah telah kami tandai berdasarkan jurusan Anda. Anda bebas menambah atau menghilangkannya.",
                   style: regular14.copyWith(color: dark3),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                Text(
+                  "Pilih minimal 2 sektor yang diminati",
+                  style: regular12_5.copyWith(color: blue1, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 16),
                 ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -315,7 +434,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
                 elevation: 0,
               ),
-              onPressed: _selectedSectors.isEmpty ? null : _submitOnboarding,
+              onPressed: _selectedSectors.length < 2 ? null : _submitOnboarding,
               child: Text(
                 "Selesai & Masuk Aplikasi",
                 style: bold16.copyWith(color: Colors.white),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
@@ -65,10 +66,11 @@ class _DataPageState extends State<DataPage> {
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
         if (mounted) {
           setState(() {
-            _brsItems = list.take(3).toList();
+            _brsItems = list;
             _loadingBrs = false;
           });
         }
+        _syncItemsToContents(list, 'view_pdf');
       }
     } catch (_) {
       if (mounted) setState(() => _loadingBrs = false);
@@ -85,10 +87,11 @@ class _DataPageState extends State<DataPage> {
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
         if (mounted) {
           setState(() {
-            _infografisItems = list.take(3).toList();
+            _infografisItems = list;
             _loadingInfografis = false;
           });
         }
+        _syncItemsToContents(list, 'view_pdf');
       }
     } catch (_) {
       if (mounted) setState(() => _loadingInfografis = false);
@@ -105,21 +108,77 @@ class _DataPageState extends State<DataPage> {
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
         if (mounted) {
           setState(() {
-            _publikasiItems = list.take(3).toList();
+            _publikasiItems = list;
             _loadingPublikasi = false;
           });
         }
+        _syncItemsToContents(list, 'view_pdf');
       }
     } catch (_) {
       if (mounted) setState(() => _loadingPublikasi = false);
     }
   }
 
-  List<Map<String, String>> get _filteredCategories {
-    if (_searchQuery.isEmpty) return _categories;
-    return _categories
-        .where((cat) => cat['title']!.toLowerCase().contains(_searchQuery))
-        .toList();
+  Future<void> _syncItemsToContents(List<Map<String, dynamic>> items, String actionType) async {
+    try {
+      final client = Supabase.instance.client;
+      for (var item in items.take(15)) {
+        final title = (item['title'] ?? item['judul'] ?? '').toString();
+        if (title.isEmpty) continue;
+        final cover = (item['thumbnail'] ?? item['img'] ?? item['cover'] ?? '').toString();
+        final content = (item['pdf'] ?? item['img'] ?? item['dl'] ?? '').toString();
+
+        final text = title.toLowerCase();
+        final sectors = <String>[];
+        if (text.contains('inflasi') || text.contains('pdrb') || text.contains('ekonomi') || text.contains('hotel') || text.contains('penghunian') || text.contains('tpk')) {
+          sectors.add('perekonomian');
+        }
+        if (text.contains('kemiskinan')) sectors.add('kemiskinan');
+        if (text.contains('kerja') || text.contains('pengangguran') || text.contains('tpt')) sectors.add('tenaga_kerja');
+        if (text.contains('ipm') || text.contains('sekolah') || text.contains('hidup')) sectors.add('ipm');
+        if (text.contains('penduduk') || text.contains('kecamatan')) sectors.add('kependudukan');
+        if (text.contains('panen') || text.contains('padi') || text.contains('beras')) sectors.add('pertanian');
+        if (text.contains('pengeluaran') || text.contains('kesejahteraan') || text.contains('gini')) sectors.add('kesejahteraan');
+        if (sectors.isEmpty) sectors.add('perekonomian');
+
+        await client.from('contents').upsert({
+          'item_name': title,
+          'sector_categories': sectors,
+          'action_type': actionType,
+          'cover_url': cover,
+          'content_url': content,
+        }, onConflict: 'item_name');
+      }
+    } catch (e) {
+      print("Background sync to contents error: $e");
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredBrsItems {
+    final query = _searchQuery.trim();
+    if (query.isEmpty) return _brsItems.take(3).toList();
+    return _brsItems.where((item) {
+      final title = (item['title'] ?? item['judul'] ?? '').toString().toLowerCase();
+      return title.contains(query);
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> get _filteredInfografisItems {
+    final query = _searchQuery.trim();
+    if (query.isEmpty) return _infografisItems.take(3).toList();
+    return _infografisItems.where((item) {
+      final title = (item['title'] ?? item['judul'] ?? '').toString().toLowerCase();
+      return title.contains(query);
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> get _filteredPublikasiItems {
+    final query = _searchQuery.trim();
+    if (query.isEmpty) return _publikasiItems.take(3).toList();
+    return _publikasiItems.where((item) {
+      final title = (item['title'] ?? item['judul'] ?? '').toString().toLowerCase();
+      return title.contains(query);
+    }).toList();
   }
 
   @override
@@ -156,17 +215,29 @@ class _DataPageState extends State<DataPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
-                    const Icon(Icons.search, color: blueNormal),
+                    GestureDetector(
+                      onTap: () {
+                        if (_searchController.text.trim().isNotEmpty) {
+                          Navigator.pushNamed(context, '/search', arguments: _searchController.text.trim());
+                        }
+                      },
+                      child: const Icon(Icons.search, color: blueNormal),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         controller: _searchController,
                         style: pjsRegular14.copyWith(color: isDark ? Colors.white : dark1),
                         decoration: InputDecoration(
-                          hintText: 'Cari data statistik, indikator, atau sektor...',
+                          hintText: 'Cari BRS, Publikasi, Infografis...',
                           hintStyle: pjsRegular14.copyWith(color: dark3),
                           border: InputBorder.none,
                         ),
+                        onSubmitted: (query) {
+                          if (query.trim().isNotEmpty) {
+                            Navigator.pushNamed(context, '/search', arguments: query.trim());
+                          }
+                        },
                       ),
                     ),
                     if (_searchController.text.isNotEmpty)
@@ -198,47 +269,31 @@ class _DataPageState extends State<DataPage> {
                     ),
                   ],
                 ),
-                child: _searchQuery.isNotEmpty
-                    ? GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _filteredCategories.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 0.80,
-                        ),
-                        itemBuilder: (context, index) {
-                          final cat = _filteredCategories[index];
-                          return _buildCategoryGridTile(context, cat, isDark);
-                        },
-                      )
-                    : Column(
-                        children: [
-                          // Row 1: 4 items
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: _categories
-                                .take(4)
-                                .map((cat) => _buildCategoryGridTile(context, cat, isDark))
-                                .toList(),
-                          ),
-                          const SizedBox(height: 16),
-                          // Row 2: 3 items (centered)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              const SizedBox(width: 20),
-                              ..._categories
-                                  .skip(4)
-                                  .map((cat) => _buildCategoryGridTile(context, cat, isDark))
-                                  .toList(),
-                              const SizedBox(width: 20),
-                            ],
-                          ),
-                        ],
-                      ),
+                child: Column(
+                  children: [
+                    // Row 1: 4 items
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: _categories
+                          .take(4)
+                          .map((cat) => _buildCategoryGridTile(context, cat, isDark))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    // Row 2: 3 items (centered)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        const SizedBox(width: 20),
+                        ..._categories
+                            .skip(4)
+                            .map((cat) => _buildCategoryGridTile(context, cat, isDark))
+                            .toList(),
+                        const SizedBox(width: 20),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -379,7 +434,15 @@ class _DataPageState extends State<DataPage> {
       );
     }
 
-    if (_brsItems.isEmpty) {
+    final items = _filteredBrsItems;
+
+    if (items.isEmpty) {
+      if (_searchQuery.isNotEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Text('Tidak ada BRS yang cocok dengan "$_searchQuery"', style: pjsRegular12.copyWith(color: dark3)),
+        );
+      }
       return _buildFallbackCards('BRS', () => Navigator.pushNamed(context, '/berita'));
     }
 
@@ -387,9 +450,9 @@ class _DataPageState extends State<DataPage> {
       height: 165,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _brsItems.length,
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          final item = _brsItems[index];
+          final item = items[index];
           final title = item['title'] ?? 'BRS Item';
           final thumbnail = item['thumbnail'] ?? '';
           return Container(
@@ -471,7 +534,15 @@ class _DataPageState extends State<DataPage> {
       );
     }
 
-    if (_infografisItems.isEmpty) {
+    final items = _filteredInfografisItems;
+
+    if (items.isEmpty) {
+      if (_searchQuery.isNotEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Text('Tidak ada Infografis yang cocok dengan "$_searchQuery"', style: pjsRegular12.copyWith(color: dark3)),
+        );
+      }
       return _buildFallbackCards('Infografis', () => Navigator.pushNamed(context, '/infografis_full'));
     }
 
@@ -479,9 +550,9 @@ class _DataPageState extends State<DataPage> {
       height: 165,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _infografisItems.length,
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          final item = _infografisItems[index];
+          final item = items[index];
           final title = item['title'] ?? 'Infografis Item';
           final imgUrl = item['img'] ?? '';
           return Container(
@@ -510,7 +581,7 @@ class _DataPageState extends State<DataPage> {
                     coverUrl: imgUrl,
                     contentUrl: imgUrl,
                   );
-                  Navigator.pushNamed(context, '/image_viewer', arguments: imgUrl);
+                  Navigator.pushNamed(context, '/image_viewer', arguments: {'imageUrl': imgUrl, 'title': title});
                 } else {
                   Navigator.pushNamed(context, '/infografis_full');
                 }
@@ -558,7 +629,15 @@ class _DataPageState extends State<DataPage> {
       );
     }
 
-    if (_publikasiItems.isEmpty) {
+    final items = _filteredPublikasiItems;
+
+    if (items.isEmpty) {
+      if (_searchQuery.isNotEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Text('Tidak ada Publikasi yang cocok dengan "$_searchQuery"', style: pjsRegular12.copyWith(color: dark3)),
+        );
+      }
       return _buildFallbackCards('Publikasi', () => Navigator.pushNamed(context, '/publikasi_full'));
     }
 
@@ -566,9 +645,9 @@ class _DataPageState extends State<DataPage> {
       height: 165,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _publikasiItems.length,
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          final item = _publikasiItems[index];
+          final item = items[index];
           final title = item['title'] ?? 'Publikasi Item';
           final coverUrl = item['cover'] ?? '';
           final pdfUrl = item['pdf'] ?? '';

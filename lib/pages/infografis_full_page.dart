@@ -141,7 +141,7 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
                               Navigator.pushNamed(
                                 context,
                                 '/image_viewer',
-                                arguments: imageUrl,
+                                arguments: {'imageUrl': imageUrl, 'title': title},
                               );
                             }
                           },

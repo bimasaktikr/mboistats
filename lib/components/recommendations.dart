@@ -27,32 +27,11 @@ class _RecommendationSectionState extends State<RecommendationSection> {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 4.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Rekomendasi Sektoral Untuk Anda',
-                style: pjsBold16.copyWith(
-                  color: isDark ? Colors.white : dark1,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.blue.shade200, width: 0.5),
-                ),
-                child: Text(
-                  'BETA',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade700,
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            'Rekomendasi Sektoral Untuk Anda',
+            style: pjsBold16.copyWith(
+              color: isDark ? Colors.white : dark1,
+            ),
           ),
         ),
         FutureBuilder<List<RecommendedItem>>(
@@ -109,7 +88,7 @@ class _RecommendationSectionState extends State<RecommendationSection> {
                             contentUrl.toLowerCase().contains('.png') ||
                             contentUrl.toLowerCase().contains('.jpeg') ||
                             item.route == '/infografis') {
-                          Navigator.of(context).pushNamed('/image_viewer', arguments: contentUrl);
+                          Navigator.of(context).pushNamed('/image_viewer', arguments: {'imageUrl': contentUrl, 'title': item.title});
                         } else {
                           Navigator.of(context).pushNamed(item.route);
                         }

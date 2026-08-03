@@ -146,7 +146,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
                             },
                           );
                         } else if (contentUrl.toLowerCase().contains('.jpg') || contentUrl.toLowerCase().contains('.png') || contentUrl.toLowerCase().contains('.jpeg') || sector.toLowerCase() == 'infografis') {
-                          Navigator.of(context).pushNamed('/image_viewer', arguments: contentUrl);
+                          Navigator.of(context).pushNamed('/image_viewer', arguments: {'imageUrl': contentUrl, 'title': title});
                         } else {
                           Navigator.of(context).pushNamed(targetRoute);
                         }

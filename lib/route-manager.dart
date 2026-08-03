@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:mboistats/components/global_pdf_viewer.dart';
+import 'package:mboistats/components/global_image_viewer.dart';
 import 'package:mboistats/pages/brs_pages.dart';
 import 'package:mboistats/pages/contact.dart';
 import 'package:mboistats/pages/ekonomi/ekonomi_pages.dart';
@@ -56,6 +57,7 @@ import 'package:mboistats/pages/edit_profil_page.dart';
 import 'package:mboistats/pages/login_page.dart';
 import 'package:mboistats/pages/infografis_full_page.dart';
 import 'package:mboistats/pages/publikasi_full_page.dart';
+import 'package:mboistats/pages/search_page.dart';
 
 class RouteManager {
   static Map<String, Widget Function(BuildContext)> routes = {
@@ -84,15 +86,16 @@ class RouteManager {
       return const Scaffold(body: Center(child: Text('Invalid Arguments')));
     },
     '/image_viewer': (context) {
-      final imageUrl = ModalRoute.of(context)!.settings.arguments as String;
-      return Scaffold(
-        appBar: AppBar(title: const Text('Visualisasi Infografis')),
-        body: Center(
-          child: InteractiveViewer(
-            child: Image.network(imageUrl),
-          ),
-        ),
-      );
+      final args = ModalRoute.of(context)!.settings.arguments;
+      if (args is Map) {
+        return GlobalImageViewer(
+          imageUrl: args['imageUrl']?.toString() ?? '',
+          title: args['title']?.toString() ?? 'Infografis',
+        );
+      } else if (args is String) {
+        return GlobalImageViewer(imageUrl: args);
+      }
+      return const Scaffold(body: Center(child: Text('Invalid Arguments')));
     },
     '/berita': (context) => BeritaPages(),
     '/infografis': (context) => InfografisPages(),
@@ -108,6 +111,10 @@ class RouteManager {
     '/ketenagakerjaan': (context) => KetenagakerjaanPages(),
     '/pertanian': (context) => PertanianPages(),
     '/more': (context) => MorePages(),
+    '/search': (context) {
+      final query = ModalRoute.of(context)!.settings.arguments as String;
+      return SearchPage(initialQuery: query);
+    },
 
     //IPM
     '/PendudukBekerja': (context) => IndexPembangunanManusiaPage(),
