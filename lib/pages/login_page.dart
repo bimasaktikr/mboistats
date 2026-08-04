@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -170,7 +171,9 @@ class _LoginPageState extends State<LoginPage> {
 
                             await GoogleSignIn.instance.initialize(
                               serverClientId: webClientId,
-                              clientId: iosClientId,
+                              clientId: defaultTargetPlatform == TargetPlatform.iOS
+                                  ? iosClientId
+                                  : null,
                             );
 
                             final googleUser =
@@ -190,6 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                                 .signInWithIdToken(
                               provider: OAuthProvider.google,
                               idToken: idToken,
+                              nonce: '',
                             );
                             // Redirection ditangani oleh onAuthStateChange di atas
                           } catch (e) {

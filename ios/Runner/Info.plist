@@ -58,6 +58,8 @@
 			<key>NSAllowsArbitraryLoadsInWebContent</key>
 			<true/>
 		</dict>
+		<key>GIDClientID</key>
+		<string>514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
@@ -66,8 +68,15 @@
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>com.googleusercontent.apps.514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15</string>
+					<string>io.supabase.mboistats</string>
 				</array>
 			</dict>
+		</array>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>https</string>
+			<string>http</string>
+			<string>io.supabase.mboistats</string>
 		</array>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Aplikasi memerlukan akses galeri untuk menyimpan gambar infografis.</string>
