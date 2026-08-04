@@ -193,18 +193,28 @@ class _LoginPageState extends State<LoginPage> {
                                 .signInWithIdToken(
                               provider: OAuthProvider.google,
                               idToken: idToken,
-                              nonce: '',
                             );
                             // Redirection ditangani oleh onAuthStateChange di atas
                           } catch (e) {
-                            print('ERROR LOGIN GOOGLE: $e');
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Gagal masuk: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
+                            print('ERROR NATIVE LOGIN GOOGLE: $e. Mencoba fallback Supabase OAuth...');
+                            try {
+                              await Supabase.instance.client.auth.signInWithOAuth(
+                                OAuthProvider.google,
+                                redirectTo: kIsWeb
+                                    ? null
+                                    : 'io.supabase.mboistats://login-callback',
+                                authScreenLaunchMode: LaunchMode.externalApplication,
                               );
+                            } catch (oauthErr) {
+                              print('ERROR OAUTH FALLBACK: $oauthErr');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Gagal masuk: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             }
                           }
                         },
