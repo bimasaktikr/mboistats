@@ -62,7 +62,8 @@ class _HomePageState extends State<HomePage> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: blueNormal),
                   ),
-                  child: const Text('Tidak', style: TextStyle(color: blueNormal)),
+                  child:
+                      const Text('Tidak', style: TextStyle(color: blueNormal)),
                 ),
               ),
               const SizedBox(width: 16),

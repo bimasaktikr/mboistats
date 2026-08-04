@@ -165,9 +165,12 @@ class _LoginPageState extends State<LoginPage> {
                             // Web Client ID dari Google Cloud Console
                             const webClientId =
                                 '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
+                            const iosClientId =
+                                '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
 
                             await GoogleSignIn.instance.initialize(
                               serverClientId: webClientId,
+                              clientId: iosClientId,
                             );
 
                             final googleUser =
