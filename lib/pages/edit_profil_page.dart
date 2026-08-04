@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditProfilPage extends StatefulWidget {
   const EditProfilPage({Key? key}) : super(key: key);
@@ -11,21 +12,78 @@ class EditProfilPage extends StatefulWidget {
 }
 
 class _EditProfilPageState extends State<EditProfilPage> {
-  final TextEditingController _firstNameController =
-      TextEditingController(text: 'Jennie');
-  final TextEditingController _lastNameController =
-      TextEditingController(text: 'Klavsky');
-  final TextEditingController _emailController =
-      TextEditingController(text: 'jennie.klavsky@gmail.com');
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  
+  bool _isLoading = true;
+  String? _avatarUrl;
 
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     LoggerService.logActivity(
       actionType: 'view_page',
       sectorCategory: 'profil',
       itemName: 'Halaman Edit Profil',
     );
+  }
+
+  void _loadUserData() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      _emailController.text = user.email ?? '';
+      
+      final fullName = user.userMetadata?['full_name'] as String? ?? '';
+      final nameParts = fullName.split(' ');
+      
+      if (nameParts.isNotEmpty) {
+        _firstNameController.text = nameParts.first;
+        if (nameParts.length > 1) {
+          _lastNameController.text = nameParts.sublist(1).join(' ');
+        }
+      }
+      
+      _avatarUrl = user.userMetadata?['avatar_url'] as String?;
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _saveProfile() async {
+    final newFirstName = _firstNameController.text.trim();
+    final newLastName = _lastNameController.text.trim();
+    final fullName = '$newFirstName $newLastName'.trim();
+    
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(
+          data: {'full_name': fullName},
+        ),
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil berhasil diperbarui!'),
+            backgroundColor: blueNormal,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui profil: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -61,7 +119,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: _isLoading 
+            ? const Center(child: CircularProgressIndicator(color: blueNormal))
+            : SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,14 +140,19 @@ class _EditProfilPageState extends State<EditProfilPage> {
                             : const Color(0xFFE2F3FC),
                         border: Border.all(color: blueNormal, width: 2),
                       ),
-                      child: const CircleAvatar(
-                        backgroundColor: Colors.transparent,
-                        child: Icon(
-                          Icons.person_rounded,
-                          size: 64,
-                          color: blueNormal,
-                        ),
-                      ),
+                      child: _avatarUrl != null
+                          ? CircleAvatar(
+                              backgroundImage: NetworkImage(_avatarUrl!),
+                              backgroundColor: Colors.transparent,
+                            )
+                          : const CircleAvatar(
+                              backgroundColor: Colors.transparent,
+                              child: Icon(
+                                Icons.person_rounded,
+                                size: 64,
+                                color: blueNormal,
+                              ),
+                            ),
                     ),
                     Positioned(
                       bottom: 2,
@@ -136,6 +201,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                 label: 'Email',
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                readOnly: true, // Email sebaiknya tidak diubah secara langsung jika menggunakan SSO
               ),
 
               const SizedBox(height: 36),
@@ -151,14 +217,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                       sectorCategory: 'profil',
                       itemName: 'Simpan Profil',
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profil berhasil diperbarui!'),
-                        backgroundColor: blueNormal,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                    Navigator.pop(context);
+                    _saveProfile();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: blueNormal,
@@ -186,6 +245,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
     required String label,
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -202,12 +262,13 @@ class _EditProfilPageState extends State<EditProfilPage> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          readOnly: readOnly,
           style: pjsRegular14.copyWith(
-            color: isDark ? Colors.white : dark1,
+            color: readOnly ? (isDark ? Colors.white54 : Colors.grey) : (isDark ? Colors.white : dark1),
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            fillColor: readOnly ? (isDark ? const Color(0xFF2A2A2A) : Colors.grey[200]) : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(

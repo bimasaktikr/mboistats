@@ -84,6 +84,9 @@ class _ProfilPageState extends State<ProfilPage> {
                 itemName: 'Logout Akun',
               );
               try {
+                const webClientId = '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
+                const iosClientId = '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
+                await GoogleSignIn.instance.initialize(serverClientId: webClientId, clientId: iosClientId);
                 await GoogleSignIn.instance.signOut();
                 await Supabase.instance.client.auth.signOut();
               } catch (e) {
@@ -132,6 +135,9 @@ class _ProfilPageState extends State<ProfilPage> {
                 itemName: 'Hapus Akun',
               );
               try {
+                const webClientId = '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
+                const iosClientId = '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
+                await GoogleSignIn.instance.initialize(serverClientId: webClientId, clientId: iosClientId);
                 await RecommendationService.deleteProfile();
                 await GoogleSignIn.instance.signOut();
                 await Supabase.instance.client.auth.signOut();
