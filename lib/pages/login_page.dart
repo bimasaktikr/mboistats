@@ -27,6 +27,13 @@ class _LoginPageState extends State<LoginPage> {
     Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final AuthChangeEvent event = data.event;
       if (event == AuthChangeEvent.signedIn) {
+        final currentUser = Supabase.instance.client.auth.currentUser;
+        LoggerService.logActivity(
+          actionType: 'login_success',
+          sectorCategory: 'auth',
+          itemName: 'Login Google Sukses',
+          userId: currentUser?.email ?? currentUser?.id,
+        );
         final hasProfile = await RecommendationService.checkProfileExists();
         if (mounted) {
           if (hasProfile) {
