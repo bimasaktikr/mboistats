@@ -136,11 +136,11 @@ class RecommendationService {
   // 4. Panggil RPC Supabase untuk mendapatkan Konten Terpersonalisasi
   static Future<List<Map<String, dynamic>>> getPersonalizedRecommendations({int limit = 6}) async {
     try {
-      final deviceId = await LoggerService.getDeviceId();
+      final profileId = await _getProfileIdentifier();
       final List<dynamic> response = await _client.rpc(
         'get_personalized_recommendations_by_device',
         params: {
-          'input_device_id': deviceId,
+          'input_device_id': profileId,
           'rec_limit': limit,
         },
       );
@@ -151,14 +151,14 @@ class RecommendationService {
     }
   }
 
-  /// Mengambil skor preferensi per sektor untuk perangkat ini.
+  /// Mengambil skor preferensi per sektor untuk akun/perangkat ini.
   /// Digunakan untuk mengurutkan 7 ikon kategori di beranda secara dinamis.
   static Future<Map<String, double>> getSectorScoresForDevice() async {
     try {
-      final deviceId = await LoggerService.getDeviceId();
+      final profileId = await _getProfileIdentifier();
       final List<dynamic> response = await _client.rpc(
         'get_sector_scores_for_device',
-        params: {'input_device_id': deviceId},
+        params: {'input_device_id': profileId},
       );
       final map = <String, double>{};
       for (var row in response) {
@@ -278,14 +278,14 @@ class RecommendationService {
   // 5. Ambil data aktivitas Terakhir Dilihat (Recently Viewed)
   static Future<List<Map<String, dynamic>>> getRecentlyViewed({int limit = 5}) async {
     try {
-      final deviceId = await LoggerService.getDeviceId();
+      final profileId = await _getProfileIdentifier();
       final List<dynamic> response = await _client
           .from('activity_logs')
           .select('item_name, sector_category, created_at, action_type, cover_url, content_url')
-          .eq('device_id', deviceId)
+          .or('user_id.eq.$profileId,device_id.eq.$profileId')
           .inFilter('action_type', ['view_pdf', 'download_file'])
           .order('created_at', ascending: false)
-          .limit(limit * 3); // Ambil lebih banyak untuk de-duplikasi
+          .limit(limit * 3); // Ambil lebih banyak untuk de-duplikasi // Ambil lebih banyak untuk de-duplikasi
 
       // De-duplikasi nama item konten dalam memori
       final seen = <String>{};
