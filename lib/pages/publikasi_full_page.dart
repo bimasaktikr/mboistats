@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:mboistats/services/recommendation_service.dart';
 import 'dart:convert';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/services/logger_service.dart';
@@ -55,9 +56,11 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
           if (publikasi.isEmpty) {
             setState(() => _hasMore = false);
           } else {
+            final list = List<Map<String, dynamic>>.from(publikasi);
+            RecommendationService.syncContentItems(list, 'view_pdf');
             setState(() {
               _currentPage++;
-              _dataPublikasi.addAll(List<Map<String, dynamic>>.from(publikasi));
+              _dataPublikasi.addAll(list);
             });
           }
         } else {

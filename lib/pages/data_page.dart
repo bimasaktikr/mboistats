@@ -120,38 +120,7 @@ class _DataPageState extends State<DataPage> {
   }
 
   Future<void> _syncItemsToContents(List<Map<String, dynamic>> items, String actionType) async {
-    try {
-      final client = Supabase.instance.client;
-      for (var item in items.take(15)) {
-        final title = (item['title'] ?? item['judul'] ?? '').toString();
-        if (title.isEmpty) continue;
-        final cover = (item['thumbnail'] ?? item['img'] ?? item['cover'] ?? '').toString();
-        final content = (item['pdf'] ?? item['img'] ?? item['dl'] ?? '').toString();
-
-        final text = title.toLowerCase();
-        final sectors = <String>[];
-        if (text.contains('inflasi') || text.contains('pdrb') || text.contains('ekonomi') || text.contains('hotel') || text.contains('penghunian') || text.contains('tpk')) {
-          sectors.add('perekonomian');
-        }
-        if (text.contains('kemiskinan')) sectors.add('kemiskinan');
-        if (text.contains('kerja') || text.contains('pengangguran') || text.contains('tpt')) sectors.add('tenaga_kerja');
-        if (text.contains('ipm') || text.contains('sekolah') || text.contains('hidup')) sectors.add('ipm');
-        if (text.contains('penduduk') || text.contains('kecamatan')) sectors.add('kependudukan');
-        if (text.contains('panen') || text.contains('padi') || text.contains('beras')) sectors.add('pertanian');
-        if (text.contains('pengeluaran') || text.contains('kesejahteraan') || text.contains('gini')) sectors.add('kesejahteraan');
-        if (sectors.isEmpty) sectors.add('perekonomian');
-
-        await client.from('contents').upsert({
-          'item_name': title,
-          'sector_categories': sectors,
-          'action_type': actionType,
-          'cover_url': cover,
-          'content_url': content,
-        }, onConflict: 'item_name');
-      }
-    } catch (e) {
-      print("Background sync to contents error: $e");
-    }
+    RecommendationService.syncContentItems(items, actionType);
   }
 
   List<Map<String, dynamic>> get _filteredBrsItems {

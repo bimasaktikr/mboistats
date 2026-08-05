@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:mboistats/services/recommendation_service.dart';
 import 'dart:convert';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/services/logger_service.dart';
@@ -55,9 +56,11 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
           if (infografis.isEmpty) {
             setState(() => _hasMore = false);
           } else {
+            final list = List<Map<String, dynamic>>.from(infografis);
+            RecommendationService.syncContentItems(list, 'download_file');
             setState(() {
               _currentPage++;
-              _dataInfografis.addAll(List<Map<String, dynamic>>.from(infografis));
+              _dataInfografis.addAll(list);
             });
           }
         } else {

@@ -14,6 +14,7 @@ import 'package:html_unescape/html_unescape.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:mboistats/services/logger_service.dart';
+import 'package:mboistats/services/recommendation_service.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -61,6 +62,7 @@ class _BeritaPageState extends State<BeritaPages> {
     if (response.statusCode == 200) {
       final parsedResponse = json.decode(response.body);
       final brs = List<Map<String, dynamic>>.from(parsedResponse["data"][1]);
+      RecommendationService.syncContentItems(brs, 'view_pdf');
 
       setState(() {
         if (brs.isNotEmpty) {
