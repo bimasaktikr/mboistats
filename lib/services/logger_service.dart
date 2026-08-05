@@ -68,10 +68,12 @@ class LoggerService {
   }) async {
     final deviceId = await getDeviceId();
     final platformName = Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'unknown');
-    final activeUserId = userId ?? Supabase.instance.client.auth.currentUser?.id;
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final activeUserId = userId ?? currentUser?.id;
+    final accountIdentifier = currentUser?.email ?? activeUserId ?? "Anonymous";
 
     // Selalu cetak log lokal untuk keperluan debugging pengembang
-    print('Activity Logged -> Platform: $platformName | Device: $deviceId | Sektor: $sectorCategory | Item: $itemName | Aksi: $actionType | User ID (SSO): ${activeUserId ?? "Anonymous"} | Cover: $coverUrl | Content: $contentUrl');
+    print('Activity Logged -> Platform: $platformName | Account: $accountIdentifier | Device: $deviceId | Sektor: $sectorCategory | Item: $itemName | Aksi: $actionType | Cover: $coverUrl | Content: $contentUrl');
 
     if (!_isInitialized) {
       return;
