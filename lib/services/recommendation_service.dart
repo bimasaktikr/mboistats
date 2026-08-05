@@ -22,11 +22,11 @@ class RecommendedItem {
 class RecommendationService {
   static final SupabaseClient _client = Supabase.instance.client;
 
-  // Mendapatkan identifier yang unik: Gunakan User ID jika login, jika tidak gunakan Device ID
+  // Mendapatkan identifier yang unik: Gunakan User Email / User ID jika login, jika tidak gunakan Device ID
   static Future<String> _getProfileIdentifier() async {
     final user = _client.auth.currentUser;
     if (user != null) {
-      return user.id;
+      return user.email ?? user.id;
     }
     return await LoggerService.getDeviceId();
   }
@@ -279,20 +279,33 @@ class RecommendationService {
   static Future<List<Map<String, dynamic>>> getRecentlyViewed({int limit = 5}) async {
     try {
       final profileId = await _getProfileIdentifier();
+      final deviceId = await LoggerService.getDeviceId();
+      final user = _client.auth.currentUser;
+      final userId = user?.id;
+      final userEmail = user?.email;
+
+      final filterOr = [
+        'user_id.eq.$profileId',
+        if (userEmail != null) 'user_id.eq.$userEmail',
+        if (userId != null) 'user_id.eq.$userId',
+        'device_id.eq.$deviceId',
+      ].join(',');
+
       final List<dynamic> response = await _client
           .from('activity_logs')
           .select('item_name, sector_category, created_at, action_type, cover_url, content_url')
-          .or('user_id.eq.$profileId,device_id.eq.$profileId')
-          .inFilter('action_type', ['view_pdf', 'download_file'])
+          .or(filterOr)
+          .inFilter('action_type', ['view_pdf', 'download_file', 'view_page'])
+          .not('item_name', 'in', '("Halaman Login","Halaman Profil","Masuk dengan Google","Login Google Sukses","Temukan BRS lainnya","Temukan Infografis lainnya","Temukan Publikasi lainnya")')
           .order('created_at', ascending: false)
-          .limit(limit * 3); // Ambil lebih banyak untuk de-duplikasi // Ambil lebih banyak untuk de-duplikasi
+          .limit(limit * 4);
 
       // De-duplikasi nama item konten dalam memori
       final seen = <String>{};
       final uniqueList = <Map<String, dynamic>>[];
       for (var item in response) {
         final name = item['item_name'] as String?;
-        if (name != null && !seen.contains(name)) {
+        if (name != null && name.isNotEmpty && !seen.contains(name)) {
           seen.add(name);
           uniqueList.add(Map<String, dynamic>.from(item));
         }
