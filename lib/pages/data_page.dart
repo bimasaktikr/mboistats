@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/services/logger_service.dart';
+import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/theme.dart';
 
 class DataPage extends StatefulWidget {
