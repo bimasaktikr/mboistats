@@ -28,6 +28,15 @@ class _DataPageState extends State<DataPage> {
 
   String _searchQuery = '';
 
+  final List<Map<String, String>> _categories = const [
+    {'title': 'Tenaga Kerja', 'icon': 'assets_v2/icons/tenaga_kerja.png', 'route': '/ketenagakerjaan'},
+    {'title': 'IPM', 'icon': 'assets_v2/icons/IPM.png', 'route': '/ipm'},
+    {'title': 'Perekonomian', 'icon': 'assets_v2/icons/perekonomian.png', 'route': '/ekonomi'},
+    {'title': 'Kemiskinan', 'icon': 'assets_v2/icons/kemiskinan.png', 'route': '/kemiskinan'},
+    {'title': 'Kependudukan', 'icon': 'assets_v2/icons/kependudukan.png', 'route': '/kependudukan'},
+    {'title': 'Pertanian', 'icon': 'assets_v2/icons/pertanian.png', 'route': '/pertanian'},
+    {'title': 'Kesejahteraan', 'icon': 'assets_v2/icons/kesejahteraan.png', 'route': '/kesejahteraan'},
+  ];
 
   @override
   void initState() {
@@ -218,7 +227,45 @@ class _DataPageState extends State<DataPage> {
                 style: pjsBold16.copyWith(color: isDark ? Colors.white : dark1),
               ),
               const SizedBox(height: 12),
-              const Menus(padding: EdgeInsets.zero),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Row 1: 4 items
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: _categories
+                          .take(4)
+                          .map((cat) => _buildCategoryGridTile(context, cat, isDark))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    // Row 2: 3 items (centered)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        const SizedBox(width: 16),
+                        ..._categories
+                            .skip(4)
+                            .map((cat) => _buildCategoryGridTile(context, cat, isDark))
+                            .toList(),
+                        const SizedBox(width: 16),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // BRS Section
@@ -282,6 +329,51 @@ class _DataPageState extends State<DataPage> {
     );
   }
 
+
+  Widget _buildCategoryGridTile(BuildContext context, Map<String, String> cat, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        LoggerService.logActivity(
+          actionType: 'view_page',
+          sectorCategory: cat['title']!,
+          itemName: cat['title']!,
+        );
+        Navigator.pushNamed(context, cat['route']!);
+      },
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              cat['icon']!,
+              width: 36,
+              height: 36,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.category, color: blueNormal, size: 36),
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  cat['title']!,
+                  style: pjsMedium12.copyWith(
+                    color: isDark ? Colors.white : dark2,
+                    fontSize: 11.5,
+                  ),
+                  maxLines: 1,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildSectionHeader({
     required BuildContext context,
