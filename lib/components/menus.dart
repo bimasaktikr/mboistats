@@ -79,29 +79,33 @@ class _MenusState extends State<Menus> {
         });
       },
       child: SizedBox(
-        width: 68,
+        width: 72,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               cat['icon']!,
-              width: 33,
-              height: 33,
+              width: 36,
+              height: 36,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.category, color: blueNormal, size: 33),
+                  const Icon(Icons.category, color: blueNormal, size: 36),
             ),
             const SizedBox(height: 4),
-            Text(
-              cat['title']!,
-              style: pjsMedium12.copyWith(
-                color: isDark ? Colors.white : dark2,
-                fontSize: 11,
-                height: 1.15,
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  cat['title']!,
+                  style: pjsMedium12.copyWith(
+                    color: isDark ? Colors.white : dark2,
+                    fontSize: 11.5,
+                  ),
+                  maxLines: 1,
+                ),
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
