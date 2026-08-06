@@ -137,7 +137,7 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
                             if (pdfUrl.isNotEmpty) {
                               LoggerService.logActivity(
                                 actionType: 'view_pdf',
-                                sectorCategory: 'publikasi',
+                                sectorCategory: LoggerService.classifySector(title),
                                 itemName: title,
                                 coverUrl: coverUrl,
                                 contentUrl: pdfUrl,

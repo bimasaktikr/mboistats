@@ -446,7 +446,7 @@ class _DataPageState extends State<DataPage> {
                 final pdfUrl = item['pdf'] as String? ?? '';
                 LoggerService.logActivity(
                   actionType: 'view_pdf',
-                  sectorCategory: 'berita',
+                  sectorCategory: LoggerService.classifySector(title),
                   itemName: title,
                   coverUrl: thumbnail,
                   contentUrl: pdfUrl,
@@ -546,7 +546,7 @@ class _DataPageState extends State<DataPage> {
                 if (imgUrl.isNotEmpty) {
                   LoggerService.logActivity(
                     actionType: 'view_pdf',
-                    sectorCategory: 'infografis',
+                    sectorCategory: LoggerService.classifySector(title),
                     itemName: title,
                     coverUrl: imgUrl,
                     contentUrl: imgUrl,
@@ -642,7 +642,7 @@ class _DataPageState extends State<DataPage> {
                 if (pdfUrl.isNotEmpty) {
                   LoggerService.logActivity(
                     actionType: 'view_pdf',
-                    sectorCategory: 'publikasi',
+                    sectorCategory: LoggerService.classifySector(title),
                     itemName: title,
                     coverUrl: coverUrl,
                     contentUrl: pdfUrl,

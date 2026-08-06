@@ -71,7 +71,7 @@ class Contact extends StatelessWidget {
                       crossAxisCount: 2,
                       mainAxisSpacing: 14,
                       crossAxisSpacing: 14,
-                      childAspectRatio: 1.05,
+                      childAspectRatio: 0.85,
                       children: [
                         _buildContactCard(
                           context: context,
@@ -175,7 +175,7 @@ class Contact extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -192,22 +192,22 @@ class Contact extends StatelessWidget {
           children: [
             Image.asset(
               icon,
-              width: 48,
-              height: 48,
+              width: 40,
+              height: 40,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.contact_phone, color: blueNormal, size: 44),
+                  const Icon(Icons.contact_phone, color: blueNormal, size: 36),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               title,
               style: pjsBold14.copyWith(color: isDark ? Colors.white : dark1),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: pjsRegular12.copyWith(color: isDark ? Colors.white70 : dark2),
             ),

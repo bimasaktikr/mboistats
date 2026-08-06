@@ -136,7 +136,7 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
                             if (imageUrl.isNotEmpty) {
                               LoggerService.logActivity(
                                 actionType: 'view_pdf',
-                                sectorCategory: 'infografis',
+                                sectorCategory: LoggerService.classifySector(title),
                                 itemName: title,
                                 coverUrl: imageUrl,
                                 contentUrl: imageUrl,

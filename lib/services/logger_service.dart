@@ -95,4 +95,20 @@ class LoggerService {
       print('Failed to sync log to Supabase: $error');
     });
   }
+
+  /// Mengklasifikasikan sektor berdasarkan judul/nama item secara otomatis.
+  /// Digunakan agar log dari BRS/Infografis/Publikasi tercatat dengan sektor yang tepat.
+  static String classifySector(String title) {
+    final text = title.toLowerCase();
+    if (text.contains('inflasi') || text.contains('pdrb') || text.contains('ekonomi') || text.contains('hotel') || text.contains('penghunian') || text.contains('tpk')) {
+      return 'PEREKONOMIAN';
+    }
+    if (text.contains('kemiskinan')) return 'KEMISKINAN';
+    if (text.contains('kerja') || text.contains('pengangguran') || text.contains('tpt')) return 'KETENAGAKERJAAN';
+    if (text.contains('ipm') || text.contains('sekolah') || text.contains('hidup')) return 'IPM';
+    if (text.contains('penduduk') || text.contains('kecamatan')) return 'KEPENDUDUKAN';
+    if (text.contains('panen') || text.contains('padi') || text.contains('beras') || text.contains('pertanian')) return 'PERTANIAN';
+    if (text.contains('pengeluaran') || text.contains('kesejahteraan') || text.contains('gini')) return 'KESEJAHTERAAN';
+    return 'BERITA';
+  }
 }

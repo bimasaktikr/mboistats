@@ -254,7 +254,7 @@ class _BeritaPageState extends State<BeritaPages> {
                     String fileName = dataBRS[index]["title"];
                     LoggerService.logActivity(
                       actionType: 'view_pdf',
-                      sectorCategory: 'berita',
+                      sectorCategory: LoggerService.classifySector(fileName),
                       itemName: fileName,
                       coverUrl: dataBRS[index]["thumbnail"],
                       contentUrl: pdfUrl,
@@ -296,7 +296,7 @@ class _BeritaPageState extends State<BeritaPages> {
 
           LoggerService.logActivity(
             actionType: 'download_file',
-            sectorCategory: 'berita',
+            sectorCategory: LoggerService.classifySector(fileName),
             itemName: fileName,
             coverUrl: coverUrl,
             contentUrl: pdfUrl,
@@ -365,7 +365,7 @@ class _BeritaPageState extends State<BeritaPages> {
             // Catat log aktivitas ke Supabase
             LoggerService.logActivity(
               actionType: 'download_file',
-              sectorCategory: 'berita',
+              sectorCategory: LoggerService.classifySector(fileName),
               itemName: fileName,
               coverUrl: coverUrl,
               contentUrl: pdfUrl,
