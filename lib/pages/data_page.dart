@@ -341,25 +341,25 @@ class _DataPageState extends State<DataPage> {
         Navigator.pushNamed(context, cat['route']!);
       },
       child: SizedBox(
-        width: 78,
+        width: 80,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               cat['icon']!,
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.category, color: blueNormal, size: 36),
+                  const Icon(Icons.category, color: blueNormal, size: 38),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             Text(
               cat['title']!,
               style: pjsMedium12.copyWith(
                 color: isDark ? Colors.white : dark2,
-                fontSize: 9.8,
-                letterSpacing: -0.2,
+                fontSize: 10.5,
+                letterSpacing: -0.1,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,

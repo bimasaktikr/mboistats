@@ -27,15 +27,17 @@ class _MenusState extends State<Menus> {
     {'key': 'kesejahteraan', 'title': 'Kesejahteraan', 'icon': 'assets_v2/icons/kesejahteraan.png', 'route': '/kesejahteraan'},
   ];
 
-  List<Map<String, String>> _mainCategories = [];
-  List<Map<String, String>> _extraCategories = [];
+  List<Map<String, String>> _row1Categories = [];
+  List<Map<String, String>> _row2Categories = [];
+  List<Map<String, String>> _row3Categories = [];
 
   @override
   void initState() {
     super.initState();
     // Default order first
-    _mainCategories = _allCategories.take(4).toList();
-    _extraCategories = _allCategories.skip(4).toList();
+    _row1Categories = _allCategories.take(3).toList();
+    _row2Categories = _allCategories.skip(3).take(3).toList();
+    _row3Categories = _allCategories.skip(6).take(1).toList();
     _loadDynamicOrder();
   }
 
@@ -53,8 +55,9 @@ class _MenusState extends State<Menus> {
       
       if (mounted) {
         setState(() {
-          _mainCategories = sorted.take(4).toList();
-          _extraCategories = sorted.skip(4).toList();
+          _row1Categories = sorted.take(3).toList();
+          _row2Categories = sorted.skip(3).take(3).toList();
+          _row3Categories = sorted.skip(6).take(1).toList();
         });
       }
     } catch (e) {
@@ -79,25 +82,24 @@ class _MenusState extends State<Menus> {
         });
       },
       child: SizedBox(
-        width: 78,
+        width: 92,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               cat['icon']!,
-              width: 36,
-              height: 36,
+              width: 44,
+              height: 44,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.category, color: blueNormal, size: 36),
+                  const Icon(Icons.category, color: blueNormal, size: 42),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               cat['title']!,
               style: pjsMedium12.copyWith(
                 color: isDark ? Colors.white : dark2,
-                fontSize: 9.8,
-                letterSpacing: -0.2,
+                fontSize: 11.5,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -127,31 +129,38 @@ class _MenusState extends State<Menus> {
             ),
           ],
         ),
-        padding: const EdgeInsets.only(top: 20.0, left: 4.0, right: 4.0, bottom: 8.0),
+        padding: const EdgeInsets.only(top: 20.0, left: 8.0, right: 8.0, bottom: 8.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Row 1: 4 items spaceEvenly
+            // Row 1: 3 items
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: _mainCategories
+              children: _row1Categories
                   .map((cat) => _buildCategoryItem(cat, isDark))
                   .toList(),
             ),
 
-            // Row 2: 3 items centered (shown when _isExpanded is true)
+            // Expanded content: Row 2 (3 items) and Row 3 (1 item left-aligned)
             if (_isExpanded) ...[
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  const SizedBox(width: 20),
-                  ..._extraCategories
-                      .map((cat) => _buildCategoryItem(cat, isDark))
-                      .toList(),
-                  const SizedBox(width: 20),
-                ],
+                children: _row2Categories
+                    .map((cat) => _buildCategoryItem(cat, isDark))
+                    .toList(),
               ),
+              if (_row3Categories.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildCategoryItem(_row3Categories.first, isDark),
+                    const SizedBox(width: 92),
+                    const SizedBox(width: 92),
+                  ],
+                ),
+              ],
             ],
 
             const SizedBox(height: 10),
