@@ -228,7 +228,7 @@ class _DataPageState extends State<DataPage> {
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 4.0),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -341,7 +341,7 @@ class _DataPageState extends State<DataPage> {
         Navigator.pushNamed(context, cat['route']!);
       },
       child: SizedBox(
-        width: 74,
+        width: 78,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -358,7 +358,8 @@ class _DataPageState extends State<DataPage> {
               cat['title']!,
               style: pjsMedium12.copyWith(
                 color: isDark ? Colors.white : dark2,
-                fontSize: 10.5,
+                fontSize: 9.8,
+                letterSpacing: -0.2,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,

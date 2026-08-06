@@ -79,7 +79,7 @@ class _MenusState extends State<Menus> {
         });
       },
       child: SizedBox(
-        width: 74,
+        width: 78,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -96,7 +96,8 @@ class _MenusState extends State<Menus> {
               cat['title']!,
               style: pjsMedium12.copyWith(
                 color: isDark ? Colors.white : dark2,
-                fontSize: 10.5,
+                fontSize: 9.8,
+                letterSpacing: -0.2,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -126,7 +127,7 @@ class _MenusState extends State<Menus> {
             ),
           ],
         ),
-        padding: const EdgeInsets.only(top: 20.0, left: 12.0, right: 12.0, bottom: 8.0),
+        padding: const EdgeInsets.only(top: 20.0, left: 4.0, right: 4.0, bottom: 8.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
