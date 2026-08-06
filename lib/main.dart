@@ -41,34 +41,33 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           theme: appThemeNotifier.currentTheme,
-          home: ConnectivityWrapper(
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: appThemeNotifier.currentTheme,
-              initialRoute: '/splash',
-              onGenerateRoute: (settings) {
-                final builder = RouteManager.routes[settings.name];
-                if (builder != null) {
-                  return PageRouteBuilder(
-                    settings: settings,
-                    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    transitionDuration: const Duration(milliseconds: 200),
+          initialRoute: '/splash',
+          onGenerateRoute: (settings) {
+            final builder = RouteManager.routes[settings.name];
+            if (builder != null) {
+              return PageRouteBuilder(
+                settings: settings,
+                pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
                   );
-                }
-                return null;
-              },
-              navigatorObservers: [
-                ActivityLoggingObserver(),
-                routeObserver,
-              ],
-            ),
-          ),
+                },
+                transitionDuration: const Duration(milliseconds: 200),
+              );
+            }
+            return null;
+          },
+          navigatorObservers: [
+            ActivityLoggingObserver(),
+            routeObserver,
+          ],
+          builder: (context, child) {
+            return ConnectivityWrapper(
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
         );
       },
     );
