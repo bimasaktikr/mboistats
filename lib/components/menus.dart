@@ -79,7 +79,7 @@ class _MenusState extends State<Menus> {
         });
       },
       child: SizedBox(
-        width: 72,
+        width: 74,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -92,20 +92,15 @@ class _MenusState extends State<Menus> {
                   const Icon(Icons.category, color: blueNormal, size: 36),
             ),
             const SizedBox(height: 4),
-            SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.center,
-                child: Text(
-                  cat['title']!,
-                  style: pjsMedium12.copyWith(
-                    color: isDark ? Colors.white : dark2,
-                    fontSize: 11.5,
-                  ),
-                  maxLines: 1,
-                ),
+            Text(
+              cat['title']!,
+              style: pjsMedium12.copyWith(
+                color: isDark ? Colors.white : dark2,
+                fontSize: 10.5,
               ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
             ),
           ],
         ),
