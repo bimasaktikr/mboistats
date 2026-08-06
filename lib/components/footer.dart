@@ -86,7 +86,7 @@ class _FooterState extends State<Footer> {
             ),
           ],
         ),
-        padding: const EdgeInsets.only(top: 6, bottom: 4),
+        padding: const EdgeInsets.only(top: 4, bottom: 2),
         child: SafeArea(
           top: false,
           child: BottomNavigationBar(
@@ -97,59 +97,59 @@ class _FooterState extends State<Footer> {
             backgroundColor: Colors.transparent,
             selectedItemColor: blueNormal,
             unselectedItemColor: const Color(0xFF8E8E93),
-            selectedFontSize: 13,
-            unselectedFontSize: 13,
+            selectedFontSize: 11,
+            unselectedFontSize: 11,
             selectedLabelStyle: pjsSemiBold14,
             unselectedLabelStyle: pjsMedium12,
             items: [
               BottomNavigationBarItem(
                 icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
+                  padding: const EdgeInsets.only(bottom: 2.0),
                   child: Image.asset(
                     _selectedIndex == 0
                         ? 'assets_v2/navbar/beranda_on.png'
                         : 'assets_v2/navbar/beranda_off.png',
-                    width: 28,
-                    height: 28,
+                    width: 22,
+                    height: 22,
                   ),
                 ),
                 label: 'Beranda',
               ),
               BottomNavigationBarItem(
                 icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
+                  padding: const EdgeInsets.only(bottom: 2.0),
                   child: Image.asset(
                     _selectedIndex == 1
                         ? 'assets_v2/navbar/data_on.png'
                         : 'assets_v2/navbar/data_off.png',
-                    width: 28,
-                    height: 28,
+                    width: 22,
+                    height: 22,
                   ),
                 ),
                 label: 'Data',
               ),
               BottomNavigationBarItem(
                 icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
+                  padding: const EdgeInsets.only(bottom: 2.0),
                   child: Image.asset(
                     _selectedIndex == 2
                         ? 'assets_v2/navbar/kontak_on.png'
                         : 'assets_v2/navbar/kontak_off.png',
-                    width: 28,
-                    height: 28,
+                    width: 22,
+                    height: 22,
                   ),
                 ),
                 label: 'Kontak',
               ),
               BottomNavigationBarItem(
                 icon: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
+                  padding: const EdgeInsets.only(bottom: 2.0),
                   child: Image.asset(
                     _selectedIndex == 3
                         ? 'assets_v2/navbar/profil_on.png'
                         : 'assets_v2/navbar/profil_off.png',
-                    width: 28,
-                    height: 28,
+                    width: 22,
+                    height: 22,
                   ),
                 ),
                 label: 'Profil',

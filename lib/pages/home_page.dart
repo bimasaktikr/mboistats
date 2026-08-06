@@ -161,11 +161,11 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Menus(),
+                      Menus(),
                       const SizedBox(height: 12),
-                      const RecommendationSection(),
+                      RecommendationSection(),
                       const SizedBox(height: 8),
-                      const RecentlyViewedSection(),
+                      RecentlyViewedSection(),
                       const SizedBox(height: 10),
                     ],
                   ),

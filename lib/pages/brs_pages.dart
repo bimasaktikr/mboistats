@@ -231,14 +231,14 @@ class _BeritaPageState extends State<BeritaPages> {
             ),
           ),
           actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text("Tutup"),
                 ),
-                const SizedBox(width: 16), // space between buttons
                 TextButton(
                   onPressed: () async {
                     Navigator.pop(context);
@@ -247,7 +247,6 @@ class _BeritaPageState extends State<BeritaPages> {
                   },
                   child: const Text("Unduh"),
                 ),
-                const SizedBox(width: 16), // space between buttons
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);

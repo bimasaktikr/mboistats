@@ -58,6 +58,10 @@ class _MenusState extends State<Menus> {
     }
   }
 
+  void refreshCategories() {
+    _loadDynamicOrder();
+  }
+
   Widget _buildCategoryItem(Map<String, String> cat, bool isDark) {
     return GestureDetector(
       onTap: () {
@@ -66,22 +70,24 @@ class _MenusState extends State<Menus> {
           sectorCategory: cat['title']!,
           itemName: cat['title']!,
         );
-        Navigator.pushNamed(context, cat['route']!);
+        Navigator.pushNamed(context, cat['route']!).then((_) {
+          _loadDynamicOrder();
+        });
       },
       child: SizedBox(
-        width: 72,
+        width: 58,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               cat['icon']!,
-              width: 52,
-              height: 52,
+              width: 42,
+              height: 42,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.category, color: blueNormal, size: 44),
+                  const Icon(Icons.category, color: blueNormal, size: 35),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               cat['title']!,
               style: pjsMedium12.copyWith(

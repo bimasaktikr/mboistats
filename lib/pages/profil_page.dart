@@ -274,7 +274,9 @@ class _ProfilPageState extends State<ProfilPage> {
                         sectorCategory: 'profil',
                         itemName: 'Edit Profil',
                       );
-                      Navigator.pushNamed(context, '/edit_profil');
+                      Navigator.pushNamed(context, '/edit_profil').then((_) {
+                        _loadProfileData();
+                      });
                     },
                   ),
                   _buildMenuCard(
