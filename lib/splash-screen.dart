@@ -29,8 +29,9 @@ class _SplashScreenState extends State<SplashScreen>
           if (session == null) {
             Navigator.pushReplacementNamed(context, '/login');
           } else {
-            // Cek apakah perangkat sudah menyelesaikan onboarding sebelumnya
-            final hasProfile = await RecommendationService.checkProfileExists();
+            // Cek apakah perangkat sudah menyelesaikan onboarding sebelumnya (dengan timeout 1.5 detik)
+            final hasProfile = await RecommendationService.checkProfileExists()
+                .timeout(const Duration(milliseconds: 1500), onTimeout: () => true);
             
             if (hasProfile) {
               Navigator.pushReplacementNamed(context, '/main');
@@ -43,7 +44,7 @@ class _SplashScreenState extends State<SplashScreen>
     });
 
     controller = AnimationController(
-      duration: Duration(seconds: 1),
+      duration: const Duration(seconds: 1),
       vsync: this,
     );
 
@@ -58,7 +59,10 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFF1F7BA4),
       body: Center(
         child: Stack(
           alignment: Alignment.center,

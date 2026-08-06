@@ -133,6 +133,10 @@ class RecommendationService {
     }
   }
 
+  static List<Map<String, dynamic>>? _cachedRecommendations;
+  static Map<String, double>? _cachedSectorScores;
+  static List<Map<String, dynamic>>? _cachedRecentlyViewed;
+
   // 4. Panggil RPC Supabase untuk mendapatkan Konten Terpersonalisasi
   static Future<List<Map<String, dynamic>>> getPersonalizedRecommendations({int limit = 6}) async {
     try {
@@ -143,11 +147,15 @@ class RecommendationService {
           'input_device_id': profileId,
           'rec_limit': limit,
         },
-      );
-      return List<Map<String, dynamic>>.from(response);
+      ).timeout(const Duration(milliseconds: 2500));
+      final result = List<Map<String, dynamic>>.from(response);
+      if (result.isNotEmpty) {
+        _cachedRecommendations = result;
+      }
+      return result.isNotEmpty ? result : (_cachedRecommendations ?? []);
     } catch (e) {
       print("Error fetching personalized recommendations: $e");
-      return [];
+      return _cachedRecommendations ?? [];
     }
   }
 
@@ -159,15 +167,18 @@ class RecommendationService {
       final List<dynamic> response = await _client.rpc(
         'get_sector_scores_for_device',
         params: {'input_device_id': profileId},
-      );
+      ).timeout(const Duration(milliseconds: 2500));
       final map = <String, double>{};
       for (var row in response) {
         map[row['sector_name'] as String] = (row['score'] as num).toDouble();
       }
-      return map;
+      if (map.isNotEmpty) {
+        _cachedSectorScores = map;
+      }
+      return map.isNotEmpty ? map : (_cachedSectorScores ?? {});
     } catch (e) {
       print("Error fetching sector scores: $e");
-      return {};
+      return _cachedSectorScores ?? {};
     }
   }
 
@@ -298,7 +309,8 @@ class RecommendationService {
           .inFilter('action_type', ['view_pdf', 'download_file', 'view_page'])
           .not('item_name', 'in', '("Halaman Login","Halaman Profil","Halaman Edit Profil","Halaman Kontak Layanan","Logout Akun","Masuk dengan Google","Login Google Sukses","Temukan BRS lainnya","Temukan Infografis lainnya","Temukan Publikasi lainnya","Pertanian","Perekonomian","Tenaga Kerja","IPM","Kemiskinan","Kependudukan","Kesejahteraan")')
           .order('created_at', ascending: false)
-          .limit(limit * 4);
+          .limit(limit * 4)
+          .timeout(const Duration(milliseconds: 2500));
 
       // De-duplikasi nama item konten dalam memori
       final seen = <String>{};
@@ -311,10 +323,13 @@ class RecommendationService {
         }
         if (uniqueList.length >= limit) break;
       }
-      return uniqueList;
+      if (uniqueList.isNotEmpty) {
+        _cachedRecentlyViewed = uniqueList;
+      }
+      return uniqueList.isNotEmpty ? uniqueList : (_cachedRecentlyViewed ?? []);
     } catch (e) {
       print("Error fetching recently viewed: $e");
-      return [];
+      return _cachedRecentlyViewed ?? [];
     }
   }
 
