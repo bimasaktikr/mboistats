@@ -4,7 +4,11 @@ import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/theme.dart';
 
 class Menus extends StatefulWidget {
-  const Menus({Key? key}) : super(key: key);
+  final EdgeInsetsGeometry padding;
+  const Menus({
+    Key? key,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
+  }) : super(key: key);
 
   @override
   State<Menus> createState() => _MenusState();
@@ -75,26 +79,28 @@ class _MenusState extends State<Menus> {
         });
       },
       child: SizedBox(
-        width: 58,
+        width: 68,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               cat['icon']!,
-              width: 42,
-              height: 42,
+              width: 33,
+              height: 33,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.category, color: blueNormal, size: 35),
+                  const Icon(Icons.category, color: blueNormal, size: 33),
             ),
             const SizedBox(height: 4),
             Text(
               cat['title']!,
               style: pjsMedium12.copyWith(
                 color: isDark ? Colors.white : dark2,
+                fontSize: 11,
+                height: 1.15,
               ),
               textAlign: TextAlign.center,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -108,7 +114,7 @@ class _MenusState extends State<Menus> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: widget.padding,
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E1E) : Colors.white,

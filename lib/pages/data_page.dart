@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mboistats/components/footer.dart';
+import 'package:mboistats/components/menus.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/theme.dart';
@@ -27,15 +28,6 @@ class _DataPageState extends State<DataPage> {
 
   String _searchQuery = '';
 
-  final List<Map<String, String>> _categories = [
-    {'title': 'Tenaga Kerja', 'icon': 'assets_v2/icons/tenaga_kerja.png', 'route': '/ketenagakerjaan'},
-    {'title': 'IPM', 'icon': 'assets_v2/icons/IPM.png', 'route': '/ipm'},
-    {'title': 'Perekonomian', 'icon': 'assets_v2/icons/perekonomian.png', 'route': '/ekonomi'},
-    {'title': 'Kemiskinan', 'icon': 'assets_v2/icons/kemiskinan.png', 'route': '/kemiskinan'},
-    {'title': 'Kependudukan', 'icon': 'assets_v2/icons/kependudukan.png', 'route': '/kependudukan'},
-    {'title': 'Pertanian', 'icon': 'assets_v2/icons/pertanian.png', 'route': '/pertanian'},
-    {'title': 'Kesejahteraan', 'icon': 'assets_v2/icons/kesejahteraan.png', 'route': '/kesejahteraan'},
-  ];
 
   @override
   void initState() {
@@ -226,45 +218,7 @@ class _DataPageState extends State<DataPage> {
                 style: pjsBold16.copyWith(color: isDark ? Colors.white : dark1),
               ),
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.only(top: 20.0, left: 12.0, right: 12.0, bottom: 16.0),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Row 1: 4 items
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: _categories
-                          .take(4)
-                          .map((cat) => _buildCategoryGridTile(context, cat, isDark))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    // Row 2: 3 items (centered)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        const SizedBox(width: 20),
-                        ..._categories
-                            .skip(4)
-                            .map((cat) => _buildCategoryGridTile(context, cat, isDark))
-                            .toList(),
-                        const SizedBox(width: 20),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              const Menus(padding: EdgeInsets.zero),
               const SizedBox(height: 24),
 
               // BRS Section
@@ -328,44 +282,6 @@ class _DataPageState extends State<DataPage> {
     );
   }
 
-  Widget _buildCategoryGridTile(BuildContext context, Map<String, String> cat, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        LoggerService.logActivity(
-          actionType: 'view_page',
-          sectorCategory: cat['title']!,
-          itemName: cat['title']!,
-        );
-        Navigator.pushNamed(context, cat['route']!);
-      },
-      child: SizedBox(
-        width: 72,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              cat['icon']!,
-              width: 52,
-              height: 52,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.category, color: blueNormal, size: 44),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              cat['title']!,
-              style: pjsMedium12.copyWith(
-                color: isDark ? Colors.white : dark2,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildSectionHeader({
     required BuildContext context,
