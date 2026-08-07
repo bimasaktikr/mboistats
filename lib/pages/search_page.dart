@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
@@ -18,6 +19,7 @@ class _SearchPageState extends State<SearchPage> {
   List<Map<String, dynamic>> _results = [];
   bool _isLoading = true;
   String _currentQuery = '';
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -29,6 +31,7 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -214,6 +217,14 @@ class _SearchPageState extends State<SearchPage> {
           controller: _searchController,
           autofocus: false,
           onSubmitted: _performSearch,
+          onChanged: (text) {
+            if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+            _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+              if (text.trim().isNotEmpty && text.trim() != _currentQuery) {
+                _performSearch(text.trim());
+              }
+            });
+          },
           style: pjsRegular14.copyWith(color: isDark ? Colors.white : dark1),
           decoration: InputDecoration(
             hintText: 'Cari BRS, Publikasi, Infografis...',
