@@ -176,30 +176,30 @@ class _LoginPageState extends State<LoginPage> {
                             const iosClientId =
                                 '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
 
-                            await GoogleSignIn.instance.initialize(
+                            final googleSignIn = GoogleSignIn(
                               serverClientId: webClientId,
                               clientId: defaultTargetPlatform == TargetPlatform.iOS
                                   ? iosClientId
                                   : null,
                             );
 
-                            final googleUser =
-                                await GoogleSignIn.instance.authenticate();
+                            final googleUser = await googleSignIn.signIn();
                             if (googleUser == null) {
                               return; // User membatalkan login (tutup popup)
                             }
 
                             final googleAuth = await googleUser.authentication;
                             final idToken = googleAuth.idToken;
+                            final accessToken = googleAuth.accessToken;
 
                             if (idToken == null) {
                               throw 'Gagal mendapatkan ID token dari Google.';
                             }
 
-                            await Supabase.instance.client.auth
-                                .signInWithIdToken(
+                            await Supabase.instance.client.auth.signInWithIdToken(
                               provider: OAuthProvider.google,
                               idToken: idToken,
+                              accessToken: accessToken,
                             );
                             // Redirection ditangani oleh onAuthStateChange di atas
                           } catch (e) {

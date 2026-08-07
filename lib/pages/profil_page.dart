@@ -7,6 +7,7 @@ import 'package:mboistats/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mboistats/services/recommendation_service.dart';
+import 'package:mboistats/services/customer_api_service.dart';
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({Key? key}) : super(key: key);
@@ -44,9 +45,19 @@ class _ProfilPageState extends State<ProfilPage> {
       });
     }
     final major = await RecommendationService.getMajor();
+    
+    // Tarik data kustomer secara Real-Time dari API Endpoint
+    CustomerProfileData? customerApiData;
+    if (_userEmail.isNotEmpty) {
+      customerApiData = await CustomerApiService.getCustomerByEmail(_userEmail);
+    }
+
     if (mounted) {
       setState(() {
         _userMajor = major;
+        if (customerApiData != null && customerApiData.name != null) {
+          _userName = customerApiData.name!;
+        }
         _isLoadingProfile = false;
       });
     }
