@@ -94,8 +94,12 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.arrow_back,
-                        color: isDark ? blueLighter : blueHover),
+                    icon: Image.asset(
+                      'assets_v2/icons/back_arrow.png',
+                      width: 24,
+                      height: 24,
+                      color: isDark ? blueLighter : blueHover,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 4),

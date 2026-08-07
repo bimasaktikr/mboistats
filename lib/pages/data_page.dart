@@ -192,7 +192,12 @@ class _DataPageState extends State<DataPage> {
                           Navigator.pushNamed(context, '/search', arguments: _searchController.text.trim());
                         }
                       },
-                      child: const Icon(Icons.search, color: blueNormal),
+                      child: Image.asset(
+                        'assets_v2/icons/search_bar.png',
+                        width: 22,
+                        height: 22,
+                        color: blueNormal,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(

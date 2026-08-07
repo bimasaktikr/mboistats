@@ -202,7 +202,12 @@ class _SearchPageState extends State<SearchPage> {
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: isDark ? Colors.white : dark1, size: 20),
+          icon: Image.asset(
+            'assets_v2/icons/back_arrow.png',
+            width: 24,
+            height: 24,
+            color: isDark ? Colors.white : dark1,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: TextField(
@@ -218,7 +223,12 @@ class _SearchPageState extends State<SearchPage> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: isDark ? Colors.white70 : dark2),
+            icon: Image.asset(
+              'assets_v2/icons/search_bar.png',
+              width: 22,
+              height: 22,
+              color: isDark ? Colors.white70 : dark2,
+            ),
             onPressed: () => _performSearch(_searchController.text),
           ),
         ],

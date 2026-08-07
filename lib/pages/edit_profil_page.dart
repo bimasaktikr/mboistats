@@ -111,8 +111,10 @@ class _EditProfilPageState extends State<EditProfilPage> {
           ),
         ),
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
+          icon: Image.asset(
+            'assets_v2/icons/back_arrow.png',
+            width: 24,
+            height: 24,
             color: isDark ? Colors.white : dark1,
           ),
           onPressed: () => Navigator.pop(context),
