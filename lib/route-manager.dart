@@ -36,6 +36,7 @@ import 'package:mboistats/pages/kependudukan/kependudukan_lowokwaru.dart';
 import 'package:mboistats/pages/ekonomi/perekonomian_inflasi_bulanan.dart';
 import 'package:mboistats/pages/ekonomi/perekonomian_inflasi_tahunan.dart';
 import 'package:mboistats/pages/ekonomi/perekonomian_lpe.dart';
+import 'package:mboistats/pages/ekonomi/perekonomian_lpe_native.dart';
 import 'package:mboistats/pages/ekonomi/perekonomian_pdrb.dart';
 import 'package:mboistats/pages/kemiskinan/kemiskinan_garis.dart';
 import 'package:mboistats/pages/kemiskinan/kemiskinan_indeks_kedalaman.dart';
@@ -133,7 +134,7 @@ class RouteManager {
     '/PLowokwaru': (context) => PendudukLowokwaruPage(),
 
     //Ekonomi
-    '/LajuPertumbuhan': (context) => LajuPertumbuhan(),
+    '/LajuPertumbuhan': (context) => LajuPertumbuhanNative(), // Native Flutter (sebelumnya: LajuPertumbuhan via WebView)
     '/Ekonomi': (context) => EkonomiPages(),
     '/PDRB': (context) => PDRB(),
     '/InflasiTahunKalender': (context) => InflasiTahunanPage(),
