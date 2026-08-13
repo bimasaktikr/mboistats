@@ -84,6 +84,7 @@ class _ProfilPageState extends State<ProfilPage> {
                 itemName: 'Logout Akun',
               );
               try {
+                RecommendationService.clearLocalCache();
                 const webClientId = '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
                 const iosClientId = '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
                 await GoogleSignIn.instance.initialize(serverClientId: webClientId, clientId: iosClientId);
@@ -97,64 +98,6 @@ class _ProfilPageState extends State<ProfilPage> {
               }
             },
             child: const Text('Logout', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteAccountDialog() {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Hapus Akun', style: pjsBold18),
-        content: const Text(
-          'Apakah Anda yakin ingin menghapus akun? Tindakan ini tidak dapat dibatalkan.',
-          style: pjsRegular14,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal', style: pjsMedium14),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              LoggerService.logActivity(
-                actionType: 'delete_account',
-                sectorCategory: 'profil',
-                itemName: 'Hapus Akun',
-              );
-              try {
-                const webClientId = '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
-                const iosClientId = '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
-                await GoogleSignIn.instance.initialize(serverClientId: webClientId, clientId: iosClientId);
-                await RecommendationService.deleteProfile();
-                await GoogleSignIn.instance.signOut();
-                await Supabase.instance.client.auth.signOut();
-              } catch (e) {
-                print("Delete account error: $e");
-              }
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Permintaan hapus akun telah diproses.'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                navigator.pushNamedAndRemoveUntil('/login', (route) => false);
-              }
-            },
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -320,12 +263,6 @@ class _ProfilPageState extends State<ProfilPage> {
                     iconPath: 'assets_v2/icons/logout.png',
                     title: 'Logout',
                     onTap: _showLogoutDialog,
-                  ),
-                  _buildMenuCard(
-                    context: context,
-                    iconPath: 'assets_v2/icons/hapus_akun.png',
-                    title: 'Hapus Akun',
-                    onTap: _showDeleteAccountDialog,
                   ),
                   const SizedBox(height: 20),
                 ],

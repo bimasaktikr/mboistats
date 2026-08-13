@@ -50,7 +50,12 @@ class _MenusState extends State<Menus> {
       sorted.sort((a, b) {
         final scoreA = sectorScores[a['key']] ?? 0.0;
         final scoreB = sectorScores[b['key']] ?? 0.0;
-        return scoreB.compareTo(scoreA);
+        if (scoreB != scoreA) {
+          return scoreB.compareTo(scoreA);
+        }
+        final indexA = _allCategories.indexWhere((element) => element['key'] == a['key']);
+        final indexB = _allCategories.indexWhere((element) => element['key'] == b['key']);
+        return indexA.compareTo(indexB);
       });
       
       if (mounted) {

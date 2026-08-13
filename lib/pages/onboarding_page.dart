@@ -18,17 +18,25 @@ class _OnboardingPageState extends State<OnboardingPage> {
   String? _selectedMajor;
   final List<String> _selectedSectors = [];
   bool _isLoading = false;
+  String _majorSearchQuery = '';
 
-  // Daftar Jurusan
+  // Daftar Jurusan Komprehensif
   final List<String> _majors = [
-    'Teknik Informatika',
-    'Sistem Informasi',
-    'Teknik Sipil',
-    'Ekonomi',
-    'Akuntansi',
-    'Ilmu Komunikasi',
-    'Pendidikan',
-    'Pertanian',
+    'Teknik Informatika / Ilmu Komputer / Data Science',
+    'Sistem Informasi / Teknologi Informasi',
+    'Teknik Sipil / Perencanaan Wilayah & Kota (PWK)',
+    'Teknik Industri / Teknik Mesin / Teknik Elektro',
+    'Ekonomi Pembangunan / Ilmu Ekonomi',
+    'Manajemen / Bisnis / Kewirausahaan',
+    'Akuntansi / Keuangan',
+    'Statistika / Matematika / Sains Data',
+    'Hukum / Ilmu Administrasi Publik',
+    'Ilmu Komunikasi / Hubungan Internasional',
+    'Sosiologi / Psikologi / Antropologi',
+    'Pendidikan / Keguruan',
+    'Pertanian / Agribisnis / Kehutanan / Peternakan',
+    'Kedokteran / Kesehatan Masyarakat / Farmasi',
+    'Pariwisata / Perhotelan',
     'Lainnya'
   ];
 
@@ -270,6 +278,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   // Slide 1: Pemilihan Jurusan
   Widget _buildMajorStep() {
+    final filteredMajors = _majors
+        .where((m) => m.toLowerCase().contains(_majorSearchQuery.toLowerCase()))
+        .toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -284,48 +296,110 @@ class _OnboardingPageState extends State<OnboardingPage> {
             "Pilih latar belakang akademik Anda untuk memetakan visualisasi awal yang relevan.",
             style: regular14.copyWith(color: dark3),
           ),
-          const SizedBox(height: 24),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _majors.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final major = _majors[index];
-              final isSelected = _selectedMajor == major;
-              return InkWell(
-                onTap: () => _onMajorSelected(major),
-                borderRadius: BorderRadius.circular(12),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: isSelected ? blue1.withOpacity(0.05) : Colors.white,
-                    border: Border.all(
-                      color: isSelected ? blue1 : Colors.grey.shade200,
-                      width: isSelected ? 2 : 1,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        major,
-                        style: semibold14.copyWith(
-                          color: isSelected ? blue1 : dark1,
-                        ),
-                      ),
-                      if (isSelected)
-                        Icon(Icons.check_circle_rounded, color: blue1)
-                      else
-                        const Icon(Icons.circle_outlined, color: Colors.grey),
-                    ],
-                  ),
-                ),
-              );
+          const SizedBox(height: 16),
+
+          // Search Field untuk Jurusan
+          TextField(
+            onChanged: (val) {
+              setState(() {
+                _majorSearchQuery = val;
+              });
             },
+            decoration: InputDecoration(
+              hintText: 'Cari jurusan Anda (mis: Informatika, Ekonomi, Hukum)...',
+              hintStyle: regular14.copyWith(color: Colors.grey),
+              prefixIcon: const Icon(Icons.search, color: blue1, size: 22),
+              suffixIcon: _majorSearchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        setState(() {
+                          _majorSearchQuery = '';
+                        });
+                      },
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              filled: true,
+              fillColor: const Color(0xFFF7FDFF),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: blue1, width: 2),
+              ),
+            ),
           ),
+          const SizedBox(height: 16),
+
+          if (filteredMajors.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24.0),
+              child: Center(
+                child: Column(
+                  children: [
+                    const Icon(Icons.search_off_rounded, size: 48, color: Colors.grey),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Jurusan tidak ditemukan',
+                      style: semibold14.copyWith(color: dark2),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pilih opsi "Lainnya" jika jurusan Anda tidak ada pada daftar.',
+                      style: regular12_5.copyWith(color: dark3),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: filteredMajors.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final major = filteredMajors[index];
+                final isSelected = _selectedMajor == major;
+                return InkWell(
+                  onTap: () => _onMajorSelected(major),
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: isSelected ? blue1.withOpacity(0.05) : Colors.white,
+                      border: Border.all(
+                        color: isSelected ? blue1 : Colors.grey.shade200,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            major,
+                            style: semibold14.copyWith(
+                              color: isSelected ? blue1 : dark1,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(Icons.check_circle_rounded, color: blue1)
+                        else
+                          const Icon(Icons.circle_outlined, color: Colors.grey),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );

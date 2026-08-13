@@ -65,9 +65,16 @@ class RecommendationService {
       return null;
     }
   }
+  static void clearLocalCache() {
+    _cachedRecommendations = null;
+    _cachedSectorScores = null;
+    _cachedRecentlyViewed = null;
+  }
+
   // 2. Simpan atau perbarui profil perangkat (Jurusan & Sektor Pilihan)
   static Future<void> saveProfile(String major, List<String> onboardingSectors) async {
     try {
+      clearLocalCache();
       final profileId = await _getProfileIdentifier();
       await _client.from('device_profiles').upsert({
         'device_id': profileId,
@@ -82,6 +89,7 @@ class RecommendationService {
 
   static Future<void> deleteProfile() async {
     try {
+      clearLocalCache();
       final profileId = await _getProfileIdentifier();
       await _client.from('device_profiles').delete().eq('device_id', profileId);
       print("Device profile successfully deleted");
@@ -108,29 +116,43 @@ class RecommendationService {
     return getOfflineRelevantSectors(major);
   }
 
-  // Fallback pemetaan jurusan luring
+  // Fallback pemetaan jurusan luring dengan substring matching yang optimal
   static List<String> getOfflineRelevantSectors(String major) {
-    switch (major) {
-      case 'Teknik Informatika':
-      case 'Sistem Informasi':
-        return ['perekonomian', 'tenaga_kerja'];
-      case 'Teknik Sipil':
-        return ['perekonomian'];
-      case 'Ekonomi':
-        return ['perekonomian', 'kemiskinan'];
-      case 'Akuntansi':
-        return ['perekonomian', 'kesejahteraan'];
-      case 'Ilmu Komunikasi':
-        return ['kependudukan', 'kesejahteraan'];
-      case 'Pendidikan':
-        return ['ipm'];
-      case 'Pertanian':
-        return ['pertanian', 'perekonomian'];
-      case 'Umum':
-        return [];
-      default:
-        return [];
+    final m = major.toLowerCase();
+    if (m.contains('informatika') || m.contains('komputer') || m.contains('sistem informasi') || m.contains('teknologi')) {
+      return ['perekonomian', 'tenaga_kerja'];
     }
+    if (m.contains('statistika') || m.contains('matematika') || m.contains('sains data')) {
+      return ['perekonomian', 'ipm', 'kemiskinan'];
+    }
+    if (m.contains('ekonomi') || m.contains('manajemen') || m.contains('bisnis') || m.contains('keuangan')) {
+      return ['perekonomian', 'kemiskinan', 'kesejahteraan'];
+    }
+    if (m.contains('akuntansi')) {
+      return ['perekonomian', 'kesejahteraan'];
+    }
+    if (m.contains('sipil') || m.contains('pwk') || m.contains('perencanaan') || m.contains('industri')) {
+      return ['perekonomian', 'kependudukan'];
+    }
+    if (m.contains('hukum') || m.contains('komunikasi') || m.contains('sosiologi') || m.contains('psikologi') || m.contains('administrasi')) {
+      return ['kependudukan', 'kesejahteraan', 'kemiskinan'];
+    }
+    if (m.contains('pendidikan') || m.contains('keguruan')) {
+      return ['ipm', 'kesejahteraan'];
+    }
+    if (m.contains('pertanian') || m.contains('agribisnis') || m.contains('kehutanan') || m.contains('peternakan')) {
+      return ['pertanian', 'perekonomian'];
+    }
+    if (m.contains('kesehatan') || m.contains('kedokteran') || m.contains('farmasi')) {
+      return ['ipm', 'kesejahteraan'];
+    }
+    if (m.contains('pariwisata') || m.contains('perhotelan')) {
+      return ['perekonomian', 'kesejahteraan'];
+    }
+    if (m.contains('umum')) {
+      return [];
+    }
+    return ['perekonomian', 'kependudukan'];
   }
 
   static List<Map<String, dynamic>>? _cachedRecommendations;
@@ -326,7 +348,7 @@ class RecommendationService {
       if (uniqueList.isNotEmpty) {
         _cachedRecentlyViewed = uniqueList;
       }
-      return uniqueList.isNotEmpty ? uniqueList : (_cachedRecentlyViewed ?? []);
+      return uniqueList;
     } catch (e) {
       print("Error fetching recently viewed: $e");
       return _cachedRecentlyViewed ?? [];
