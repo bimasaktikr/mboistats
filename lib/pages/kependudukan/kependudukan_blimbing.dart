@@ -1,61 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:mboistats/main.dart';
-import 'package:webview_flutter_plus/webview_flutter_plus.dart';
+import 'package:mboistats/components/bps_native_data_page.dart';
 
-class PendudukBlimbingPage extends StatefulWidget {
+class PendudukBlimbingPage extends StatelessWidget {
   const PendudukBlimbingPage({Key? key}) : super(key: key);
-
-
-  @override
-  State<PendudukBlimbingPage> createState() => _PendudukBlimbingPageState();
-}
-
-class _PendudukBlimbingPageState extends State<PendudukBlimbingPage> {
-  WebViewControllerPlus controller = WebViewControllerPlus()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    ..setBackgroundColor(const Color(0x00000000))
-    ..setNavigationDelegate(
-      NavigationDelegate(
-        onProgress: (int progress) {
-          // Update loading bar.
-        },
-        onPageStarted: (String url) {},
-        onPageFinished: (String url) {},
-        onWebResourceError: (WebResourceError error) {},
-      ),
-    )
-    ..loadFlutterAssetWithServer('assets/web/kependudukan_blimbing.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kependudukan'),
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/left-arrow.png',
-            height: 25,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Background Image
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/back_kependudukan.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          // WebView
-          WebViewWidget(controller: controller),
-        ],
-      ),
+    return const BpsNativeDataPage(
+      title: 'Penduduk Blimbing',
+      varId: 55,
     );
   }
 }

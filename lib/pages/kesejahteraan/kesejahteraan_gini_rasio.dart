@@ -1,61 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:mboistats/main.dart';
-import 'package:webview_flutter_plus/webview_flutter_plus.dart';
+import 'package:mboistats/components/bps_native_data_page.dart';
 
-class GiniRasioPage extends StatefulWidget {
+class GiniRasioPage extends StatelessWidget {
   const GiniRasioPage({Key? key}) : super(key: key);
-
-
-  @override
-  State<GiniRasioPage> createState() => _GiniRasioPageState();
-}
-
-class _GiniRasioPageState extends State<GiniRasioPage> {
-  WebViewControllerPlus controller = WebViewControllerPlus()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    ..setBackgroundColor(const Color(0x00000000))
-    ..setNavigationDelegate(
-      NavigationDelegate(
-        onProgress: (int progress) {
-          // Update loading bar.
-        },
-        onPageStarted: (String url) {},
-        onPageFinished: (String url) {},
-        onWebResourceError: (WebResourceError error) {},
-      ),
-    )
-    ..loadFlutterAssetWithServer('assets/web/kesejahteraan_gini_rasio.html', localhostServer.port!);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gini Rasio'),
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/left-arrow.png',
-            height: 25,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Background Image
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/back_kesejahteraan.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          // WebView
-          WebViewWidget(controller: controller),
-        ],
-      ),
+    return const BpsNativeDataPage(
+      title: 'Gini Rasio',
+      varId: 426,
     );
   }
 }

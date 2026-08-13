@@ -118,11 +118,11 @@ class RouteManager {
     },
 
     //IPM
-    '/PendudukBekerja': (context) => IndexPembangunanManusiaPage(),
-    '/UsiaHarapanHidup': (context) => UsiaHarapanHidupPage(),
-    '/HarapanLamaSekolah': (context) => HarapanLamaSekolahPage(),
-    '/RataRataLamaSekolah': (context) => RataRataLamaSekolahPage(),
-    '/DayaBeli': (context) => DayaBeliPage(),
+    '/PendudukBekerja': (context) => const IPMPage(),
+    '/UsiaHarapanHidup': (context) => const UsiaHarapanHidupPage(),
+    '/HarapanLamaSekolah': (context) => const HarapanLamaSekolahPage(),
+    '/RataRataLamaSekolah': (context) => const RataRataLamaSekolahPage(),
+    '/DayaBeli': (context) => const DayaBeliPage(),
 
     //Kependudukan
     '/PendudukJK': (context) => KependudukanMenurutJKPage(),
@@ -134,27 +134,25 @@ class RouteManager {
     '/PLowokwaru': (context) => PendudukLowokwaruPage(),
 
     //Ekonomi
-    '/LajuPertumbuhan': (context) => LajuPertumbuhanNative(), // Native Flutter (sebelumnya: LajuPertumbuhan via WebView)
-    '/Ekonomi': (context) => EkonomiPages(),
-    '/PDRB': (context) => PDRB(),
-    '/InflasiTahunKalender': (context) => InflasiTahunanPage(),
-    '/InflasiBulanan': (context) => InflasiBulananPage(),
-    '/DeteksiDiniInflasi': (context) => DeteksiDiniInflasiPage(),
+    '/LajuPertumbuhan': (context) => const LajuPertumbuhan(),
+    '/Ekonomi': (context) => const EkonomiPages(),
+    '/PDRB': (context) => const PDRB(),
+    '/InflasiTahunKalender': (context) => const InflasiTahunanPage(),
+    '/InflasiBulanan': (context) => const InflasiBulananPage(),
+    '/DeteksiDiniInflasi': (context) => const DeteksiDiniInflasiPage(),
 
     //Kemiskinan
-    '/kemiskinan': (context) => KemiskinanPages(),
-    '/TingkatKemiskinan': (context) => TingkatKemiskinanPage(),
-    '/IndeksKedalamanKemiskinan': (context) => IndeksKedalamanKemiskinanPage(),
-    '/IndeksKeparahanKemiskinan': (context) => IndeksKeparahanKemiskinan(),
-    '/GarisKemiskinan': (context) => GarisKemiskinanPage(),
+    '/kemiskinan': (context) => const KemiskinanPages(),
+    '/TingkatKemiskinan': (context) => const TingkatKemiskinanPage(),
+    '/IndeksKedalamanKemiskinan': (context) => const IndeksKedalamanKemiskinanPage(),
+    '/IndeksKeparahanKemiskinan': (context) => const IndeksKeparahanKemiskinanPage(),
+    '/GarisKemiskinan': (context) => const GarisKemiskinanPage(),
 
     //Ketenagakerjaan
-    '/AKMenurutPendidikan': (context) => AngkatanKerjaMenurutPendidikanPage(),
-    '/PartisipasiAngkatanKerja': (context) =>
-        TingkatPartisipasiAngkatanKerjaPage(),
-    '/TingkatPengangguran': (context) =>
-        PersentasePengangguranMenurutPendidikanPage(),
-    '/PengangguranMenurutPendidikan': (context) => PengangguranMenurutPendidikan(),
+    '/AKMenurutPendidikan': (context) => const AKPendidikanPage(),
+    '/PartisipasiAngkatanKerja': (context) => const TPAKPage(),
+    '/TingkatPengangguran': (context) => const TPTPage(),
+    '/PengangguranMenurutPendidikan': (context) => const PenganggurPendidikanPage(),
 
     //Kesejahteraan
     '/GiniRasio': (context) => GiniRasioPage(),
