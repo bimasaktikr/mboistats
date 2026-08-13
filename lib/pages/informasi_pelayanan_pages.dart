@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class InformasiPelayananPages extends StatefulWidget {
+  const InformasiPelayananPages({Key? key}) : super(key: key);
+
   @override
   _InformasiPelayananPagesState createState() => _InformasiPelayananPagesState();
 }
