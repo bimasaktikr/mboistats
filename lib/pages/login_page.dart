@@ -27,6 +27,7 @@ class _LoginPageState extends State<LoginPage> {
     Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final AuthChangeEvent event = data.event;
       if (event == AuthChangeEvent.signedIn) {
+        RecommendationService.clearLocalCache();
         final currentUser = Supabase.instance.client.auth.currentUser;
         LoggerService.logActivity(
           actionType: 'login_success',

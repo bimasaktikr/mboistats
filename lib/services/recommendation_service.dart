@@ -258,9 +258,9 @@ class RecommendationService {
   }
 
   // Wrapper untuk dipanggil oleh widget visualisasi rekomendasi sektoral existing
-  static Future<List<RecommendedItem>> getSectorRecommendations({String? userId}) async {
+  static Future<List<RecommendedItem>> getSectorRecommendations({String? userId, int limit = 2}) async {
     try {
-      final list = await getPersonalizedRecommendations(limit: 5);
+      final list = await getPersonalizedRecommendations(limit: limit);
       if (list.isEmpty) {
         // Fallback default jika belum ada aktivitas
         return [
@@ -311,23 +311,32 @@ class RecommendationService {
   // 5. Ambil data aktivitas Terakhir Dilihat (Recently Viewed)
   static Future<List<Map<String, dynamic>>> getRecentlyViewed({int limit = 5}) async {
     try {
-      final profileId = await _getProfileIdentifier();
-      final deviceId = await LoggerService.getDeviceId();
       final user = _client.auth.currentUser;
-      final userId = user?.id;
       final userEmail = user?.email;
+      final userId = user?.id;
+      final deviceId = await LoggerService.getDeviceId();
 
-      final filterOr = [
-        'user_id.eq.$profileId',
-        if (userEmail != null) 'user_id.eq.$userEmail',
-        if (userId != null) 'user_id.eq.$userId',
-        'device_id.eq.$deviceId',
-      ].join(',');
+      // Filter terisolasi: Jika pengguna sudah login, HANYA filter berdasarkan user_id / email akun tersebut.
+      // Jangan sertakan device_id di dalam OR agar aktivitas antar-akun pada perangkat yang sama tidak saling tercampur!
+      final filterOr = <String>[];
+      if (userEmail != null && userEmail.isNotEmpty) {
+        filterOr.add('user_id.eq.$userEmail');
+      }
+      if (userId != null && userId.isNotEmpty) {
+        filterOr.add('user_id.eq.$userId');
+      }
+
+      // Jika belum login (Pengguna Anonim / Guest), baru gunakan device_id
+      if (filterOr.isEmpty) {
+        filterOr.add('device_id.eq.$deviceId');
+      }
+
+      final filterStr = filterOr.join(',');
 
       final List<dynamic> response = await _client
           .from('activity_logs')
           .select('item_name, sector_category, created_at, action_type, cover_url, content_url')
-          .or(filterOr)
+          .or(filterStr)
           .inFilter('action_type', ['view_pdf', 'download_file', 'view_page'])
           .not('item_name', 'in', '("Halaman Login","Halaman Profil","Halaman Edit Profil","Halaman Kontak Layanan","Logout Akun","Masuk dengan Google","Login Google Sukses","Temukan BRS lainnya","Temukan Infografis lainnya","Temukan Publikasi lainnya","Pertanian","Perekonomian","Tenaga Kerja","IPM","Kemiskinan","Kependudukan","Kesejahteraan")')
           .order('created_at', ascending: false)

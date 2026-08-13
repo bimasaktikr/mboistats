@@ -308,7 +308,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             decoration: InputDecoration(
               hintText: 'Cari jurusan Anda (mis: Informatika, Ekonomi, Hukum)...',
               hintStyle: regular14.copyWith(color: Colors.grey),
-              prefixIcon: const Icon(Icons.search, color: blue1, size: 22),
+              prefixIcon: const Icon(Icons.search, color: blueLight, size: 22),
               suffixIcon: _majorSearchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 18),
@@ -328,7 +328,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: blue1, width: 2),
+                borderSide: const BorderSide(color: blueLight, width: 2),
               ),
             ),
           ),

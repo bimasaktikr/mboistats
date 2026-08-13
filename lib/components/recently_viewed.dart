@@ -17,7 +17,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
   @override
   void initState() {
     super.initState();
-    _recentlyViewedFuture = RecommendationService.getRecentlyViewed(limit: 3);
+    _recentlyViewedFuture = RecommendationService.getRecentlyViewed(limit: 2);
   }
 
   @override
@@ -38,7 +38,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
   @override
   void didPopNext() {
     setState(() {
-      _recentlyViewedFuture = RecommendationService.getRecentlyViewed(limit: 3);
+      _recentlyViewedFuture = RecommendationService.getRecentlyViewed(limit: 2);
     });
   }
 
