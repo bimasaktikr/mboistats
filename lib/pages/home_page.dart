@@ -4,8 +4,11 @@ import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/components/menus.dart';
 import 'package:mboistats/components/recommendations.dart';
 import 'package:mboistats/components/recently_viewed.dart';
+import 'package:mboistats/services/youtube_service.dart';
 import 'package:mboistats/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -15,6 +18,42 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Map<String, dynamic>? _liveStream;
+  YoutubePlayerController? _youtubeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLiveStream();
+  }
+
+  @override
+  void dispose() {
+    _youtubeController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkLiveStream() async {
+    final live = await YouTubeService.getLiveStream();
+    if (mounted && live != null) {
+      final videoId = live['video_id'] as String? ?? '';
+      if (videoId.isNotEmpty) {
+        setState(() {
+          _liveStream = live;
+          _youtubeController = YoutubePlayerController(
+            initialVideoId: videoId,
+            flags: const YoutubePlayerFlags(
+              autoPlay: false,
+              mute: false,
+              showLiveFullscreenButton: true,
+              isLive: true,
+            ),
+          );
+        });
+      }
+    }
+  }
+
   String _getUserName() {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
@@ -22,7 +61,7 @@ class _HomePageState extends State<HomePage> {
       if (metadata != null && metadata.containsKey('full_name')) {
         final name = metadata['full_name'].toString();
         if (name.isNotEmpty) {
-          return name.split(' ').first; // Mengambil nama depan saja
+          return name.split(' ').first;
         }
       }
       return 'Pengguna';
@@ -83,6 +122,127 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     return shouldExit ?? false;
+  }
+
+  Widget _buildLiveYouTubeBanner(bool isDark) {
+    if (_liveStream == null || _youtubeController == null) {
+      return const SizedBox.shrink();
+    }
+
+    final title = _liveStream!['title'] ?? 'Siaran Pers BPS Kota Malang';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          // Container Player
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              children: [
+                YoutubePlayer(
+                  controller: _youtubeController!,
+                  showVideoProgressIndicator: true,
+                  progressIndicatorColor: Colors.red,
+                  progressColors: const ProgressBarColors(
+                    playedColor: Colors.red,
+                    handleColor: Colors.redAccent,
+                  ),
+                ),
+                // Badge LIVE
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'LIVE',
+                          style: pjsBold14.copyWith(
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Judul & Link YouTube
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: pjsSemiBold14.copyWith(
+                    color: isDark ? Colors.white : dark1,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () async {
+                  final videoId = _liveStream!['video_id'] ?? '';
+                  final url = Uri.parse('https://www.youtube.com/watch?v=$videoId');
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.open_in_new, size: 14, color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        'YouTube',
+                        style: pjsSemiBold12.copyWith(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -162,6 +322,8 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Menus(),
+                      // Live YouTube Banner (kondisional - hanya muncul saat live)
+                      _buildLiveYouTubeBanner(isDark),
                       const SizedBox(height: 12),
                       RecommendationSection(),
                       const SizedBox(height: 8),

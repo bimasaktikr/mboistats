@@ -59,6 +59,8 @@ import 'package:mboistats/pages/login_page.dart';
 import 'package:mboistats/pages/infografis_full_page.dart';
 import 'package:mboistats/pages/publikasi_full_page.dart';
 import 'package:mboistats/pages/search_page.dart';
+import 'package:mboistats/pages/youtube_archive_page.dart';
+import 'package:mboistats/pages/youtube_player_page.dart';
 
 class RouteManager {
   static Map<String, Widget Function(BuildContext)> routes = {
@@ -163,5 +165,15 @@ class RouteManager {
     '/ProduksiPadi': (context) => ProduksiPadiPage(),
     '/ProduktivitasPadi': (context) => ProduktivitasPadiPage(),
     '/ProduksiBeras': (context) => ProduksiBerasPage(),
+
+    //YouTube
+    '/youtube_archive': (context) => const YouTubeArchivePage(),
+    '/youtube_player': (context) {
+      final args = ModalRoute.of(context)!.settings.arguments as Map;
+      return YouTubePlayerPage(
+        videoId: args['videoId']?.toString() ?? '',
+        title: args['title']?.toString() ?? 'Live Youtube',
+      );
+    },
   };
 }

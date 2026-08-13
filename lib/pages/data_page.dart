@@ -6,6 +6,7 @@ import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/components/menus.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/services/recommendation_service.dart';
+import 'package:mboistats/services/youtube_service.dart';
 import 'package:mboistats/theme.dart';
 
 class DataPage extends StatefulWidget {
@@ -21,10 +22,12 @@ class _DataPageState extends State<DataPage> {
   List<Map<String, dynamic>> _brsItems = [];
   List<Map<String, dynamic>> _infografisItems = [];
   List<Map<String, dynamic>> _publikasiItems = [];
+  List<Map<String, dynamic>> _youtubeItems = [];
 
   bool _loadingBrs = true;
   bool _loadingInfografis = true;
   bool _loadingPublikasi = true;
+  bool _loadingYoutube = true;
 
   String _searchQuery = '';
 
@@ -44,6 +47,7 @@ class _DataPageState extends State<DataPage> {
     _fetchBrsData();
     _fetchInfografisData();
     _fetchPublikasiData();
+    _fetchYoutubeData();
 
     _searchController.addListener(() {
       setState(() {
@@ -118,6 +122,20 @@ class _DataPageState extends State<DataPage> {
       }
     } catch (_) {
       if (mounted) setState(() => _loadingPublikasi = false);
+    }
+  }
+
+  Future<void> _fetchYoutubeData() async {
+    try {
+      final items = await YouTubeService.getRecentStreams(limit: 3);
+      if (mounted) {
+        setState(() {
+          _youtubeItems = items;
+          _loadingYoutube = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingYoutube = false);
     }
   }
 
@@ -325,6 +343,24 @@ class _DataPageState extends State<DataPage> {
               ),
               const SizedBox(height: 12),
               _buildPublikasiList(context),
+              const SizedBox(height: 24),
+
+              // YouTube Siaran Pers Section
+              _buildSectionHeader(
+                context: context,
+                title: 'Live Youtube Siaran Pers',
+                linkText: 'Lainnya ▶',
+                onLinkTap: () {
+                  LoggerService.logActivity(
+                    actionType: 'view_youtube_list',
+                    sectorCategory: 'youtube',
+                    itemName: 'Lihat arsip Live Youtube',
+                  );
+                  Navigator.pushNamed(context, '/youtube_archive');
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildYoutubeList(context),
               const SizedBox(height: 24),
             ],
           ),
@@ -736,6 +772,122 @@ class _DataPageState extends State<DataPage> {
                     ),
                   ],
                 ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildYoutubeList(BuildContext context) {
+    if (_loadingYoutube) {
+      return const SizedBox(
+        height: 140,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_youtubeItems.isEmpty) {
+      return _buildFallbackCards('Youtube', () => Navigator.pushNamed(context, '/youtube_archive'));
+    }
+
+    return SizedBox(
+      height: 165,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _youtubeItems.length,
+        itemBuilder: (context, index) {
+          final item = _youtubeItems[index];
+          final title = item['title'] ?? 'Siaran Pers BPS';
+          final thumbnail = item['thumbnail_url'] ?? '';
+          final videoId = item['video_id'] ?? '';
+          return Container(
+            width: 180,
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: dark4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                if (videoId.isNotEmpty) {
+                  LoggerService.logActivity(
+                    actionType: 'view_youtube',
+                    sectorCategory: 'youtube',
+                    itemName: title,
+                  );
+                  Navigator.pushNamed(
+                    context,
+                    '/youtube_player',
+                    arguments: {'videoId': videoId, 'title': title},
+                  );
+                } else {
+                  Navigator.pushNamed(context, '/youtube_archive');
+                }
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          thumbnail.isNotEmpty
+                              ? Image.network(
+                                  thumbnail,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                    color: blueLighter,
+                                    child: const Icon(Icons.play_circle_outline, color: blueNormal, size: 36),
+                                  ),
+                                )
+                              : Container(
+                                  color: blueLighter,
+                                  child: const Icon(Icons.play_circle_outline, color: blueNormal, size: 36),
+                                ),
+                          // Play overlay icon
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Text(
+                      title,
+                      style: pjsSemiBold12.copyWith(fontSize: 10, color: dark1),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
