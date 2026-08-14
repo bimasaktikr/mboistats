@@ -90,11 +90,27 @@ class RecommendationService {
   static Future<void> deleteProfile() async {
     try {
       clearLocalCache();
+      final user = _client.auth.currentUser;
+      final userEmail = user?.email;
+      final userId = user?.id;
+      final deviceId = await LoggerService.getDeviceId();
       final profileId = await _getProfileIdentifier();
+
+      // 1. Hapus profil onboarding dari tabel device_profiles
       await _client.from('device_profiles').delete().eq('device_id', profileId);
-      print("Device profile successfully deleted");
+
+      // 2. Hapus histori aktivitas dari tabel activity_logs (agar fresh saat testing/ganti akun)
+      if (userEmail != null && userEmail.isNotEmpty) {
+        await _client.from('activity_logs').delete().eq('user_id', userEmail);
+      }
+      if (userId != null && userId.isNotEmpty) {
+        await _client.from('activity_logs').delete().eq('user_id', userId);
+      }
+      await _client.from('activity_logs').delete().eq('device_id', deviceId);
+
+      print("Device profile and activity logs successfully deleted from Supabase");
     } catch (e) {
-      print("Error deleting device profile: $e");
+      print("Error deleting device profile and logs: $e");
     }
   }
 
