@@ -54,9 +54,9 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           // Background illustration at the bottom
           Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
+            bottom: 15,
+            left: 15,
+            right: 15,
             child: Image.asset(
               'assets_v2/icons/login_bg.png',
               width: double.infinity,
@@ -76,8 +76,8 @@ class _LoginPageState extends State<LoginPage> {
                     'Selamat',
                     style: TextStyle(
                       fontFamily: 'PlusJakartaSans',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 45,
                       color: blueNormal,
                       height: 1.1,
                     ),
@@ -86,8 +86,8 @@ class _LoginPageState extends State<LoginPage> {
                     'Datang',
                     style: TextStyle(
                       fontFamily: 'PlusJakartaSans',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 45,
                       color: Color(0xFF75C7EC), // blueLightActive
                       height: 1.1,
                     ),
@@ -98,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(
                       fontFamily: 'PlusJakartaSans',
                       fontWeight: FontWeight.bold,
-                      fontSize: 28,
+                      fontSize: 30,
                       color: orangeNormal,
                     ),
                   ),
@@ -108,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                   // Google SSO Login Button
                   Material(
                     color: blueNormal,
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(10),
                     elevation: 3,
                     child: InkWell(
                       onTap: () async {
@@ -132,20 +132,20 @@ class _LoginPageState extends State<LoginPage> {
                         }
                       },
                       child: Container(
-                        height: 54,
+                        height: 40,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Image.asset(
                               'assets_v2/icons/google_login.png',
-                              width: 24,
-                              height: 24,
+                              width: 16,
+                              height: 16,
                             ),
                             const SizedBox(width: 12),
                             Text(
                               'Masuk dengan Google',
-                              style: pjsBold16.copyWith(
+                              style: pjsBold14.copyWith(
                                 color: Colors.white,
                               ),
                             ),
