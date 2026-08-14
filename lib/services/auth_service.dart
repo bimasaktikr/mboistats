@@ -60,6 +60,19 @@ class AuthService {
       );
 
       return authResponse;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        // User menutup popup / membatalkan login
+        LoggerService.logActivity(
+          actionType: 'login_canceled',
+          sectorCategory: 'auth',
+          itemName: 'User membatalkan login Google',
+        );
+        return null;
+      }
+      // Jika terjadi error native lain (seperti reauth/SHA-1), coba fallback ke Supabase OAuth
+      print('Native Google Sign-In failed ($e). Attempting Supabase OAuth fallback...');
+      return await _signInWithOAuthFallback();
     } on AuthException catch (e) {
       LoggerService.logActivity(
         actionType: 'login_failed',
@@ -68,12 +81,27 @@ class AuthService {
       );
       throw 'Otentikasi Supabase gagal: ${e.message}';
     } catch (e) {
+      print('Google Sign-In error ($e). Attempting Supabase OAuth fallback...');
+      return await _signInWithOAuthFallback();
+    }
+  }
+
+  /// Fallback menggunakan Supabase OAuth Browser Flow
+  static Future<AuthResponse?> _signInWithOAuthFallback() async {
+    try {
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: kIsWeb ? null : 'io.supabase.mboistats://login-callback',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+      return null; // Redirection dan login ditangani oleh Supabase onAuthStateChange listener
+    } catch (e) {
       LoggerService.logActivity(
         actionType: 'login_failed',
         sectorCategory: 'auth',
-        itemName: 'Error Native Google Sign-In: $e',
+        itemName: 'OAuth Fallback Error: $e',
       );
-      rethrow;
+      throw 'Gagal masuk dengan Google: $e';
     }
   }
 
