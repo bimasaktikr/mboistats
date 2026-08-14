@@ -183,10 +183,36 @@ class RecommendationService {
         'get_personalized_recommendations_by_device',
         params: {
           'input_device_id': profileId,
-          'rec_limit': limit,
+          'rec_limit': limit + 6,
         },
       ).timeout(const Duration(milliseconds: 2500));
-      final result = List<Map<String, dynamic>>.from(response);
+      
+      const validSectors = {
+        'perekonomian', 'ekonomi',
+        'tenaga_kerja', 'ketenagakerjaan',
+        'ipm',
+        'kemiskinan',
+        'kependudukan',
+        'pertanian',
+        'kesejahteraan',
+      };
+
+      final result = List<Map<String, dynamic>>.from(response).where((item) {
+        final sector = (item['sector_category'] ?? '').toString().toLowerCase();
+        final title = (item['content_title'] ?? item['item_name'] ?? '').toString().toLowerCase();
+        
+        if (!validSectors.contains(sector)) return false;
+        if (title.startsWith('halaman') ||
+            title.contains('kontak') ||
+            title.contains('profil') ||
+            title.contains('login') ||
+            title.contains('logout') ||
+            title.contains('temukan')) {
+          return false;
+        }
+        return true;
+      }).take(limit).toList();
+
       if (result.isNotEmpty) {
         _cachedRecommendations = result;
       }
@@ -269,16 +295,62 @@ class RecommendationService {
       case 'pertanian':
         return 'pertanian.png';
       default:
-        return 'faq.png';
+        return 'ekonomi.png';
     }
   }
 
   // Wrapper untuk dipanggil oleh widget visualisasi rekomendasi sektoral existing
   static Future<List<RecommendedItem>> getSectorRecommendations({String? userId, int limit = 2}) async {
     try {
-      final list = await getPersonalizedRecommendations(limit: limit);
-      if (list.isEmpty) {
-        // Fallback default jika belum ada aktivitas
+      final list = await getPersonalizedRecommendations(limit: limit + 5);
+      
+      const validSectors = {
+        'perekonomian', 'ekonomi',
+        'tenaga_kerja', 'ketenagakerjaan',
+        'ipm',
+        'kemiskinan',
+        'kependudukan',
+        'pertanian',
+        'kesejahteraan',
+      };
+
+      final filteredList = list.where((item) {
+        final sector = (item['sector_category'] ?? '').toString().toLowerCase();
+        final title = (item['content_title'] ?? item['item_name'] ?? '').toString();
+        final titleLower = title.toLowerCase();
+
+        if (!validSectors.contains(sector)) return false;
+        if (titleLower.startsWith('halaman') ||
+            titleLower.contains('kontak') ||
+            titleLower.contains('profil') ||
+            titleLower.contains('login') ||
+            titleLower.contains('logout') ||
+            titleLower.contains('temukan')) {
+          return false;
+        }
+        return true;
+      }).take(limit).toList();
+
+      if (filteredList.isEmpty) {
+        // Ambil sektor preferensi pengguna dari onboarding
+        final profileId = await _getProfileIdentifier();
+        List<String> preferredSectors = [];
+        try {
+          final profile = await _client
+              .from('device_profiles')
+              .select('onboarding_sectors')
+              .eq('device_id', profileId)
+              .maybeSingle();
+          if (profile != null && profile['onboarding_sectors'] != null) {
+            preferredSectors = List<String>.from(profile['onboarding_sectors']);
+          }
+        } catch (_) {}
+
+        if (preferredSectors.isNotEmpty) {
+          return preferredSectors.take(limit).map((s) => _getDefaultItemForSector(s)).toList();
+        }
+
+        // Fallback default jika belum ada preferensi
         return [
           RecommendedItem(
             title: 'Penduduk Menurut Kecamatan',
@@ -295,7 +367,7 @@ class RecommendationService {
         ];
       }
 
-      return list.map((item) {
+      return filteredList.map((item) {
         final sector = item['sector_category'] as String? ?? '';
         final title = item['content_title'] as String? ?? 'Data Statistik';
         final cType = item['content_type'] as String? ?? 'view_page';
@@ -321,6 +393,69 @@ class RecommendationService {
     } catch (e) {
       print("Gagal mengurai getSectorRecommendations: $e");
       return [];
+    }
+  }
+
+  static RecommendedItem _getDefaultItemForSector(String sector) {
+    switch (sector.toLowerCase()) {
+      case 'perekonomian':
+      case 'ekonomi':
+        return RecommendedItem(
+          title: 'Laju Pertumbuhan Ekonomi (LPE)',
+          route: '/LajuPertumbuhan',
+          icon: 'ekonomi.png',
+          description: 'Perkembangan laju pertumbuhan ekonomi Kota Malang terbaru.',
+        );
+      case 'tenaga_kerja':
+      case 'ketenagakerjaan':
+        return RecommendedItem(
+          title: 'Tingkat Pengangguran Terbuka',
+          route: '/TingkatPengangguran',
+          icon: 'ketenagakerjaan.png',
+          description: 'Data dan persentase pengangguran di Kota Malang.',
+        );
+      case 'ipm':
+        return RecommendedItem(
+          title: 'Usia Harapan Hidup',
+          route: '/UsiaHarapanHidup',
+          icon: 'ipm.png',
+          description: 'Perkembangan angka harapan hidup masyarakat Kota Malang.',
+        );
+      case 'kemiskinan':
+        return RecommendedItem(
+          title: 'Tingkat Kemiskinan',
+          route: '/TingkatKemiskinan',
+          icon: 'kemiskinan.png',
+          description: 'Persentase dan perkembangan kemiskinan Kota Malang.',
+        );
+      case 'kependudukan':
+        return RecommendedItem(
+          title: 'Penduduk Menurut Kecamatan',
+          route: '/PendudukKec',
+          icon: 'kependudukan.png',
+          description: 'Informasi jumlah penduduk di tiap kecamatan Kota Malang.',
+        );
+      case 'kesejahteraan':
+        return RecommendedItem(
+          title: 'Gini Rasio',
+          route: '/GiniRasio',
+          icon: 'kesejahteraan.png',
+          description: 'Tingkat ketimpangan pendapatan penduduk Kota Malang.',
+        );
+      case 'pertanian':
+        return RecommendedItem(
+          title: 'Produksi Padi & Beras',
+          route: '/ProduksiPadi',
+          icon: 'pertanian.png',
+          description: 'Data luas panen dan produksi padi di Kota Malang.',
+        );
+      default:
+        return RecommendedItem(
+          title: 'Penduduk Menurut Kecamatan',
+          route: '/PendudukKec',
+          icon: 'kependudukan.png',
+          description: 'Informasi demografi Kota Malang terbaru.',
+        );
     }
   }
 
@@ -359,12 +494,36 @@ class RecommendationService {
           .limit(limit * 4)
           .timeout(const Duration(milliseconds: 2500));
 
+      const validSectors = {
+        'perekonomian', 'ekonomi',
+        'tenaga_kerja', 'ketenagakerjaan',
+        'ipm',
+        'kemiskinan',
+        'kependudukan',
+        'pertanian',
+        'kesejahteraan',
+      };
+
       // De-duplikasi nama item konten dalam memori
       final seen = <String>{};
       final uniqueList = <Map<String, dynamic>>[];
       for (var item in response) {
-        final name = item['item_name'] as String?;
-        if (name != null && name.isNotEmpty && !seen.contains(name)) {
+        final name = (item['item_name'] as String? ?? '').trim();
+        final nameLower = name.toLowerCase();
+        final sector = (item['sector_category'] as String? ?? '').toLowerCase();
+
+        if (name.isEmpty) continue;
+        if (!validSectors.contains(sector)) continue;
+        if (nameLower.startsWith('halaman') ||
+            nameLower.contains('kontak') ||
+            nameLower.contains('profil') ||
+            nameLower.contains('login') ||
+            nameLower.contains('logout') ||
+            nameLower.contains('temukan')) {
+          continue;
+        }
+
+        if (!seen.contains(name)) {
           seen.add(name);
           uniqueList.add(Map<String, dynamic>.from(item));
         }
