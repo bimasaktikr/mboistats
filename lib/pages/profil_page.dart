@@ -246,9 +246,13 @@ class _ProfilPageState extends State<ProfilPage> {
                         children: [
                           const Icon(Icons.school_rounded, color: Colors.white, size: 16),
                           const SizedBox(width: 6),
-                          Text(
-                            _userMajor!,
-                            style: pjsSemiBold12.copyWith(color: Colors.white),
+                          Flexible(
+                            child: Text(
+                              _userMajor!,
+                              style: pjsSemiBold12.copyWith(color: Colors.white),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),

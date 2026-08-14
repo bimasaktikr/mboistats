@@ -299,17 +299,19 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Image.asset(
-                        'assets_v2/icons/bps_2.png',
-                        width: 110,
-                        height: 110,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Image.asset(
-                          'assets/images/Mbois-stat Logo_Fix Putih.png',
-                          width: 80,
-                          height: 80,
+                      Transform.translate(
+                        offset: const Offset(6, 22),
+                        child: Image.asset(
+                          'assets_v2/icons/ikon_beranda.png',
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Image.asset(
+                            'assets/images/Mbois-stat Logo_Fix Putih.png',
+                            width: 90,
+                            height: 90,
+                          ),
                         ),
                       ),
                     ],

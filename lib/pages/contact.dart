@@ -43,7 +43,7 @@ class Contact extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20.0),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A261F) : const Color(0xFFFCF8EC),
+                  color: isDark ? const Color(0xFF2A261F) : const Color(0xFFF8F0D7),
                   borderRadius: BorderRadius.circular(24.0),
                 ),
                 child: Column(

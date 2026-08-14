@@ -14,7 +14,7 @@ class _FooterState extends State<Footer> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final currentRoute = ModalRoute.of(context)!.settings.name;
+    final currentRoute = ModalRoute.of(context)?.settings.name;
 
     if (currentRoute == '/data' ||
         currentRoute == '/berita' ||

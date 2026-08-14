@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mboistats/components/footer.dart';
-import 'package:mboistats/components/menus.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/services/youtube_service.dart';
@@ -18,6 +16,7 @@ class DataPage extends StatefulWidget {
 
 class _DataPageState extends State<DataPage> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _categoryScrollController = ScrollController();
 
   List<Map<String, dynamic>> _brsItems = [];
   List<Map<String, dynamic>> _infografisItems = [];
@@ -59,6 +58,7 @@ class _DataPageState extends State<DataPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _categoryScrollController.dispose();
     super.dispose();
   }
 
@@ -214,7 +214,6 @@ class _DataPageState extends State<DataPage> {
                         'assets_v2/icons/search_bar.png',
                         width: 22,
                         height: 22,
-                        color: blueNormal,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -265,26 +264,65 @@ class _DataPageState extends State<DataPage> {
                 ),
                 child: Column(
                   children: [
-                    // Row 1: 4 items
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: _categories
-                          .take(4)
-                          .map((cat) => _buildCategoryGridTile(context, cat, isDark))
-                          .toList(),
+                    SingleChildScrollView(
+                      controller: _categoryScrollController,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Row(
+                        children: _categories.map((cat) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: _buildCategoryGridTile(context, cat, isDark),
+                          );
+                        }).toList(),
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    // Row 2: 3 items (centered)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        const SizedBox(width: 16),
-                        ..._categories
-                            .skip(4)
-                            .map((cat) => _buildCategoryGridTile(context, cat, isDark))
-                            .toList(),
-                        const SizedBox(width: 16),
-                      ],
+                    const SizedBox(height: 12),
+                    AnimatedBuilder(
+                      animation: _categoryScrollController,
+                      builder: (context, child) {
+                        double progress = 0.0;
+                        try {
+                          if (_categoryScrollController.hasClients &&
+                              _categoryScrollController.position.hasContentDimensions &&
+                              _categoryScrollController.position.maxScrollExtent > 0) {
+                            progress = (_categoryScrollController.offset /
+                                    _categoryScrollController.position.maxScrollExtent)
+                                .clamp(0.0, 1.0);
+                          }
+                        } catch (_) {
+                          progress = 0.0;
+                        }
+                        const double trackWidth = 52.0;
+                        const double thumbWidth = 26.0;
+                        final double leftOffset = progress * (trackWidth - thumbWidth);
+
+                        return Container(
+                          width: trackWidth,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF333333) : const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                left: leftOffset,
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: thumbWidth,
+                                  decoration: BoxDecoration(
+                                    color: blueNormal,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -372,14 +410,20 @@ class _DataPageState extends State<DataPage> {
 
 
   Widget _buildCategoryGridTile(BuildContext context, Map<String, String> cat, bool isDark) {
+    final title = cat['title'] ?? 'Kategori';
+    final route = cat['route'] ?? '';
+    final icon = cat['icon'] ?? '';
+
     return GestureDetector(
       onTap: () {
         LoggerService.logActivity(
           actionType: 'view_page',
-          sectorCategory: cat['title']!,
-          itemName: cat['title']!,
+          sectorCategory: title,
+          itemName: title,
         );
-        Navigator.pushNamed(context, cat['route']!);
+        if (route.isNotEmpty) {
+          Navigator.pushNamed(context, route);
+        }
       },
       child: SizedBox(
         width: 80,
@@ -387,7 +431,7 @@ class _DataPageState extends State<DataPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              cat['icon']!,
+              icon,
               width: 40,
               height: 40,
               fit: BoxFit.contain,
@@ -396,7 +440,7 @@ class _DataPageState extends State<DataPage> {
             ),
             const SizedBox(height: 5),
             Text(
-              cat['title']!,
+              title,
               style: pjsMedium12.copyWith(
                 color: isDark ? Colors.white : dark2,
                 fontSize: 10.5,

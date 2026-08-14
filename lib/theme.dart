@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 // =============================================
 
 // ---- Background ----
-const Color bgColor = Color(0xFFF7FDFF);
+const Color bgColor = Color(0xFFFDFAF2);
 
 // ---- Blue Palette (Primary) ----
 const Color blueLighter = Color(0xFF9FD8F2);
