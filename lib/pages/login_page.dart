@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mboistats/services/recommendation_service.dart';
+import 'package:mboistats/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -112,67 +111,23 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(28),
                     elevation: 3,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(28),
                       onTap: () async {
-                        LoggerService.logActivity(
-                          actionType: 'click_login_google',
-                          sectorCategory: 'auth',
-                          itemName: 'Masuk dengan Google',
-                        );
-
                         try {
-                          // Web Client ID dari Google Cloud Console
-                          const webClientId =
-                              '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
-                          const iosClientId =
-                              '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
-
-                          await GoogleSignIn.instance.initialize(
-                            serverClientId: webClientId,
-                            clientId: defaultTargetPlatform == TargetPlatform.iOS
-                                ? iosClientId
-                                : null,
-                          );
-
-                          final googleUser =
-                              await GoogleSignIn.instance.authenticate();
-                          if (googleUser == null) {
-                            return; // User membatalkan login (tutup popup)
+                          final authResponse =
+                              await AuthService.signInWithGoogle();
+                          if (authResponse == null) {
+                            // User membatalkan / menutup popup login
+                            return;
                           }
-
-                          final googleAuth = await googleUser.authentication;
-                          final idToken = googleAuth.idToken;
-
-                          if (idToken == null) {
-                            throw 'Gagal mendapatkan ID token dari Google.';
-                          }
-
-                          await Supabase.instance.client.auth
-                              .signInWithIdToken(
-                            provider: OAuthProvider.google,
-                            idToken: idToken,
-                          );
-                          // Redirection ditangani oleh onAuthStateChange di atas
+                          // Navigasi ditangani otomatis oleh onAuthStateChange listener
                         } catch (e) {
-                          print('ERROR NATIVE LOGIN GOOGLE: $e. Mencoba fallback Supabase OAuth...');
-                          try {
-                            await Supabase.instance.client.auth.signInWithOAuth(
-                              OAuthProvider.google,
-                              redirectTo: kIsWeb
-                                  ? null
-                                  : 'io.supabase.mboistats://login-callback',
-                              authScreenLaunchMode: LaunchMode.externalApplication,
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Gagal masuk: $e'),
+                                backgroundColor: Colors.red,
+                              ),
                             );
-                          } catch (oauthErr) {
-                            print('ERROR OAUTH FALLBACK: $oauthErr');
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Gagal masuk: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
                           }
                         }
                       },

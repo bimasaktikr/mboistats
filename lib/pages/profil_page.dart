@@ -6,7 +6,9 @@ import 'package:mboistats/theme.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mboistats/config/auth_config.dart';
 import 'package:mboistats/services/recommendation_service.dart';
+import 'package:mboistats/services/customer_api_service.dart';
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({Key? key}) : super(key: key);
@@ -44,9 +46,19 @@ class _ProfilPageState extends State<ProfilPage> {
       });
     }
     final major = await RecommendationService.getMajor();
+    
+    // Tarik data kustomer secara Real-Time dari API Endpoint
+    CustomerProfileData? customerApiData;
+    if (_userEmail.isNotEmpty) {
+      customerApiData = await CustomerApiService.getCustomerByEmail(_userEmail);
+    }
+
     if (mounted) {
       setState(() {
         _userMajor = major;
+        if (customerApiData != null && customerApiData.name != null) {
+          _userName = customerApiData.name!;
+        }
         _isLoadingProfile = false;
       });
     }
@@ -85,9 +97,10 @@ class _ProfilPageState extends State<ProfilPage> {
               );
               try {
                 RecommendationService.clearLocalCache();
-                const webClientId = '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
-                const iosClientId = '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
-                await GoogleSignIn.instance.initialize(serverClientId: webClientId, clientId: iosClientId);
+                await GoogleSignIn.instance.initialize(
+                  serverClientId: AuthConfig.webClientId,
+                  clientId: AuthConfig.iosClientId,
+                );
                 await GoogleSignIn.instance.signOut();
                 await Supabase.instance.client.auth.signOut();
               } catch (e) {
@@ -136,9 +149,10 @@ class _ProfilPageState extends State<ProfilPage> {
                 itemName: 'Hapus Akun',
               );
               try {
-                const webClientId = '514445291536-chdl933f0j39uuas2dsnb132boen68s7.apps.googleusercontent.com';
-                const iosClientId = '514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com';
-                await GoogleSignIn.instance.initialize(serverClientId: webClientId, clientId: iosClientId);
+                await GoogleSignIn.instance.initialize(
+                  serverClientId: AuthConfig.webClientId,
+                  clientId: AuthConfig.iosClientId,
+                );
                 await RecommendationService.deleteProfile();
                 await GoogleSignIn.instance.signOut();
                 await Supabase.instance.client.auth.signOut();
@@ -202,7 +216,7 @@ class _ProfilPageState extends State<ProfilPage> {
                       border: Border.all(color: Colors.white, width: 3),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.12),
+                          color: Colors.black.withValues(alpha: 0.12),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -229,7 +243,7 @@ class _ProfilPageState extends State<ProfilPage> {
                   Text(
                     _userEmail,
                     style: pjsRegular14.copyWith(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   if (_userMajor != null) ...[
@@ -237,9 +251,9 @@ class _ProfilPageState extends State<ProfilPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -290,7 +304,7 @@ class _ProfilPageState extends State<ProfilPage> {
                     title: 'Mode Gelap',
                     trailing: Switch(
                       value: appThemeNotifier.isDarkMode,
-                      activeColor: blueNormal,
+                      activeThumbColor: blueNormal,
                       onChanged: (val) {
                         LoggerService.logActivity(
                           actionType: 'toggle_dark_mode',
@@ -307,7 +321,7 @@ class _ProfilPageState extends State<ProfilPage> {
                     title: 'Notifikasi',
                     trailing: Switch(
                       value: _notificationsEnabled,
-                      activeColor: blueNormal,
+                      activeThumbColor: blueNormal,
                       onChanged: (val) {
                         setState(() {
                           _notificationsEnabled = val;
@@ -362,7 +376,7 @@ class _ProfilPageState extends State<ProfilPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

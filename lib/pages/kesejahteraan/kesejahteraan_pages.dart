@@ -44,7 +44,7 @@ class KesejahteraanPages extends StatelessWidget {
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey
-                            .withOpacity(0.2), // Warna abu-abu transparan
+                            .withValues(alpha: 0.2), // Warna abu-abu transparan
                         spreadRadius: 2, // Seberapa tersebar bayangannya
                         blurRadius: 4, // Seberapa kabur bayangannya
                         offset:

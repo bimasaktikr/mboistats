@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mboistats/datas/button.dart';
 
 class ButtonSection extends StatelessWidget {
+  const ButtonSection({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Container(
