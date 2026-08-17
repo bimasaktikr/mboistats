@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/services/logger_service.dart';
-import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/services/youtube_service.dart';
 import 'package:mboistats/theme.dart';
 
@@ -17,18 +18,30 @@ class DataPage extends StatefulWidget {
 class _DataPageState extends State<DataPage> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _categoryScrollController = ScrollController();
+  Timer? _searchDebounce;
 
   List<Map<String, dynamic>> _brsItems = [];
   List<Map<String, dynamic>> _infografisItems = [];
   List<Map<String, dynamic>> _publikasiItems = [];
   List<Map<String, dynamic>> _youtubeItems = [];
 
+  // Search Results
+  List<Map<String, dynamic>> _searchBrsResults = [];
+  List<Map<String, dynamic>> _searchInfografisResults = [];
+  List<Map<String, dynamic>> _searchPublikasiResults = [];
+
   bool _loadingBrs = true;
   bool _loadingInfografis = true;
   bool _loadingPublikasi = true;
   bool _loadingYoutube = true;
+  bool _isSearching = false;
 
   String _searchQuery = '';
+
+  // Sector Filters per Section
+  String _selectedBrsSector = 'semua';
+  String _selectedInfografisSector = 'semua';
+  String _selectedPublikasiSector = 'semua';
 
   final List<Map<String, String>> _categories = const [
     {'title': 'Tenaga Kerja', 'icon': 'assets_v2/icons/tenaga_kerja.png', 'route': '/ketenagakerjaan'},
@@ -40,6 +53,17 @@ class _DataPageState extends State<DataPage> {
     {'title': 'Kesejahteraan', 'icon': 'assets_v2/icons/kesejahteraan.png', 'route': '/kesejahteraan'},
   ];
 
+  final List<Map<String, String>> _sectorOptions = const [
+    {'key': 'semua', 'label': 'Semua Sektor'},
+    {'key': 'pertanian', 'label': 'Pertanian'},
+    {'key': 'perekonomian', 'label': 'Perekonomian'},
+    {'key': 'tenaga_kerja', 'label': 'Tenaga Kerja'},
+    {'key': 'ipm', 'label': 'IPM'},
+    {'key': 'kemiskinan', 'label': 'Kemiskinan'},
+    {'key': 'kependudukan', 'label': 'Kependudukan'},
+    {'key': 'kesejahteraan', 'label': 'Kesejahteraan'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -48,25 +72,112 @@ class _DataPageState extends State<DataPage> {
     _fetchPublikasiData();
     _fetchYoutubeData();
 
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
-    });
+    _searchController.addListener(_onSearchInputChanged);
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _categoryScrollController.dispose();
     super.dispose();
   }
 
+  void _onSearchInputChanged() {
+    final query = _searchController.text.trim().toLowerCase();
+    setState(() {
+      _searchQuery = query;
+    });
+
+    if (query.isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _searchBrsResults = [];
+        _searchInfografisResults = [];
+        _searchPublikasiResults = [];
+      });
+      return;
+    }
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      _performInlineSearch(query);
+    });
+  }
+
+  Future<void> _performInlineSearch(String query) async {
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      // Query Supabase contents table with full dataset
+      final response = await Supabase.instance.client
+          .from('contents')
+          .select()
+          .ilike('item_name', '%$query%')
+          .order('created_at', ascending: false)
+          .limit(60);
+
+      final List<Map<String, dynamic>> allMatches = List<Map<String, dynamic>>.from(response);
+
+      final brsList = <Map<String, dynamic>>[];
+      final pubList = <Map<String, dynamic>>[];
+      final infList = <Map<String, dynamic>>[];
+
+      for (var item in allMatches) {
+        final actionType = item['action_type'] as String? ?? 'view_pdf';
+        if (actionType == 'download_file') {
+          infList.add(item);
+        } else {
+          // Both BRS and Publikasi have action_type = 'view_pdf'
+          brsList.add(item);
+          pubList.add(item);
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _searchBrsResults = brsList;
+          _searchInfografisResults = infList;
+          _searchPublikasiResults = pubList;
+          _isSearching = false;
+        });
+      }
+    } catch (e) {
+      print("Inline search error: $e");
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
   Future<void> _fetchBrsData() async {
     try {
-      final response = await http.get(Uri.parse(
-        'https://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/1/key/9db89e91c3c142df678e65a78c4e547f',
-      ));
+      // 1. Ambil langsung dari Supabase contents table
+      final response = await Supabase.instance.client
+          .from('contents')
+          .select()
+          .eq('action_type', 'view_pdf')
+          .order('created_at', ascending: false)
+          .limit(30);
+
+      final list = List<Map<String, dynamic>>.from(response);
+      if (list.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _brsItems = list;
+            _loadingBrs = false;
+          });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback BPS API jika Supabase sedang offline
+    try {
+      final response = await http.get(
+        Uri.parse('https://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/1/key/9db89e91c3c142df678e65a78c4e547f'),
+        headers: {'User-Agent': 'Mozilla/5.0'},
+      );
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
@@ -76,7 +187,6 @@ class _DataPageState extends State<DataPage> {
             _loadingBrs = false;
           });
         }
-        _syncItemsToContents(list, 'view_pdf');
       }
     } catch (_) {
       if (mounted) setState(() => _loadingBrs = false);
@@ -85,9 +195,32 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> _fetchInfografisData() async {
     try {
-      final response = await http.get(Uri.parse(
-        'https://webapi.bps.go.id/v1/api/list/domain/3573/model/infographic/lang/ind/domain/3573/page/1/key/9db89e91c3c142df678e65a78c4e547f',
-      ));
+      // 1. Ambil langsung dari Supabase contents table
+      final response = await Supabase.instance.client
+          .from('contents')
+          .select()
+          .eq('action_type', 'download_file')
+          .order('created_at', ascending: false)
+          .limit(30);
+
+      final list = List<Map<String, dynamic>>.from(response);
+      if (list.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _infografisItems = list;
+            _loadingInfografis = false;
+          });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback BPS API
+    try {
+      final response = await http.get(
+        Uri.parse('https://webapi.bps.go.id/v1/api/list/domain/3573/model/infographic/lang/ind/domain/3573/page/1/key/9db89e91c3c142df678e65a78c4e547f'),
+        headers: {'User-Agent': 'Mozilla/5.0'},
+      );
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
@@ -97,7 +230,6 @@ class _DataPageState extends State<DataPage> {
             _loadingInfografis = false;
           });
         }
-        _syncItemsToContents(list, 'view_pdf');
       }
     } catch (_) {
       if (mounted) setState(() => _loadingInfografis = false);
@@ -106,9 +238,32 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> _fetchPublikasiData() async {
     try {
-      final response = await http.get(Uri.parse(
-        'https://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/1/key/9db89e91c3c142df678e65a78c4e547f',
-      ));
+      // 1. Ambil langsung dari Supabase contents table
+      final response = await Supabase.instance.client
+          .from('contents')
+          .select()
+          .eq('action_type', 'view_pdf')
+          .order('created_at', ascending: false)
+          .limit(30);
+
+      final list = List<Map<String, dynamic>>.from(response);
+      if (list.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _publikasiItems = list;
+            _loadingPublikasi = false;
+          });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback BPS API
+    try {
+      final response = await http.get(
+        Uri.parse('https://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/1/key/9db89e91c3c142df678e65a78c4e547f'),
+        headers: {'User-Agent': 'Mozilla/5.0'},
+      );
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
@@ -118,7 +273,6 @@ class _DataPageState extends State<DataPage> {
             _loadingPublikasi = false;
           });
         }
-        _syncItemsToContents(list, 'view_pdf');
       }
     } catch (_) {
       if (mounted) setState(() => _loadingPublikasi = false);
@@ -139,35 +293,34 @@ class _DataPageState extends State<DataPage> {
     }
   }
 
-  Future<void> _syncItemsToContents(List<Map<String, dynamic>> items, String actionType) async {
-    RecommendationService.syncContentItems(items, actionType);
+  bool _matchesSector(Map<String, dynamic> item, String sectorKey) {
+    if (sectorKey == 'semua') return true;
+    final sectors = item['sector_categories'];
+    if (sectors is List) {
+      return sectors.any((s) => s.toString().toLowerCase() == sectorKey.toLowerCase());
+    }
+    return true;
   }
 
   List<Map<String, dynamic>> get _filteredBrsItems {
-    final query = _searchQuery.trim();
-    if (query.isEmpty) return _brsItems.take(3).toList();
-    return _brsItems.where((item) {
-      final title = (item['title'] ?? item['judul'] ?? '').toString().toLowerCase();
-      return title.contains(query);
-    }).toList();
+    final source = _searchQuery.isNotEmpty ? _searchBrsResults : _brsItems;
+    final filtered = source.where((item) => _matchesSector(item, _selectedBrsSector)).toList();
+    if (_searchQuery.isEmpty) return filtered.take(5).toList();
+    return filtered;
   }
 
   List<Map<String, dynamic>> get _filteredInfografisItems {
-    final query = _searchQuery.trim();
-    if (query.isEmpty) return _infografisItems.take(3).toList();
-    return _infografisItems.where((item) {
-      final title = (item['title'] ?? item['judul'] ?? '').toString().toLowerCase();
-      return title.contains(query);
-    }).toList();
+    final source = _searchQuery.isNotEmpty ? _searchInfografisResults : _infografisItems;
+    final filtered = source.where((item) => _matchesSector(item, _selectedInfografisSector)).toList();
+    if (_searchQuery.isEmpty) return filtered.take(5).toList();
+    return filtered;
   }
 
   List<Map<String, dynamic>> get _filteredPublikasiItems {
-    final query = _searchQuery.trim();
-    if (query.isEmpty) return _publikasiItems.take(3).toList();
-    return _publikasiItems.where((item) {
-      final title = (item['title'] ?? item['judul'] ?? '').toString().toLowerCase();
-      return title.contains(query);
-    }).toList();
+    final source = _searchQuery.isNotEmpty ? _searchPublikasiResults : _publikasiItems;
+    final filtered = source.where((item) => _matchesSector(item, _selectedPublikasiSector)).toList();
+    if (_searchQuery.isEmpty) return filtered.take(5).toList();
+    return filtered;
   }
 
   @override
@@ -233,7 +386,13 @@ class _DataPageState extends State<DataPage> {
                         },
                       ),
                     ),
-                    if (_searchController.text.isNotEmpty)
+                    if (_isSearching)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else if (_searchController.text.isNotEmpty)
                       GestureDetector(
                         onTap: () => _searchController.clear(),
                         child: Icon(Icons.clear, color: dark3, size: 18),
@@ -330,10 +489,12 @@ class _DataPageState extends State<DataPage> {
               const SizedBox(height: 24),
 
               // BRS Section
-              _buildSectionHeader(
+              _buildSectionHeaderWithFilter(
                 context: context,
                 title: 'Berita Resmi Statistik (BRS)',
                 linkText: 'Lainnya ▶',
+                selectedSector: _selectedBrsSector,
+                onSectorChanged: (val) => setState(() => _selectedBrsSector = val),
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_brs_list',
@@ -343,15 +504,17 @@ class _DataPageState extends State<DataPage> {
                   Navigator.pushNamed(context, '/berita');
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _buildBrsList(context),
               const SizedBox(height: 24),
 
               // Infografis Section
-              _buildSectionHeader(
+              _buildSectionHeaderWithFilter(
                 context: context,
                 title: 'Infografis',
                 linkText: 'Lainnya ▶',
+                selectedSector: _selectedInfografisSector,
+                onSectorChanged: (val) => setState(() => _selectedInfografisSector = val),
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_infografis_list',
@@ -361,15 +524,17 @@ class _DataPageState extends State<DataPage> {
                   Navigator.pushNamed(context, '/infografis_full');
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _buildInfografisList(context),
               const SizedBox(height: 24),
 
               // Publikasi Section
-              _buildSectionHeader(
+              _buildSectionHeaderWithFilter(
                 context: context,
                 title: 'Publikasi',
                 linkText: 'Lainnya ▶',
+                selectedSector: _selectedPublikasiSector,
+                onSectorChanged: (val) => setState(() => _selectedPublikasiSector = val),
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_publikasi_list',
@@ -379,7 +544,7 @@ class _DataPageState extends State<DataPage> {
                   Navigator.pushNamed(context, '/publikasi_full');
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _buildPublikasiList(context),
               const SizedBox(height: 24),
 
@@ -407,7 +572,6 @@ class _DataPageState extends State<DataPage> {
       bottomNavigationBar: const Footer(),
     );
   }
-
 
   Widget _buildCategoryGridTile(BuildContext context, Map<String, String> cat, bool isDark) {
     final title = cat['title'] ?? 'Kategori';
@@ -453,6 +617,89 @@ class _DataPageState extends State<DataPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeaderWithFilter({
+    required BuildContext context,
+    required String title,
+    required String linkText,
+    required String selectedSector,
+    required ValueChanged<String> onSectorChanged,
+    required VoidCallback onLinkTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: pjsBold16.copyWith(color: isDark ? Colors.white : dark1),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            InkWell(
+              onTap: onLinkTap,
+              child: Text(
+                linkText,
+                style: pjsSemiBold12.copyWith(color: blueNormal),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // Dropdown Filter Bar
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              decoration: BoxDecoration(
+                color: selectedSector != 'semua'
+                    ? blueNormal.withOpacity(0.12)
+                    : (isDark ? const Color(0xFF222222) : const Color(0xFFEBF3F8)),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: selectedSector != 'semua' ? blueNormal : Colors.transparent,
+                  width: 1,
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: selectedSector,
+                  isDense: true,
+                  icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: blueNormal),
+                  style: pjsMedium12.copyWith(
+                    color: selectedSector != 'semua' ? blueNormal : (isDark ? Colors.white70 : dark2),
+                    fontSize: 11,
+                  ),
+                  dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                  items: _sectorOptions.map((opt) {
+                    return DropdownMenuItem<String>(
+                      value: opt['key'],
+                      child: Text(opt['label']!),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) onSectorChanged(val);
+                  },
+                ),
+              ),
+            ),
+            if (selectedSector != 'semua') ...[
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () => onSectorChanged('semua'),
+                child: Icon(Icons.cancel, size: 16, color: Colors.grey.shade500),
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
@@ -512,8 +759,10 @@ class _DataPageState extends State<DataPage> {
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          final title = item['title'] ?? 'BRS Item';
-          final thumbnail = item['thumbnail'] ?? '';
+          final title = item['item_name'] ?? item['title'] ?? item['judul'] ?? 'BRS Item';
+          final thumbnail = item['cover_url'] ?? item['thumbnail'] ?? item['img'] ?? item['cover'] ?? '';
+          final pdfUrl = item['content_url'] ?? item['pdf'] ?? item['dl'] ?? '';
+
           return Container(
             width: 120,
             margin: const EdgeInsets.only(right: 12),
@@ -532,7 +781,6 @@ class _DataPageState extends State<DataPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                final pdfUrl = item['pdf'] as String? ?? '';
                 LoggerService.logActivity(
                   actionType: 'view_pdf',
                   sectorCategory: LoggerService.classifySector(title),
@@ -612,8 +860,10 @@ class _DataPageState extends State<DataPage> {
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          final title = item['title'] ?? 'Infografis Item';
-          final imgUrl = item['img'] ?? '';
+          final title = item['item_name'] ?? item['title'] ?? item['judul'] ?? 'Infografis Item';
+          final imgUrl = item['cover_url'] ?? item['img'] ?? item['thumbnail'] ?? item['cover'] ?? '';
+          final contentUrl = item['content_url'] ?? item['dl'] ?? item['img'] ?? '';
+
           return Container(
             width: 120,
             margin: const EdgeInsets.only(right: 12),
@@ -632,15 +882,16 @@ class _DataPageState extends State<DataPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                if (imgUrl.isNotEmpty) {
+                final displayUrl = imgUrl.isNotEmpty ? imgUrl : contentUrl;
+                if (displayUrl.isNotEmpty) {
                   LoggerService.logActivity(
-                    actionType: 'view_pdf',
+                    actionType: 'download_file',
                     sectorCategory: LoggerService.classifySector(title),
                     itemName: title,
-                    coverUrl: imgUrl,
-                    contentUrl: imgUrl,
+                    coverUrl: displayUrl,
+                    contentUrl: displayUrl,
                   );
-                  Navigator.pushNamed(context, '/image_viewer', arguments: {'imageUrl': imgUrl, 'title': title});
+                  Navigator.pushNamed(context, '/image_viewer', arguments: {'imageUrl': displayUrl, 'title': title});
                 } else {
                   Navigator.pushNamed(context, '/infografis_full');
                 }
@@ -707,9 +958,10 @@ class _DataPageState extends State<DataPage> {
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          final title = item['title'] ?? 'Publikasi Item';
-          final coverUrl = item['cover'] ?? '';
-          final pdfUrl = item['pdf'] ?? '';
+          final title = item['item_name'] ?? item['title'] ?? item['judul'] ?? 'Publikasi Item';
+          final thumbnail = item['cover_url'] ?? item['cover'] ?? item['img'] ?? item['thumbnail'] ?? '';
+          final pdfUrl = item['content_url'] ?? item['pdf'] ?? item['dl'] ?? '';
+
           return Container(
             width: 120,
             margin: const EdgeInsets.only(right: 12),
@@ -728,14 +980,14 @@ class _DataPageState extends State<DataPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
+                LoggerService.logActivity(
+                  actionType: 'view_pdf',
+                  sectorCategory: LoggerService.classifySector(title),
+                  itemName: title,
+                  coverUrl: thumbnail,
+                  contentUrl: pdfUrl,
+                );
                 if (pdfUrl.isNotEmpty) {
-                  LoggerService.logActivity(
-                    actionType: 'view_pdf',
-                    sectorCategory: LoggerService.classifySector(title),
-                    itemName: title,
-                    coverUrl: coverUrl,
-                    contentUrl: pdfUrl,
-                  );
                   Navigator.pushNamed(
                     context,
                     '/pdf_viewer',
@@ -751,14 +1003,14 @@ class _DataPageState extends State<DataPage> {
                   Expanded(
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      child: coverUrl.isNotEmpty
+                      child: thumbnail.isNotEmpty
                           ? Image.network(
-                              coverUrl,
+                              thumbnail,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
-                                  Container(color: blueLighter, child: const Icon(Icons.menu_book, color: blueNormal)),
+                                  Container(color: blueLighter, child: const Icon(Icons.book, color: blueNormal)),
                             )
-                          : Container(color: blueLighter, child: const Icon(Icons.menu_book, color: blueNormal)),
+                          : Container(color: blueLighter, child: const Icon(Icons.book, color: blueNormal)),
                     ),
                   ),
                   Padding(
@@ -772,50 +1024,6 @@ class _DataPageState extends State<DataPage> {
                     ),
                   ),
                 ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFallbackCards(String type, VoidCallback onTap) {
-    return SizedBox(
-      height: 140,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 3,
-        itemBuilder: (context, index) {
-          return Container(
-            width: 110,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: dark4),
-            ),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(12),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      type == 'BRS'
-                          ? Icons.newspaper
-                          : (type == 'Infografis' ? Icons.image : Icons.menu_book),
-                      color: blueNormal,
-                      size: 32,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '$type ${index + 1}',
-                      style: pjsMedium12.copyWith(color: dark2),
-                    ),
-                  ],
-                ),
               ),
             ),
           );
@@ -833,7 +1041,10 @@ class _DataPageState extends State<DataPage> {
     }
 
     if (_youtubeItems.isEmpty) {
-      return _buildFallbackCards('Youtube', () => Navigator.pushNamed(context, '/youtube_archive'));
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Text('Belum ada arsip live streaming siaran pers.', style: pjsRegular12.copyWith(color: dark3)),
+      );
     }
 
     return SizedBox(
@@ -843,11 +1054,13 @@ class _DataPageState extends State<DataPage> {
         itemCount: _youtubeItems.length,
         itemBuilder: (context, index) {
           final item = _youtubeItems[index];
-          final title = item['title'] ?? 'Siaran Pers BPS';
+          final title = item['title'] ?? 'Live Stream';
           final thumbnail = item['thumbnail_url'] ?? '';
           final videoId = item['video_id'] ?? '';
+          final isLive = item['is_live'] == true;
+
           return Container(
-            width: 180,
+            width: 140,
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -864,61 +1077,52 @@ class _DataPageState extends State<DataPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                if (videoId.isNotEmpty) {
-                  LoggerService.logActivity(
-                    actionType: 'view_youtube',
-                    sectorCategory: 'youtube',
-                    itemName: title,
-                  );
-                  Navigator.pushNamed(
-                    context,
-                    '/youtube_player',
-                    arguments: {'videoId': videoId, 'title': title},
-                  );
-                } else {
-                  Navigator.pushNamed(context, '/youtube_archive');
-                }
+                LoggerService.logActivity(
+                  actionType: 'view_youtube_stream',
+                  sectorCategory: 'youtube',
+                  itemName: title,
+                );
+                Navigator.pushNamed(context, '/youtube_player', arguments: {
+                  'videoId': videoId,
+                  'title': title,
+                });
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          thumbnail.isNotEmpty
-                              ? Image.network(
-                                  thumbnail,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                    color: blueLighter,
-                                    child: const Icon(Icons.play_circle_outline, color: blueNormal, size: 36),
-                                  ),
-                                )
-                              : Container(
-                                  color: blueLighter,
-                                  child: const Icon(Icons.play_circle_outline, color: blueNormal, size: 36),
-                                ),
-                          // Play overlay icon
-                          Center(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                            child: thumbnail.isNotEmpty
+                                ? Image.network(
+                                    thumbnail,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Container(color: Colors.red.shade50, child: const Icon(Icons.play_circle_fill, color: Colors.red, size: 36)),
+                                  )
+                                : Container(color: Colors.red.shade50, child: const Icon(Icons.play_circle_fill, color: Colors.red, size: 36)),
+                          ),
+                        ),
+                        if (isLive)
+                          Positioned(
+                            top: 6,
+                            left: 6,
                             child: Container(
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
-                                shape: BoxShape.circle,
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Icon(
-                                Icons.play_arrow_rounded,
-                                color: Colors.white,
-                                size: 28,
+                              child: const Text(
+                                'LIVE',
+                                style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                   Padding(
@@ -936,6 +1140,24 @@ class _DataPageState extends State<DataPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFallbackCards(String category, VoidCallback onTap) {
+    return Container(
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: dark4),
+      ),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: onTap,
+          icon: const Icon(Icons.refresh, color: blueNormal),
+          label: Text('Muat data $category', style: pjsMedium14.copyWith(color: blueNormal)),
+        ),
       ),
     );
   }
