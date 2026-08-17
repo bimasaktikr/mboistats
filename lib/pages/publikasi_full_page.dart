@@ -20,6 +20,19 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
   bool _hasMore = true;
   final ScrollController _scrollController = ScrollController();
 
+  String _selectedSector = 'semua';
+
+  final List<Map<String, String>> _sectorFilters = const [
+    {'key': 'semua', 'label': 'Semua Sektor'},
+    {'key': 'pertanian', 'label': 'Pertanian'},
+    {'key': 'perekonomian', 'label': 'Perekonomian'},
+    {'key': 'tenaga_kerja', 'label': 'Tenaga Kerja'},
+    {'key': 'ipm', 'label': 'IPM'},
+    {'key': 'kemiskinan', 'label': 'Kemiskinan'},
+    {'key': 'kependudukan', 'label': 'Kependudukan'},
+    {'key': 'kesejahteraan', 'label': 'Kesejahteraan'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +51,35 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  int _extractYear(String title) {
+    final matches = RegExp(r'\b(20\d{2}|19\d{2})\b').allMatches(title);
+    if (matches.isNotEmpty) {
+      return int.tryParse(matches.last.group(0) ?? '') ?? 0;
+    }
+    return 0;
+  }
+
+  int _compareByNewest(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final dateA = (a['rl_date'] ?? a['sch_date'] ?? a['created_at'] ?? '').toString();
+    final dateB = (b['rl_date'] ?? b['sch_date'] ?? b['created_at'] ?? '').toString();
+    final comp = dateB.compareTo(dateA);
+    if (comp != 0) return comp;
+
+    final yearA = _extractYear((a['title'] ?? '').toString());
+    final yearB = _extractYear((b['title'] ?? '').toString());
+    return yearB.compareTo(yearA);
+  }
+
+  List<Map<String, dynamic>> get _filteredPublikasi {
+    if (_selectedSector == 'semua') return _dataPublikasi;
+    return _dataPublikasi.where((item) {
+      final title = (item['title'] ?? '').toString().toLowerCase();
+      final sector = LoggerService.classifySector(title).toLowerCase();
+      return sector == _selectedSector.toLowerCase() ||
+          title.contains(_selectedSector.toLowerCase());
+    }).toList();
   }
 
   Future<void> _fetchDataPublikasi() async {
@@ -61,6 +103,7 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
             setState(() {
               _currentPage++;
               _dataPublikasi.addAll(list);
+              _dataPublikasi.sort(_compareByNewest);
             });
           }
         } else {
@@ -81,6 +124,7 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final displayList = _filteredPublikasi;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : bgColor,
@@ -112,101 +156,148 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
                 ],
               ),
             ),
+
+            // Horizontal Sector Filter Chips
+            Container(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: _sectorFilters.map((sector) {
+                    final isSelected = _selectedSector == sector['key'];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          sector['label']!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : dark1),
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: blueNormal,
+                        backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: isSelected ? blueNormal : dark4,
+                            width: 1,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedSector = sector['key']!;
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+
             // Grid content
             Expanded(
-              child: _dataPublikasi.isEmpty && _isLoading
+              child: displayList.isEmpty && _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : GridView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 20,
-                        childAspectRatio: 0.58,
-                      ),
-                      itemCount: _dataPublikasi.length + (_hasMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == _dataPublikasi.length) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-
-                        final item = _dataPublikasi[index];
-                        final String coverUrl = item['cover'] ?? '';
-                        final String pdfUrl = item['pdf'] ?? '';
-                        final String title = item['title'] ?? 'Publikasi BPS';
-
-                        return InkWell(
-                          onTap: () {
-                            if (pdfUrl.isNotEmpty) {
-                              LoggerService.logActivity(
-                                actionType: 'view_pdf',
-                                sectorCategory: LoggerService.classifySector(title),
-                                itemName: title,
-                                coverUrl: coverUrl,
-                                contentUrl: pdfUrl,
-                              );
-                              Navigator.pushNamed(
-                                context,
-                                '/pdf_viewer',
-                                arguments: {
-                                  'pdfUrl': pdfUrl,
-                                  'title': title,
-                                },
-                              );
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Image card — gray rounded rectangle
-                              Expanded(
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  clipBehavior: Clip.hardEdge,
-                                  child: coverUrl.isNotEmpty
-                                      ? Image.network(
-                                          coverUrl,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          errorBuilder: (context, error, stackTrace) =>
-                                              Center(
-                                            child: Icon(
-                                              Icons.menu_book,
-                                              color: dark3,
-                                              size: 40,
-                                            ),
-                                          ),
-                                        )
-                                      : Center(
-                                          child: Icon(
-                                            Icons.menu_book,
-                                            color: dark3,
-                                            size: 40,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                              // Title text below — max 3 lines with ellipsis
-                              const SizedBox(height: 8),
-                              Text(
-                                title,
-                                style: pjsRegular14.copyWith(
-                                  color: isDark ? Colors.white : dark1,
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                  : displayList.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Tidak ada Publikasi di sektor ini.',
+                            style: pjsRegular14.copyWith(color: dark3),
                           ),
-                        );
-                      },
-                    ),
+                        )
+                      : GridView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 20,
+                            childAspectRatio: 0.58,
+                          ),
+                          itemCount: displayList.length + (_hasMore && _selectedSector == 'semua' ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == displayList.length) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+
+                            final item = displayList[index];
+                            final String coverUrl = item['cover'] ?? '';
+                            final String pdfUrl = item['pdf'] ?? '';
+                            final String title = item['title'] ?? 'Publikasi BPS';
+
+                            return InkWell(
+                              onTap: () {
+                                if (pdfUrl.isNotEmpty) {
+                                  LoggerService.logActivity(
+                                    actionType: 'view_pdf',
+                                    sectorCategory: LoggerService.classifySector(title),
+                                    itemName: title,
+                                    coverUrl: coverUrl,
+                                    contentUrl: pdfUrl,
+                                  );
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/pdf_viewer',
+                                    arguments: {'pdfUrl': pdfUrl, 'title': title},
+                                  );
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      clipBehavior: Clip.hardEdge,
+                                      child: coverUrl.isNotEmpty
+                                          ? Image.network(
+                                              coverUrl,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  Center(
+                                                child: Icon(
+                                                  Icons.book,
+                                                  color: dark3,
+                                                  size: 40,
+                                                ),
+                                              ),
+                                            )
+                                          : Center(
+                                              child: Icon(
+                                                Icons.book,
+                                                color: dark3,
+                                                size: 40,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    title,
+                                    style: pjsRegular14.copyWith(
+                                      color: isDark ? Colors.white : dark1,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

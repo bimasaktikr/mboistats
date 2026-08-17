@@ -33,6 +33,19 @@ class _BeritaPageState extends State<BeritaPages> {
   bool hasMore = true;
   final ScrollController _scrollController = ScrollController();
 
+  String _selectedSector = 'semua';
+
+  final List<Map<String, String>> _sectorFilters = const [
+    {'key': 'semua', 'label': 'Semua Sektor'},
+    {'key': 'pertanian', 'label': 'Pertanian'},
+    {'key': 'perekonomian', 'label': 'Perekonomian'},
+    {'key': 'tenaga_kerja', 'label': 'Tenaga Kerja'},
+    {'key': 'ipm', 'label': 'IPM'},
+    {'key': 'kemiskinan', 'label': 'Kemiskinan'},
+    {'key': 'kependudukan', 'label': 'Kependudukan'},
+    {'key': 'kesejahteraan', 'label': 'Kesejahteraan'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +61,35 @@ class _BeritaPageState extends State<BeritaPages> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  int _extractYear(String title) {
+    final matches = RegExp(r'\b(20\d{2}|19\d{2})\b').allMatches(title);
+    if (matches.isNotEmpty) {
+      return int.tryParse(matches.last.group(0) ?? '') ?? 0;
+    }
+    return 0;
+  }
+
+  int _compareByNewest(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final dateA = (a['rl_date'] ?? a['created_at'] ?? '').toString();
+    final dateB = (b['rl_date'] ?? b['created_at'] ?? '').toString();
+    final comp = dateB.compareTo(dateA);
+    if (comp != 0) return comp;
+
+    final yearA = _extractYear((a['title'] ?? '').toString());
+    final yearB = _extractYear((b['title'] ?? '').toString());
+    return yearB.compareTo(yearA);
+  }
+
+  List<Map<String, dynamic>> get _filteredBRS {
+    if (_selectedSector == 'semua') return dataBRS;
+    return dataBRS.where((item) {
+      final title = (item['title'] ?? '').toString().toLowerCase();
+      final sector = LoggerService.classifySector(title).toLowerCase();
+      return sector == _selectedSector.toLowerCase() ||
+          title.contains(_selectedSector.toLowerCase());
+    }).toList();
   }
 
   Future<void> fetchDataBRS() async {
@@ -67,6 +109,7 @@ class _BeritaPageState extends State<BeritaPages> {
       setState(() {
         if (brs.isNotEmpty) {
           dataBRS.addAll(brs);
+          dataBRS.sort(_compareByNewest);
           currentPage++;
         } else {
           hasMore = false;
@@ -91,6 +134,7 @@ class _BeritaPageState extends State<BeritaPages> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final displayList = _filteredBRS;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : bgColor,
@@ -122,67 +166,132 @@ class _BeritaPageState extends State<BeritaPages> {
                 ],
               ),
             ),
+
+            // Horizontal Sector Filter Chips
+            Container(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: _sectorFilters.map((sector) {
+                    final isSelected = _selectedSector == sector['key'];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          sector['label']!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : dark1),
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: blueNormal,
+                        backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: isSelected ? blueNormal : dark4,
+                            width: 1,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedSector = sector['key']!;
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+
             // Grid content
             Expanded(
-              child: dataBRS.isEmpty && isLoading
+              child: displayList.isEmpty && isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : GridView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 20,
-                        childAspectRatio: 0.58,
-                      ),
-                      itemCount: dataBRS.length + (hasMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == dataBRS.length) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        return InkWell(
-                          onTap: () => showDownloadDialog(context, dataBRS[index]["pdf"], index),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  clipBehavior: Clip.hardEdge,
-                                  child: Image.network(
-                                    dataBRS[index]['thumbnail'],
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        Center(
-                                      child: Icon(
-                                        Icons.newspaper,
-                                        color: dark3,
-                                        size: 40,
+                  : displayList.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Tidak ada BRS di sektor ini.',
+                            style: pjsRegular14.copyWith(color: dark3),
+                          ),
+                        )
+                      : GridView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 20,
+                            childAspectRatio: 0.58,
+                          ),
+                          itemCount: displayList.length + (hasMore && _selectedSector == 'semua' ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == displayList.length) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            final item = displayList[index];
+                            final title = (item["title"] ?? '').toString();
+                            final thumbnail = (item['thumbnail'] ?? '').toString();
+                            final pdfUrl = (item["pdf"] ?? '').toString();
+
+                            return InkWell(
+                              onTap: () => showDownloadDialog(context, pdfUrl, index),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
+                                      clipBehavior: Clip.hardEdge,
+                                      child: thumbnail.isNotEmpty
+                                          ? Image.network(
+                                              thumbnail,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  Center(
+                                                child: Icon(
+                                                  Icons.newspaper,
+                                                  color: dark3,
+                                                  size: 40,
+                                                ),
+                                              ),
+                                            )
+                                          : Center(
+                                              child: Icon(
+                                                Icons.newspaper,
+                                                color: dark3,
+                                                size: 40,
+                                              ),
+                                            ),
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    title,
+                                    style: pjsRegular14.copyWith(
+                                      color: isDark ? Colors.white : dark1,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                dataBRS[index]["title"],
-                                style: pjsRegular14.copyWith(
-                                  color: isDark ? Colors.white : dark1,
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

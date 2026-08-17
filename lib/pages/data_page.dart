@@ -25,7 +25,7 @@ class _DataPageState extends State<DataPage> {
   List<Map<String, dynamic>> _publikasiItems = [];
   List<Map<String, dynamic>> _youtubeItems = [];
 
-  // Search Results
+  // Inline Search Results
   List<Map<String, dynamic>> _searchBrsResults = [];
   List<Map<String, dynamic>> _searchInfografisResults = [];
   List<Map<String, dynamic>> _searchPublikasiResults = [];
@@ -38,11 +38,6 @@ class _DataPageState extends State<DataPage> {
 
   String _searchQuery = '';
 
-  // Sector Filters per Section
-  String _selectedBrsSector = 'semua';
-  String _selectedInfografisSector = 'semua';
-  String _selectedPublikasiSector = 'semua';
-
   final List<Map<String, String>> _categories = const [
     {'title': 'Tenaga Kerja', 'icon': 'assets_v2/icons/tenaga_kerja.png', 'route': '/ketenagakerjaan'},
     {'title': 'IPM', 'icon': 'assets_v2/icons/IPM.png', 'route': '/ipm'},
@@ -51,17 +46,6 @@ class _DataPageState extends State<DataPage> {
     {'title': 'Kependudukan', 'icon': 'assets_v2/icons/kependudukan.png', 'route': '/kependudukan'},
     {'title': 'Pertanian', 'icon': 'assets_v2/icons/pertanian.png', 'route': '/pertanian'},
     {'title': 'Kesejahteraan', 'icon': 'assets_v2/icons/kesejahteraan.png', 'route': '/kesejahteraan'},
-  ];
-
-  final List<Map<String, String>> _sectorOptions = const [
-    {'key': 'semua', 'label': 'Semua Sektor'},
-    {'key': 'pertanian', 'label': 'Pertanian'},
-    {'key': 'perekonomian', 'label': 'Perekonomian'},
-    {'key': 'tenaga_kerja', 'label': 'Tenaga Kerja'},
-    {'key': 'ipm', 'label': 'IPM'},
-    {'key': 'kemiskinan', 'label': 'Kemiskinan'},
-    {'key': 'kependudukan', 'label': 'Kependudukan'},
-    {'key': 'kesejahteraan', 'label': 'Kesejahteraan'},
   ];
 
   @override
@@ -81,6 +65,25 @@ class _DataPageState extends State<DataPage> {
     _searchController.dispose();
     _categoryScrollController.dispose();
     super.dispose();
+  }
+
+  int _extractYear(String title) {
+    final matches = RegExp(r'\b(20\d{2}|19\d{2})\b').allMatches(title);
+    if (matches.isNotEmpty) {
+      return int.tryParse(matches.last.group(0) ?? '') ?? 0;
+    }
+    return 0;
+  }
+
+  int _compareByNewest(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final dateA = (a['created_at'] ?? a['rl_date'] ?? a['date'] ?? '').toString();
+    final dateB = (b['created_at'] ?? b['rl_date'] ?? b['date'] ?? '').toString();
+    final comp = dateB.compareTo(dateA);
+    if (comp != 0) return comp;
+
+    final yearA = _extractYear((a['item_name'] ?? a['title'] ?? '').toString());
+    final yearB = _extractYear((b['item_name'] ?? b['title'] ?? '').toString());
+    return yearB.compareTo(yearA);
   }
 
   void _onSearchInputChanged() {
@@ -111,7 +114,6 @@ class _DataPageState extends State<DataPage> {
     });
 
     try {
-      // Query Supabase contents table with full dataset
       final response = await Supabase.instance.client
           .from('contents')
           .select()
@@ -120,6 +122,7 @@ class _DataPageState extends State<DataPage> {
           .limit(60);
 
       final List<Map<String, dynamic>> allMatches = List<Map<String, dynamic>>.from(response);
+      allMatches.sort(_compareByNewest);
 
       final brsList = <Map<String, dynamic>>[];
       final pubList = <Map<String, dynamic>>[];
@@ -130,7 +133,6 @@ class _DataPageState extends State<DataPage> {
         if (actionType == 'download_file') {
           infList.add(item);
         } else {
-          // Both BRS and Publikasi have action_type = 'view_pdf'
           brsList.add(item);
           pubList.add(item);
         }
@@ -152,7 +154,6 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> _fetchBrsData() async {
     try {
-      // 1. Ambil langsung dari Supabase contents table
       final response = await Supabase.instance.client
           .from('contents')
           .select()
@@ -161,6 +162,8 @@ class _DataPageState extends State<DataPage> {
           .limit(30);
 
       final list = List<Map<String, dynamic>>.from(response);
+      list.sort(_compareByNewest);
+
       if (list.isNotEmpty) {
         if (mounted) {
           setState(() {
@@ -172,7 +175,7 @@ class _DataPageState extends State<DataPage> {
       }
     } catch (_) {}
 
-    // Fallback BPS API jika Supabase sedang offline
+    // Fallback BPS API
     try {
       final response = await http.get(
         Uri.parse('https://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/1/key/9db89e91c3c142df678e65a78c4e547f'),
@@ -181,6 +184,7 @@ class _DataPageState extends State<DataPage> {
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
+        list.sort(_compareByNewest);
         if (mounted) {
           setState(() {
             _brsItems = list;
@@ -195,7 +199,6 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> _fetchInfografisData() async {
     try {
-      // 1. Ambil langsung dari Supabase contents table
       final response = await Supabase.instance.client
           .from('contents')
           .select()
@@ -204,6 +207,8 @@ class _DataPageState extends State<DataPage> {
           .limit(30);
 
       final list = List<Map<String, dynamic>>.from(response);
+      list.sort(_compareByNewest);
+
       if (list.isNotEmpty) {
         if (mounted) {
           setState(() {
@@ -224,6 +229,7 @@ class _DataPageState extends State<DataPage> {
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
+        list.sort(_compareByNewest);
         if (mounted) {
           setState(() {
             _infografisItems = list;
@@ -238,7 +244,6 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> _fetchPublikasiData() async {
     try {
-      // 1. Ambil langsung dari Supabase contents table
       final response = await Supabase.instance.client
           .from('contents')
           .select()
@@ -247,6 +252,8 @@ class _DataPageState extends State<DataPage> {
           .limit(30);
 
       final list = List<Map<String, dynamic>>.from(response);
+      list.sort(_compareByNewest);
+
       if (list.isNotEmpty) {
         if (mounted) {
           setState(() {
@@ -267,6 +274,7 @@ class _DataPageState extends State<DataPage> {
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
+        list.sort(_compareByNewest);
         if (mounted) {
           setState(() {
             _publikasiItems = list;
@@ -293,34 +301,22 @@ class _DataPageState extends State<DataPage> {
     }
   }
 
-  bool _matchesSector(Map<String, dynamic> item, String sectorKey) {
-    if (sectorKey == 'semua') return true;
-    final sectors = item['sector_categories'];
-    if (sectors is List) {
-      return sectors.any((s) => s.toString().toLowerCase() == sectorKey.toLowerCase());
-    }
-    return true;
-  }
-
   List<Map<String, dynamic>> get _filteredBrsItems {
     final source = _searchQuery.isNotEmpty ? _searchBrsResults : _brsItems;
-    final filtered = source.where((item) => _matchesSector(item, _selectedBrsSector)).toList();
-    if (_searchQuery.isEmpty) return filtered.take(5).toList();
-    return filtered;
+    if (_searchQuery.isEmpty) return source.take(5).toList();
+    return source;
   }
 
   List<Map<String, dynamic>> get _filteredInfografisItems {
     final source = _searchQuery.isNotEmpty ? _searchInfografisResults : _infografisItems;
-    final filtered = source.where((item) => _matchesSector(item, _selectedInfografisSector)).toList();
-    if (_searchQuery.isEmpty) return filtered.take(5).toList();
-    return filtered;
+    if (_searchQuery.isEmpty) return source.take(5).toList();
+    return source;
   }
 
   List<Map<String, dynamic>> get _filteredPublikasiItems {
     final source = _searchQuery.isNotEmpty ? _searchPublikasiResults : _publikasiItems;
-    final filtered = source.where((item) => _matchesSector(item, _selectedPublikasiSector)).toList();
-    if (_searchQuery.isEmpty) return filtered.take(5).toList();
-    return filtered;
+    if (_searchQuery.isEmpty) return source.take(5).toList();
+    return source;
   }
 
   @override
@@ -488,13 +484,11 @@ class _DataPageState extends State<DataPage> {
               ),
               const SizedBox(height: 24),
 
-              // BRS Section
-              _buildSectionHeaderWithFilter(
+              // BRS Section (Clean header)
+              _buildSectionHeader(
                 context: context,
                 title: 'Berita Resmi Statistik (BRS)',
                 linkText: 'Lainnya ▶',
-                selectedSector: _selectedBrsSector,
-                onSectorChanged: (val) => setState(() => _selectedBrsSector = val),
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_brs_list',
@@ -504,17 +498,15 @@ class _DataPageState extends State<DataPage> {
                   Navigator.pushNamed(context, '/berita');
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               _buildBrsList(context),
               const SizedBox(height: 24),
 
-              // Infografis Section
-              _buildSectionHeaderWithFilter(
+              // Infografis Section (Clean header)
+              _buildSectionHeader(
                 context: context,
                 title: 'Infografis',
                 linkText: 'Lainnya ▶',
-                selectedSector: _selectedInfografisSector,
-                onSectorChanged: (val) => setState(() => _selectedInfografisSector = val),
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_infografis_list',
@@ -524,17 +516,15 @@ class _DataPageState extends State<DataPage> {
                   Navigator.pushNamed(context, '/infografis_full');
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               _buildInfografisList(context),
               const SizedBox(height: 24),
 
-              // Publikasi Section
-              _buildSectionHeaderWithFilter(
+              // Publikasi Section (Clean header)
+              _buildSectionHeader(
                 context: context,
                 title: 'Publikasi',
                 linkText: 'Lainnya ▶',
-                selectedSector: _selectedPublikasiSector,
-                onSectorChanged: (val) => setState(() => _selectedPublikasiSector = val),
                 onLinkTap: () {
                   LoggerService.logActivity(
                     actionType: 'view_publikasi_list',
@@ -544,7 +534,7 @@ class _DataPageState extends State<DataPage> {
                   Navigator.pushNamed(context, '/publikasi_full');
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               _buildPublikasiList(context),
               const SizedBox(height: 24),
 
@@ -617,89 +607,6 @@ class _DataPageState extends State<DataPage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionHeaderWithFilter({
-    required BuildContext context,
-    required String title,
-    required String linkText,
-    required String selectedSector,
-    required ValueChanged<String> onSectorChanged,
-    required VoidCallback onLinkTap,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: pjsBold16.copyWith(color: isDark ? Colors.white : dark1),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            InkWell(
-              onTap: onLinkTap,
-              child: Text(
-                linkText,
-                style: pjsSemiBold12.copyWith(color: blueNormal),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        // Dropdown Filter Bar
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              decoration: BoxDecoration(
-                color: selectedSector != 'semua'
-                    ? blueNormal.withOpacity(0.12)
-                    : (isDark ? const Color(0xFF222222) : const Color(0xFFEBF3F8)),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: selectedSector != 'semua' ? blueNormal : Colors.transparent,
-                  width: 1,
-                ),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedSector,
-                  isDense: true,
-                  icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: blueNormal),
-                  style: pjsMedium12.copyWith(
-                    color: selectedSector != 'semua' ? blueNormal : (isDark ? Colors.white70 : dark2),
-                    fontSize: 11,
-                  ),
-                  dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
-                  items: _sectorOptions.map((opt) {
-                    return DropdownMenuItem<String>(
-                      value: opt['key'],
-                      child: Text(opt['label']!),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) onSectorChanged(val);
-                  },
-                ),
-              ),
-            ),
-            if (selectedSector != 'semua') ...[
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => onSectorChanged('semua'),
-                child: Icon(Icons.cancel, size: 16, color: Colors.grey.shade500),
-              ),
-            ],
-          ],
-        ),
-      ],
     );
   }
 

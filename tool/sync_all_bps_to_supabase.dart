@@ -130,6 +130,24 @@ Future<void> upsertBatchToSupabase(List<Map<String, dynamic>> items) async {
   }
 }
 
+String resolveDate(String? rawDate, String title) {
+  if (rawDate != null && rawDate.trim().isNotEmpty) {
+    if (rawDate.contains('T')) return rawDate;
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(rawDate.trim())) {
+      return '${rawDate.trim()}T00:00:00Z';
+    }
+  }
+  final dateMatch = RegExp(r'(\d{4}-\d{2}-\d{2})').firstMatch(title);
+  if (dateMatch != null) {
+    return '${dateMatch.group(1)}T00:00:00Z';
+  }
+  final yearMatch = RegExp(r'\b(20\d{2}|19\d{2})\b').allMatches(title);
+  if (yearMatch.isNotEmpty) {
+    return '${yearMatch.last.group(0)}-01-01T00:00:00Z';
+  }
+  return DateTime.now().toIso8601String();
+}
+
 Future<void> syncBrs() async {
   print('\n=== 1. SYNCING BRS (Berita Resmi Statistik) ===');
   int page = 1;
@@ -152,6 +170,7 @@ Future<void> syncBrs() async {
             if (title.isEmpty) continue;
             final cover = (item['thumbnail'] ?? item['img'] ?? item['cover'] ?? '').toString();
             final pdf = (item['pdf'] ?? item['dl'] ?? '').toString();
+            final rlDate = item['rl_date']?.toString();
             
             batch.add({
               'item_name': title,
@@ -159,6 +178,7 @@ Future<void> syncBrs() async {
               'action_type': 'view_pdf',
               'cover_url': cover,
               'content_url': pdf,
+              'created_at': resolveDate(rlDate, title),
             });
           }
           
@@ -198,6 +218,7 @@ Future<void> syncPublikasi() async {
             if (title.isEmpty) continue;
             final cover = (item['cover'] ?? item['img'] ?? item['thumbnail'] ?? '').toString();
             final pdf = (item['pdf'] ?? item['dl'] ?? '').toString();
+            final rlDate = (item['rl_date'] ?? item['sch_date'])?.toString();
             
             batch.add({
               'item_name': title,
@@ -205,6 +226,7 @@ Future<void> syncPublikasi() async {
               'action_type': 'view_pdf',
               'cover_url': cover,
               'content_url': pdf,
+              'created_at': resolveDate(rlDate, title),
             });
           }
           
@@ -244,6 +266,7 @@ Future<void> syncInfografis() async {
             if (title.isEmpty) continue;
             final img = (item['img'] ?? item['thumbnail'] ?? item['cover'] ?? '').toString();
             final dl = (item['dl'] ?? item['img'] ?? '').toString();
+            final date = item['date']?.toString();
             
             batch.add({
               'item_name': title,
@@ -251,6 +274,7 @@ Future<void> syncInfografis() async {
               'action_type': 'download_file',
               'cover_url': img,
               'content_url': dl,
+              'created_at': resolveDate(date, title),
             });
           }
           

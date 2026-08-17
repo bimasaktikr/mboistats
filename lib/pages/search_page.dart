@@ -53,6 +53,25 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
+  int _extractYear(String title) {
+    final matches = RegExp(r'\b(20\d{2}|19\d{2})\b').allMatches(title);
+    if (matches.isNotEmpty) {
+      return int.tryParse(matches.last.group(0) ?? '') ?? 0;
+    }
+    return 0;
+  }
+
+  int _compareByNewest(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final dateA = (a['created_at'] ?? a['rl_date'] ?? a['date'] ?? '').toString();
+    final dateB = (b['created_at'] ?? b['rl_date'] ?? b['date'] ?? '').toString();
+    final comp = dateB.compareTo(dateA);
+    if (comp != 0) return comp;
+
+    final yearA = _extractYear((a['item_name'] ?? a['title'] ?? '').toString());
+    final yearB = _extractYear((b['item_name'] ?? b['title'] ?? '').toString());
+    return yearB.compareTo(yearA);
+  }
+
   Future<void> _performSearch(String query) async {
     final cleanQuery = query.trim().toLowerCase();
     if (cleanQuery.isEmpty) {
@@ -79,6 +98,7 @@ class _SearchPageState extends State<SearchPage> {
           .limit(100);
 
       final List<Map<String, dynamic>> list = List<Map<String, dynamic>>.from(response);
+      list.sort(_compareByNewest);
 
       if (mounted) {
         setState(() {
@@ -98,7 +118,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   List<Map<String, dynamic>> get _filteredResults {
-    return _rawResults.where((item) {
+    final list = _rawResults.where((item) {
       // 1. Sector filter
       if (_selectedSector != 'semua') {
         final sectors = item['sector_categories'];
@@ -122,6 +142,9 @@ class _SearchPageState extends State<SearchPage> {
 
       return true;
     }).toList();
+
+    list.sort(_compareByNewest);
+    return list;
   }
 
   String _getSectorLabel(dynamic sectorCategories) {
