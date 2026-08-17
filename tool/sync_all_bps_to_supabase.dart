@@ -175,7 +175,7 @@ Future<void> syncBrs() async {
             batch.add({
               'item_name': title,
               'sector_categories': categorizeTitle(title),
-              'action_type': 'view_pdf',
+              'action_type': 'view_brs_pdf',
               'cover_url': cover,
               'content_url': pdf,
               'created_at': resolveDate(rlDate, title),
@@ -223,7 +223,7 @@ Future<void> syncPublikasi() async {
             batch.add({
               'item_name': title,
               'sector_categories': categorizeTitle(title),
-              'action_type': 'view_pdf',
+              'action_type': 'view_publikasi_pdf',
               'cover_url': cover,
               'content_url': pdf,
               'created_at': resolveDate(rlDate, title),

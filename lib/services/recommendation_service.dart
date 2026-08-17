@@ -488,7 +488,7 @@ class RecommendationService {
           .from('activity_logs')
           .select('item_name, sector_category, created_at, action_type, cover_url, content_url')
           .or(filterStr)
-          .inFilter('action_type', ['view_pdf', 'download_file', 'view_page'])
+          .inFilter('action_type', ['view_pdf', 'view_brs_pdf', 'view_publikasi_pdf', 'download_file', 'view_page'])
           .not('item_name', 'in', '("Halaman Login","Halaman Profil","Halaman Edit Profil","Halaman Kontak Layanan","Logout Akun","Masuk dengan Google","Login Google Sukses","Temukan BRS lainnya","Temukan Infografis lainnya","Temukan Publikasi lainnya","Pertanian","Perekonomian","Tenaga Kerja","IPM","Kemiskinan","Kependudukan","Kesejahteraan")')
           .order('created_at', ascending: false)
           .limit(limit * 4)

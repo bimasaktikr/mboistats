@@ -264,6 +264,7 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
                                       child: coverUrl.isNotEmpty
                                           ? Image.network(
                                               coverUrl,
+                                              headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
                                               fit: BoxFit.cover,
                                               width: double.infinity,
                                               errorBuilder: (context, error, stackTrace) =>

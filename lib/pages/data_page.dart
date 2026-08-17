@@ -132,6 +132,10 @@ class _DataPageState extends State<DataPage> {
         final actionType = item['action_type'] as String? ?? 'view_pdf';
         if (actionType == 'download_file') {
           infList.add(item);
+        } else if (actionType == 'view_brs_pdf') {
+          brsList.add(item);
+        } else if (actionType == 'view_publikasi_pdf') {
+          pubList.add(item);
         } else {
           brsList.add(item);
           pubList.add(item);
@@ -157,7 +161,7 @@ class _DataPageState extends State<DataPage> {
       final response = await Supabase.instance.client
           .from('contents')
           .select()
-          .eq('action_type', 'view_pdf')
+          .eq('action_type', 'view_brs_pdf')
           .order('created_at', ascending: false)
           .limit(30);
 
@@ -247,7 +251,7 @@ class _DataPageState extends State<DataPage> {
       final response = await Supabase.instance.client
           .from('contents')
           .select()
-          .eq('action_type', 'view_pdf')
+          .eq('action_type', 'view_publikasi_pdf')
           .order('created_at', ascending: false)
           .limit(30);
 
@@ -714,6 +718,7 @@ class _DataPageState extends State<DataPage> {
                       child: thumbnail.isNotEmpty
                           ? Image.network(
                               thumbnail,
+                              headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
                                   Container(color: blueLighter, child: const Icon(Icons.newspaper, color: blueNormal)),
@@ -812,6 +817,7 @@ class _DataPageState extends State<DataPage> {
                       child: imgUrl.isNotEmpty
                           ? Image.network(
                               imgUrl,
+                              headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
                                   Container(color: blueLighter, child: const Icon(Icons.image, color: blueNormal)),
@@ -913,6 +919,7 @@ class _DataPageState extends State<DataPage> {
                       child: thumbnail.isNotEmpty
                           ? Image.network(
                               thumbnail,
+                              headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
                                   Container(color: blueLighter, child: const Icon(Icons.book, color: blueNormal)),

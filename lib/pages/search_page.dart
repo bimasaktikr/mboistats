@@ -136,7 +136,9 @@ class _SearchPageState extends State<SearchPage> {
         if (_selectedContentType == 'infografis') {
           if (actionType != 'download_file') return false;
         } else if (_selectedContentType == 'dokumen') {
-          if (actionType != 'view_pdf') return false;
+          if (actionType != 'view_pdf' &&
+              actionType != 'view_brs_pdf' &&
+              actionType != 'view_publikasi_pdf') return false;
         }
       }
 
@@ -421,6 +423,7 @@ class _SearchPageState extends State<SearchPage> {
                                       child: coverUrl.isNotEmpty
                                           ? Image.network(
                                               coverUrl,
+                                              headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
                                               fit: BoxFit.cover,
                                               errorBuilder: (context, error, stackTrace) =>
                                                   Image.asset(
