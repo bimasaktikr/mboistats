@@ -539,64 +539,8 @@ class RecommendationService {
     }
   }
 
-  /// Sync list item BPS API ke tabel 'contents' Supabase secara otomatis
+  /// Sync list item BPS API ke tabel 'contents' Supabase (dikelola oleh centralized sync)
   static Future<void> syncContentItems(List<Map<String, dynamic>> items, String actionType) async {
-    try {
-      for (var item in items) {
-        final title = (item['title'] ?? item['judul'] ?? '').toString();
-        if (title.isEmpty) continue;
-        final cover = (item['thumbnail'] ?? item['img'] ?? item['cover'] ?? '').toString();
-        final content = (item['pdf'] ?? item['img'] ?? item['dl'] ?? '').toString();
-
-        final text = title.toLowerCase();
-        final sectors = <String>[];
-        if (text.contains('inflasi') || text.contains('pdrb') || text.contains('ekonomi') ||
-            text.contains('hotel') || text.contains('penghunian') || text.contains('tpk') ||
-            text.contains('pariwisata') || text.contains('wisatawan') || text.contains('industri') ||
-            text.contains('perusahaan') || text.contains('usaha') || text.contains('perdagangan') ||
-            text.contains('ekspor') || text.contains('impor') || text.contains('konstruksi') ||
-            text.contains('transportasi') || text.contains('laju pertumbuhan')) {
-          sectors.add('perekonomian');
-        }
-        if (text.contains('kemiskinan') || text.contains('miskin')) sectors.add('kemiskinan');
-        if (text.contains('kerja') || text.contains('pengangguran') || text.contains('tpt') ||
-            text.contains('tenaga') || text.contains('upah') || text.contains('buruh')) {
-          sectors.add('tenaga_kerja');
-        }
-        if (text.contains('ipm') || text.contains('pembangunan manusia') ||
-            text.contains('sekolah') || text.contains('harapan hidup') ||
-            text.contains('melek huruf') || text.contains('pendidikan') ||
-            text.contains('gender') || text.contains('ketimpangan')) {
-          sectors.add('ipm');
-        }
-        if (text.contains('penduduk') || text.contains('kecamatan') || text.contains('dalam angka') ||
-            text.contains('demografi') || text.contains('kelahiran') || text.contains('kematian') ||
-            text.contains('migrasi') || text.contains('sensus') || text.contains('potensi desa') ||
-            text.contains('statistik daerah')) {
-          sectors.add('kependudukan');
-        }
-        if (text.contains('panen') || text.contains('padi') || text.contains('beras') ||
-            text.contains('pertanian') || text.contains('tanaman') || text.contains('ternak') ||
-            text.contains('perikanan') || text.contains('hortikultura')) {
-          sectors.add('pertanian');
-        }
-        if (text.contains('pengeluaran') || text.contains('kesejahteraan') || text.contains('gini') ||
-            text.contains('konsumsi') || text.contains('sosial') || text.contains('rumah tangga') ||
-            text.contains('susenas')) {
-          sectors.add('kesejahteraan');
-        }
-        if (sectors.isEmpty) sectors.add('perekonomian');
-
-        await _client.from('contents').upsert({
-          'item_name': title,
-          'sector_categories': sectors,
-          'action_type': actionType,
-          'cover_url': cover,
-          'content_url': content,
-        }, onConflict: 'item_name');
-      }
-    } catch (e) {
-      print("Error syncing content items to Supabase: $e");
-    }
+    // Database contents disinkronkan secara terpusat oleh sync script / backend cron
   }
 }

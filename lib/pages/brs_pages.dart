@@ -17,6 +17,7 @@ import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/services/recommendation_service.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BeritaPages extends StatefulWidget {
   const BeritaPages({Key? key}) : super(key: key);
@@ -82,45 +83,80 @@ class _BeritaPageState extends State<BeritaPages> {
     return yearB.compareTo(yearA);
   }
 
-  List<Map<String, dynamic>> get _filteredBRS {
-    if (_selectedSector == 'semua') return dataBRS;
-    return dataBRS.where((item) {
-      final title = (item['title'] ?? '').toString().toLowerCase();
-      final sector = LoggerService.classifySector(title).toLowerCase();
-      return sector == _selectedSector.toLowerCase() ||
-          title.contains(_selectedSector.toLowerCase());
-    }).toList();
-  }
-
   Future<void> fetchDataBRS() async {
+    if (isLoading) return;
     setState(() {
       isLoading = true;
     });
 
-    final String apiUrl = "https://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/$currentPage/key/9db89e91c3c142df678e65a78c4e547f";
+    try {
+      final from = (currentPage - 1) * 20;
+      final to = from + 19;
 
-    final response = await http.get(Uri.parse(apiUrl));
+      var query = Supabase.instance.client
+          .from('contents')
+          .select()
+          .eq('action_type', 'view_brs_pdf');
 
-    if (response.statusCode == 200) {
-      final parsedResponse = json.decode(response.body);
-      final brs = List<Map<String, dynamic>>.from(parsedResponse["data"][1]);
-      RecommendationService.syncContentItems(brs, 'view_pdf');
+      if (_selectedSector != 'semua') {
+        query = query.contains('sector_categories', [_selectedSector]);
+      }
 
-      setState(() {
-        if (brs.isNotEmpty) {
-          dataBRS.addAll(brs);
-          dataBRS.sort(_compareByNewest);
-          currentPage++;
-        } else {
-          hasMore = false;
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(from, to);
+
+      final list = List<Map<String, dynamic>>.from(response);
+
+      if (mounted) {
+        setState(() {
+          if (list.isNotEmpty) {
+            dataBRS.addAll(list.map((item) => {
+              'title': item['item_name'],
+              'thumbnail': item['cover_url'],
+              'pdf': item['content_url'],
+              'created_at': item['created_at'],
+              'sector_categories': item['sector_categories'],
+            }));
+            currentPage++;
+          }
+          if (list.length < 20) {
+            hasMore = false;
+          }
+          isLoading = false;
+        });
+      }
+      return;
+    } catch (e) {
+      print("Error fetching BRS from Supabase: $e");
+    }
+
+    // Fallback to BPS API if Supabase fails
+    try {
+      final String apiUrl = "https://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/$currentPage/key/9db89e91c3c142df678e65a78c4e547f";
+      final response = await http.get(Uri.parse(apiUrl), headers: {'User-Agent': 'Mozilla/5.0'});
+
+      if (response.statusCode == 200) {
+        final parsedResponse = json.decode(response.body);
+        final brs = List<Map<String, dynamic>>.from(parsedResponse["data"][1]);
+
+        if (mounted) {
+          setState(() {
+            if (brs.isNotEmpty) {
+              dataBRS.addAll(brs);
+              dataBRS.sort(_compareByNewest);
+              currentPage++;
+            } else {
+              hasMore = false;
+            }
+            isLoading = false;
+          });
         }
-        isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-      throw Exception('Failed to load data');
+      } else {
+        if (mounted) setState(() => isLoading = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -134,7 +170,7 @@ class _BeritaPageState extends State<BeritaPages> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final displayList = _filteredBRS;
+    final displayList = dataBRS;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : bgColor,
@@ -202,7 +238,11 @@ class _BeritaPageState extends State<BeritaPages> {
                         onSelected: (selected) {
                           setState(() {
                             _selectedSector = sector['key']!;
+                            dataBRS.clear();
+                            currentPage = 1;
+                            hasMore = true;
                           });
+                          fetchDataBRS();
                         },
                       ),
                     );

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class InfografisFullPage extends StatefulWidget {
   const InfografisFullPage({Key? key}) : super(key: key);
@@ -86,11 +87,54 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
     if (_isLoading) return;
     setState(() => _isLoading = true);
 
+    try {
+      final from = (_currentPage - 1) * 20;
+      final to = from + 19;
+
+      var query = Supabase.instance.client
+          .from('contents')
+          .select()
+          .eq('action_type', 'download_file');
+
+      if (_selectedSector != 'semua') {
+        query = query.contains('sector_categories', [_selectedSector]);
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(from, to);
+
+      final list = List<Map<String, dynamic>>.from(response);
+
+      if (mounted) {
+        setState(() {
+          if (list.isNotEmpty) {
+            _dataInfografis.addAll(list.map((item) => {
+              'title': item['item_name'],
+              'img': item['cover_url'],
+              'dl': item['content_url'],
+              'created_at': item['created_at'],
+              'sector_categories': item['sector_categories'],
+            }));
+            _currentPage++;
+          }
+          if (list.length < 20) {
+            _hasMore = false;
+          }
+          _isLoading = false;
+        });
+      }
+      return;
+    } catch (e) {
+      print("Error fetching Infografis from Supabase: $e");
+    }
+
+    // Fallback to BPS API
     final String apiUrl =
         "https://webapi.bps.go.id/v1/api/list/domain/3573/model/infographic/lang/ind/domain/3573/page/$_currentPage/key/9db89e91c3c142df678e65a78c4e547f";
 
     try {
-      final response = await http.get(Uri.parse(apiUrl));
+      final response = await http.get(Uri.parse(apiUrl), headers: {'User-Agent': 'Mozilla/5.0'});
       if (response.statusCode == 200) {
         final parsedResponse = json.decode(response.body);
         if (parsedResponse["data"] != null && parsedResponse["data"][1] != null) {
@@ -99,7 +143,6 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
             setState(() => _hasMore = false);
           } else {
             final list = List<Map<String, dynamic>>.from(infografis);
-            RecommendationService.syncContentItems(list, 'download_file');
             setState(() {
               _currentPage++;
               _dataInfografis.addAll(list);
@@ -124,7 +167,7 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final displayList = _filteredInfografis;
+    final displayList = _dataInfografis;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : bgColor,
@@ -192,7 +235,11 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
                         onSelected: (selected) {
                           setState(() {
                             _selectedSector = sector['key']!;
+                            _dataInfografis.clear();
+                            _currentPage = 1;
+                            _hasMore = true;
                           });
+                          _fetchDataInfografis();
                         },
                       ),
                     );
