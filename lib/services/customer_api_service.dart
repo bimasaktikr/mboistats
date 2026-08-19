@@ -118,4 +118,28 @@ class CustomerApiService {
       return null;
     }
   }
+
+  /// Mengambil data customer milik user yang sedang aktif login
+  static Future<CustomerProfileData?> getCurrentUserProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || user.email == null) return null;
+    return await getCustomerFromSupabase(user.email!);
+  }
+
+  /// Memperbarui data pengguna di tabel users_buku_tamu berdasarkan email
+  static Future<bool> updateCustomerInSupabase({
+    required String email,
+    required Map<String, dynamic> updateData,
+  }) async {
+    try {
+      await Supabase.instance.client
+          .from('users_buku_tamu')
+          .update(updateData)
+          .eq('email', email);
+      return true;
+    } catch (e) {
+      print("updateCustomerInSupabase Error: $e");
+      return false;
+    }
+  }
 }

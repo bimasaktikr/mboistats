@@ -4,6 +4,8 @@ import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:mboistats/services/customer_api_service.dart';
+
 class EditProfilPage extends StatefulWidget {
   const EditProfilPage({Key? key}) : super(key: key);
 
@@ -30,14 +32,20 @@ class _EditProfilPageState extends State<EditProfilPage> {
     );
   }
 
-  void _loadUserData() {
+  void _loadUserData() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       _emailController.text = user.email ?? '';
       
-      final fullName = user.userMetadata?['full_name'] as String? ?? '';
-      final nameParts = fullName.split(' ');
+      String fullName = user.userMetadata?['full_name'] as String? ?? '';
       
+      // Ambil nama dari tabel users_buku_tamu jika tersedia
+      final customerData = await CustomerApiService.getCurrentUserProfile();
+      if (customerData?.name != null && customerData!.name!.isNotEmpty) {
+        fullName = customerData.name!;
+      }
+      
+      final nameParts = fullName.split(' ');
       if (nameParts.isNotEmpty) {
         _firstNameController.text = nameParts.first;
         if (nameParts.length > 1) {
@@ -47,22 +55,34 @@ class _EditProfilPageState extends State<EditProfilPage> {
       
       _avatarUrl = user.userMetadata?['avatar_url'] as String?;
     }
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveProfile() async {
     final newFirstName = _firstNameController.text.trim();
     final newLastName = _lastNameController.text.trim();
     final fullName = '$newFirstName $newLastName'.trim();
+    final email = _emailController.text.trim();
     
     try {
+      // 1. Update metadata di Supabase Auth
       await Supabase.instance.client.auth.updateUser(
         UserAttributes(
           data: {'full_name': fullName},
         ),
       );
+
+      // 2. Sinkronkan perubahan ke tabel users_buku_tamu
+      if (email.isNotEmpty) {
+        await CustomerApiService.updateCustomerInSupabase(
+          email: email,
+          updateData: {'name': fullName},
+        );
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
