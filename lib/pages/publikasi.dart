@@ -179,25 +179,29 @@ class _PublikasiPageState extends State<PublikasiPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          parse(HtmlUnescape().convert(dataPublikasi[index]["abstract"])).body?.text ?? '',
+                          dataPublikasi[index]["abstract"] != null && (dataPublikasi[index]["abstract"] as String).isNotEmpty
+                              ? (parse(HtmlUnescape().convert(dataPublikasi[index]["abstract"])).body?.text ?? '')
+                              : (dataPublikasi[index]["title"] ?? ''),
                           style: TextStyle(fontSize: 13, color: dark1),
                           textAlign: TextAlign.justify,
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          "Ukuran Berkas: ${dataPublikasi[index]["size"].replaceAll('.', ',')}",
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey
+                        if (dataPublikasi[index]["size"] != null)
+                          Text(
+                            "Ukuran Berkas: ${(dataPublikasi[index]["size"] as String).replaceAll('.', ',')}",
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey
+                            ),
                           ),
-                        ),
-                        Text(
-                          "Tanggal Rilis: ${dataPublikasi[index]["rl_date"]}",
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey
+                        if (dataPublikasi[index]["rl_date"] != null || dataPublikasi[index]["created_at"] != null)
+                          Text(
+                            "Tanggal Rilis: ${dataPublikasi[index]["rl_date"] ?? dataPublikasi[index]["created_at"]?.toString().split('T')[0] ?? ''}",
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

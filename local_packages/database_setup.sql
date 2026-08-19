@@ -1,27 +1,68 @@
--- 1. Tabel Profil Perangkat (Device Profiles)
-CREATE TABLE IF NOT EXISTS public.device_profiles (
+-- 1. Tabel Profil Pengguna (User Profiles)
+CREATE TABLE IF NOT EXISTS public.user_profiles (
   device_id TEXT PRIMARY KEY,
   major TEXT NOT NULL,                         -- Jurusan yang dipilih saat onboarding
   onboarding_sectors TEXT[] DEFAULT '{}',      -- Sektor pilihan manual / pre-selected
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Tabel Pemetaan Jurusan ke Sektor Relevan (Smart Default)
+-- 2. Tabel Pemetaan Jurusan ke Sektor Relevan (Smart Default - Single Source of Truth)
 CREATE TABLE IF NOT EXISTS public.major_sector_mapping (
   major_name TEXT PRIMARY KEY,
   relevant_sectors TEXT[] NOT NULL
 );
 
--- Isi Data Default Pemetaan Jurusan ke Sektor
+-- Isi 49 Data Lengkap Pemetaan Jurusan ke Sektor BPS MBOISTATS
 INSERT INTO public.major_sector_mapping (major_name, relevant_sectors) VALUES
-('Teknik Informatika', ARRAY['perekonomian', 'tenaga_kerja']),
-('Sistem Informasi', ARRAY['perekonomian', 'tenaga_kerja']),
-('Teknik Sipil', ARRAY['perekonomian']),
-('Ekonomi', ARRAY['perekonomian', 'kemiskinan']),
-('Akuntansi', ARRAY['perekonomian', 'kesejahteraan']),
-('Ilmu Komunikasi', ARRAY['kependudukan', 'kesejahteraan']),
-('Pendidikan', ARRAY['ipm']),
-('Pertanian', ARRAY['pertanian', 'perekonomian'])
+  ('Teknik Informatika', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Ilmu Komputer', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Sains Data', ARRAY['perekonomian', 'ipm', 'kemiskinan']),
+  ('Sistem Informasi', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Teknologi Informasi', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Teknik Sipil', ARRAY['perekonomian', 'kependudukan']),
+  ('Perencanaan Wilayah & Kota (PWK)', ARRAY['perekonomian', 'kependudukan', 'kemiskinan']),
+  ('Teknik Industri', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Teknik Mesin', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Teknik Elektro', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Teknik Kimia', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Teknik Lingkungan', ARRAY['perekonomian', 'kependudukan', 'ipm']),
+  ('Ekonomi Pembangunan', ARRAY['perekonomian', 'kemiskinan', 'kesejahteraan']),
+  ('Ilmu Ekonomi', ARRAY['perekonomian', 'kemiskinan', 'kesejahteraan']),
+  ('Manajemen', ARRAY['perekonomian', 'tenaga_kerja', 'kesejahteraan']),
+  ('Bisnis', ARRAY['perekonomian', 'tenaga_kerja', 'kesejahteraan']),
+  ('Kewirausahaan', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Akuntansi', ARRAY['perekonomian', 'kesejahteraan']),
+  ('Keuangan', ARRAY['perekonomian', 'kesejahteraan']),
+  ('Statistika', ARRAY['perekonomian', 'ipm', 'kemiskinan']),
+  ('Matematika', ARRAY['perekonomian', 'ipm']),
+  ('Fisika', ARRAY['ipm', 'perekonomian']),
+  ('Kimia', ARRAY['ipm', 'perekonomian']),
+  ('Biologi', ARRAY['pertanian', 'ipm']),
+  ('Hukum', ARRAY['kependudukan', 'kesejahteraan', 'kemiskinan']),
+  ('Ilmu Administrasi Publik', ARRAY['kependudukan', 'kesejahteraan', 'kemiskinan']),
+  ('Ilmu Administrasi Bisnis', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Ilmu Komunikasi', ARRAY['kependudukan', 'kesejahteraan']),
+  ('Hubungan Internasional', ARRAY['perekonomian', 'kependudukan']),
+  ('Sosiologi', ARRAY['kemiskinan', 'kependudukan', 'kesejahteraan']),
+  ('Psikologi', ARRAY['kesejahteraan', 'ipm']),
+  ('Antropologi', ARRAY['kependudukan', 'kemiskinan', 'kesejahteraan']),
+  ('Pendidikan / Keguruan', ARRAY['ipm', 'kesejahteraan']),
+  ('Pertanian', ARRAY['pertanian', 'perekonomian']),
+  ('Agribisnis', ARRAY['pertanian', 'perekonomian']),
+  ('Kehutanan', ARRAY['pertanian', 'perekonomian']),
+  ('Peternakan', ARRAY['pertanian', 'perekonomian']),
+  ('Kedokteran', ARRAY['ipm', 'kesejahteraan']),
+  ('Kesehatan Masyarakat', ARRAY['ipm', 'kesejahteraan', 'kemiskinan']),
+  ('Farmasi', ARRAY['ipm', 'kesejahteraan']),
+  ('Keperawatan', ARRAY['ipm', 'kesejahteraan']),
+  ('Gizi', ARRAY['ipm', 'kemiskinan', 'kesejahteraan']),
+  ('Pariwisata', ARRAY['perekonomian', 'kesejahteraan']),
+  ('Perhotelan', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Desain Komunikasi Visual (DKV)', ARRAY['perekonomian', 'tenaga_kerja']),
+  ('Arsitektur', ARRAY['perekonomian', 'kependudukan']),
+  ('Sastra / Bahasa', ARRAY['ipm', 'kependudukan']),
+  ('Seni & Kriya', ARRAY['perekonomian', 'kesejahteraan']),
+  ('Lainnya', ARRAY['perekonomian', 'kependudukan'])
 ON CONFLICT (major_name) DO UPDATE 
 SET relevant_sectors = EXCLUDED.relevant_sectors;
 
@@ -30,7 +71,7 @@ ALTER TABLE public.activity_logs ADD COLUMN IF NOT EXISTS cover_url TEXT;
 ALTER TABLE public.activity_logs ADD COLUMN IF NOT EXISTS content_url TEXT;
 
 -- Nonaktifkan RLS (Row Level Security) agar log perangkat & preferensi dapat disimpan secara publik tanpa sesi Auth/SSO
-ALTER TABLE public.device_profiles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_profiles DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs DISABLE ROW LEVEL SECURITY;
 
 -- 3. Fungsi PostgreSQL RPC untuk Menghitung Skor & Rekomendasi Konten (Deduplicated & Cover Aggr)

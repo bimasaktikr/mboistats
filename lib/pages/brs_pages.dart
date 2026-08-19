@@ -359,25 +359,29 @@ class _BeritaPageState extends State<BeritaPages> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        parse(HtmlUnescape().convert(dataBRS[index]["abstract"])).body?.text ?? '',
+                        dataBRS[index]["abstract"] != null && (dataBRS[index]["abstract"] as String).isNotEmpty
+                            ? (parse(HtmlUnescape().convert(dataBRS[index]["abstract"])).body?.text ?? '')
+                            : (dataBRS[index]["title"] ?? ''),
                         style: TextStyle(fontSize: 13, color: dark1),
                         textAlign: TextAlign.justify,
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        "Ukuran Berkas: ${dataBRS[index]["size"].replaceAll('.', ',')}",
-                        style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey
+                      if (dataBRS[index]["size"] != null)
+                        Text(
+                          "Ukuran Berkas: ${(dataBRS[index]["size"] as String).replaceAll('.', ',')}",
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey
+                          ),
                         ),
-                      ),
-                      Text(
-                        "Tanggal Rilis: ${dataBRS[index]["rl_date"]}",
-                        style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey
+                      if (dataBRS[index]["rl_date"] != null || dataBRS[index]["created_at"] != null)
+                        Text(
+                          "Tanggal Rilis: ${dataBRS[index]["rl_date"] ?? dataBRS[index]["created_at"]?.toString().split('T')[0] ?? ''}",
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

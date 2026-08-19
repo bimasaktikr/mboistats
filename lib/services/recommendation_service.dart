@@ -36,23 +36,23 @@ class RecommendationService {
     try {
       final profileId = await _getProfileIdentifier();
       final data = await _client
-          .from('device_profiles')
+          .from('user_profiles')
           .select('device_id')
           .eq('device_id', profileId)
           .maybeSingle();
       return data != null;
     } catch (e) {
-      print("Error checking device profile: $e");
+      print("Error checking user profile: $e");
       return false;
     }
   }
 
-  // 2. Mengambil profil jurusan (major) perangkat saat ini
+  // 2. Mengambil profil jurusan (major) pengguna saat ini
   static Future<String?> getMajor() async {
     try {
       final profileId = await _getProfileIdentifier();
       final data = await _client
-          .from('device_profiles')
+          .from('user_profiles')
           .select('major')
           .eq('device_id', profileId)
           .maybeSingle();
@@ -61,7 +61,7 @@ class RecommendationService {
       }
       return null;
     } catch (e) {
-      print("Error fetching device major: $e");
+      print("Error fetching user major: $e");
       return null;
     }
   }
@@ -71,19 +71,19 @@ class RecommendationService {
     _cachedRecentlyViewed = null;
   }
 
-  // 2. Simpan atau perbarui profil perangkat (Jurusan & Sektor Pilihan)
+  // 2. Simpan atau perbarui profil pengguna (Jurusan & Sektor Pilihan)
   static Future<void> saveProfile(String major, List<String> onboardingSectors) async {
     try {
       clearLocalCache();
       final profileId = await _getProfileIdentifier();
-      await _client.from('device_profiles').upsert({
+      await _client.from('user_profiles').upsert({
         'device_id': profileId,
         'major': major,
         'onboarding_sectors': onboardingSectors,
       });
-      print("Device profile successfully saved: $major");
+      print("User profile successfully saved: $major");
     } catch (e) {
-      print("Error saving device profile: $e");
+      print("Error saving user profile: $e");
     }
   }
 
@@ -96,8 +96,8 @@ class RecommendationService {
       final deviceId = await LoggerService.getDeviceId();
       final profileId = await _getProfileIdentifier();
 
-      // 1. Hapus profil onboarding dari tabel device_profiles
-      await _client.from('device_profiles').delete().eq('device_id', profileId);
+      // 1. Hapus profil onboarding dari tabel user_profiles
+      await _client.from('user_profiles').delete().eq('device_id', profileId);
 
       // 2. Hapus histori aktivitas dari tabel activity_logs (agar fresh saat testing/ganti akun)
       if (userEmail != null && userEmail.isNotEmpty) {
@@ -114,61 +114,95 @@ class RecommendationService {
     }
   }
 
-  // 3. Ambil rekomendasi sektor awal berdasarkan Jurusan (Smart Default)
-  static Future<List<String>> getRelevantSectorsForMajor(String major) async {
+  static Map<String, List<String>>? _cachedMajorSectorMapping;
+
+  /// Default mapping 49 prodi sebagai fallback offline instan
+  static const Map<String, List<String>> defaultMajorSectorMapping = {
+    'Teknik Informatika': ['perekonomian', 'tenaga_kerja'],
+    'Ilmu Komputer': ['perekonomian', 'tenaga_kerja'],
+    'Sains Data': ['perekonomian', 'ipm', 'kemiskinan'],
+    'Sistem Informasi': ['perekonomian', 'tenaga_kerja'],
+    'Teknologi Informasi': ['perekonomian', 'tenaga_kerja'],
+    'Teknik Sipil': ['perekonomian', 'kependudukan'],
+    'Perencanaan Wilayah & Kota (PWK)': ['perekonomian', 'kependudukan', 'kemiskinan'],
+    'Teknik Industri': ['perekonomian', 'tenaga_kerja'],
+    'Teknik Mesin': ['perekonomian', 'tenaga_kerja'],
+    'Teknik Elektro': ['perekonomian', 'tenaga_kerja'],
+    'Teknik Kimia': ['perekonomian', 'tenaga_kerja'],
+    'Teknik Lingkungan': ['perekonomian', 'kependudukan', 'ipm'],
+    'Ekonomi Pembangunan': ['perekonomian', 'kemiskinan', 'kesejahteraan'],
+    'Ilmu Ekonomi': ['perekonomian', 'kemiskinan', 'kesejahteraan'],
+    'Manajemen': ['perekonomian', 'tenaga_kerja', 'kesejahteraan'],
+    'Bisnis': ['perekonomian', 'tenaga_kerja', 'kesejahteraan'],
+    'Kewirausahaan': ['perekonomian', 'tenaga_kerja'],
+    'Akuntansi': ['perekonomian', 'kesejahteraan'],
+    'Keuangan': ['perekonomian', 'kesejahteraan'],
+    'Statistika': ['perekonomian', 'ipm', 'kemiskinan'],
+    'Matematika': ['perekonomian', 'ipm'],
+    'Fisika': ['ipm', 'perekonomian'],
+    'Kimia': ['ipm', 'perekonomian'],
+    'Biologi': ['pertanian', 'ipm'],
+    'Hukum': ['kependudukan', 'kesejahteraan', 'kemiskinan'],
+    'Ilmu Administrasi Publik': ['kependudukan', 'kesejahteraan', 'kemiskinan'],
+    'Ilmu Administrasi Bisnis': ['perekonomian', 'tenaga_kerja'],
+    'Ilmu Komunikasi': ['kependudukan', 'kesejahteraan'],
+    'Hubungan Internasional': ['perekonomian', 'kependudukan'],
+    'Sosiologi': ['kemiskinan', 'kependudukan', 'kesejahteraan'],
+    'Psikologi': ['kesejahteraan', 'ipm'],
+    'Antropologi': ['kependudukan', 'kemiskinan', 'kesejahteraan'],
+    'Pendidikan / Keguruan': ['ipm', 'kesejahteraan'],
+    'Pertanian': ['pertanian', 'perekonomian'],
+    'Agribisnis': ['pertanian', 'perekonomian'],
+    'Kehutanan': ['pertanian', 'perekonomian'],
+    'Peternakan': ['pertanian', 'perekonomian'],
+    'Kedokteran': ['ipm', 'kesejahteraan'],
+    'Kesehatan Masyarakat': ['ipm', 'kesejahteraan', 'kemiskinan'],
+    'Farmasi': ['ipm', 'kesejahteraan'],
+    'Keperawatan': ['ipm', 'kesejahteraan'],
+    'Gizi': ['ipm', 'kemiskinan', 'kesejahteraan'],
+    'Pariwisata': ['perekonomian', 'kesejahteraan'],
+    'Perhotelan': ['perekonomian', 'tenaga_kerja'],
+    'Desain Komunikasi Visual (DKV)': ['perekonomian', 'tenaga_kerja'],
+    'Arsitektur': ['perekonomian', 'kependudukan'],
+    'Sastra / Bahasa': ['ipm', 'kependudukan'],
+    'Seni & Kriya': ['perekonomian', 'kesejahteraan'],
+    'Lainnya': ['perekonomian', 'kependudukan']
+  };
+
+  // 3. Mengambil daftar mapping seluruh jurusan dan sektor dari Supabase (Single Source of Truth)
+  static Future<Map<String, List<String>>> getMajorSectorMapping() async {
+    if (_cachedMajorSectorMapping != null && _cachedMajorSectorMapping!.isNotEmpty) {
+      return _cachedMajorSectorMapping!;
+    }
     try {
-      final data = await _client
+      final List<dynamic> data = await _client
           .from('major_sector_mapping')
-          .select('relevant_sectors')
-          .eq('major_name', major)
-          .maybeSingle();
-      if (data != null && data['relevant_sectors'] != null) {
-        return List<String>.from(data['relevant_sectors']);
+          .select('major_name, relevant_sectors')
+          .order('major_name', ascending: true);
+
+      if (data.isNotEmpty) {
+        final map = <String, List<String>>{};
+        for (final row in data) {
+          final majorName = row['major_name']?.toString() ?? '';
+          final sectors = List<String>.from(row['relevant_sectors'] ?? []);
+          if (majorName.isNotEmpty) {
+            map[majorName] = sectors;
+          }
+        }
+        _cachedMajorSectorMapping = map;
+        return map;
       }
     } catch (e) {
-      print("Error fetching sectors for major: $e");
+      print("Info: Memakai fallback default mapping jurusan: $e");
     }
-    // Fallback Offline jika database belum sinkron/koneksi offline
-    return getOfflineRelevantSectors(major);
+    _cachedMajorSectorMapping = Map<String, List<String>>.from(defaultMajorSectorMapping);
+    return _cachedMajorSectorMapping!;
   }
 
-  // Fallback pemetaan jurusan luring dengan substring matching yang optimal
-  static List<String> getOfflineRelevantSectors(String major) {
-    final m = major.toLowerCase();
-    if (m.contains('informatika') || m.contains('komputer') || m.contains('sistem informasi') || m.contains('teknologi')) {
-      return ['perekonomian', 'tenaga_kerja'];
-    }
-    if (m.contains('statistika') || m.contains('matematika') || m.contains('sains data')) {
-      return ['perekonomian', 'ipm', 'kemiskinan'];
-    }
-    if (m.contains('ekonomi') || m.contains('manajemen') || m.contains('bisnis') || m.contains('keuangan')) {
-      return ['perekonomian', 'kemiskinan', 'kesejahteraan'];
-    }
-    if (m.contains('akuntansi')) {
-      return ['perekonomian', 'kesejahteraan'];
-    }
-    if (m.contains('sipil') || m.contains('pwk') || m.contains('perencanaan') || m.contains('industri')) {
-      return ['perekonomian', 'kependudukan'];
-    }
-    if (m.contains('hukum') || m.contains('komunikasi') || m.contains('sosiologi') || m.contains('psikologi') || m.contains('administrasi')) {
-      return ['kependudukan', 'kesejahteraan', 'kemiskinan'];
-    }
-    if (m.contains('pendidikan') || m.contains('keguruan')) {
-      return ['ipm', 'kesejahteraan'];
-    }
-    if (m.contains('pertanian') || m.contains('agribisnis') || m.contains('kehutanan') || m.contains('peternakan')) {
-      return ['pertanian', 'perekonomian'];
-    }
-    if (m.contains('kesehatan') || m.contains('kedokteran') || m.contains('farmasi')) {
-      return ['ipm', 'kesejahteraan'];
-    }
-    if (m.contains('pariwisata') || m.contains('perhotelan')) {
-      return ['perekonomian', 'kesejahteraan'];
-    }
-    if (m.contains('umum')) {
-      return [];
-    }
-    return ['perekonomian', 'kependudukan'];
+  // Ambil rekomendasi sektor awal berdasarkan Jurusan (Langsung dari Map)
+  static Future<List<String>> getRelevantSectorsForMajor(String major) async {
+    final mapping = await getMajorSectorMapping();
+    return mapping[major] ?? defaultMajorSectorMapping[major] ?? ['perekonomian', 'kependudukan'];
   }
 
   static List<Map<String, dynamic>>? _cachedRecommendations;
@@ -337,7 +371,7 @@ class RecommendationService {
         List<String> preferredSectors = [];
         try {
           final profile = await _client
-              .from('device_profiles')
+              .from('user_profiles')
               .select('onboarding_sectors')
               .eq('device_id', profileId)
               .maybeSingle();
