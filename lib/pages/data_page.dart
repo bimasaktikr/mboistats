@@ -1,5 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -129,12 +134,13 @@ class _DataPageState extends State<DataPage> {
       final infList = <Map<String, dynamic>>[];
 
       for (var item in allMatches) {
-        final actionType = item['action_type'] as String? ?? 'view_pdf';
-        if (actionType == 'download_file') {
+        final cType = (item['content_type'] ?? '').toString();
+        final actionType = (item['action_type'] ?? '').toString();
+        if (cType == 'infografis' || actionType == 'download_file') {
           infList.add(item);
-        } else if (actionType == 'view_brs_pdf') {
+        } else if (cType == 'brs' || actionType == 'view_brs_pdf') {
           brsList.add(item);
-        } else if (actionType == 'view_publikasi_pdf') {
+        } else if (cType == 'publikasi' || actionType == 'view_publikasi_pdf') {
           pubList.add(item);
         } else {
           brsList.add(item);
@@ -161,9 +167,10 @@ class _DataPageState extends State<DataPage> {
       final response = await Supabase.instance.client
           .from('contents')
           .select()
-          .eq('action_type', 'view_brs_pdf')
+          .or('content_type.eq.brs,action_type.eq.view_brs_pdf')
           .order('created_at', ascending: false)
-          .limit(30);
+          .limit(30)
+          .timeout(const Duration(seconds: 4));
 
       final list = List<Map<String, dynamic>>.from(response);
       list.sort(_compareByNewest);
@@ -184,7 +191,7 @@ class _DataPageState extends State<DataPage> {
       final response = await http.get(
         Uri.parse('https://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/1/key/9db89e91c3c142df678e65a78c4e547f'),
         headers: {'User-Agent': 'Mozilla/5.0'},
-      );
+      ).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
@@ -206,9 +213,10 @@ class _DataPageState extends State<DataPage> {
       final response = await Supabase.instance.client
           .from('contents')
           .select()
-          .eq('action_type', 'download_file')
+          .or('content_type.eq.infografis,action_type.eq.download_file')
           .order('created_at', ascending: false)
-          .limit(30);
+          .limit(30)
+          .timeout(const Duration(seconds: 4));
 
       final list = List<Map<String, dynamic>>.from(response);
       list.sort(_compareByNewest);
@@ -229,7 +237,7 @@ class _DataPageState extends State<DataPage> {
       final response = await http.get(
         Uri.parse('https://webapi.bps.go.id/v1/api/list/domain/3573/model/infographic/lang/ind/domain/3573/page/1/key/9db89e91c3c142df678e65a78c4e547f'),
         headers: {'User-Agent': 'Mozilla/5.0'},
-      );
+      ).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
@@ -251,9 +259,10 @@ class _DataPageState extends State<DataPage> {
       final response = await Supabase.instance.client
           .from('contents')
           .select()
-          .eq('action_type', 'view_publikasi_pdf')
+          .or('content_type.eq.publikasi,action_type.eq.view_publikasi_pdf')
           .order('created_at', ascending: false)
-          .limit(30);
+          .limit(30)
+          .timeout(const Duration(seconds: 4));
 
       final list = List<Map<String, dynamic>>.from(response);
       list.sort(_compareByNewest);
@@ -274,7 +283,7 @@ class _DataPageState extends State<DataPage> {
       final response = await http.get(
         Uri.parse('https://webapi.bps.go.id/v1/api/list/domain/3573/model/publication/lang/ind/page/1/key/9db89e91c3c142df678e65a78c4e547f'),
         headers: {'User-Agent': 'Mozilla/5.0'},
-      );
+      ).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final parsed = json.decode(response.body);
         final list = List<Map<String, dynamic>>.from(parsed['data'][1]);
@@ -293,7 +302,7 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> _fetchYoutubeData() async {
     try {
-      final items = await YouTubeService.getRecentStreams(limit: 3);
+      final items = await YouTubeService.getRecentStreams(limit: 3).timeout(const Duration(seconds: 4));
       if (mounted) {
         setState(() {
           _youtubeItems = items;
@@ -692,18 +701,16 @@ class _DataPageState extends State<DataPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                LoggerService.logActivity(
-                  actionType: 'view_pdf',
-                  sectorCategory: LoggerService.classifySector(title),
-                  itemName: title,
-                  coverUrl: thumbnail,
-                  contentUrl: pdfUrl,
-                );
                 if (pdfUrl.isNotEmpty) {
-                  Navigator.pushNamed(
-                    context,
-                    '/pdf_viewer',
-                    arguments: {'pdfUrl': pdfUrl, 'title': title},
+                  _showPdfConfirmDialog(
+                    context: context,
+                    title: title,
+                    pdfUrl: pdfUrl,
+                    contentType: 'brs',
+                    coverUrl: thumbnail,
+                    abstractText: item['abstract'] ?? item['ringkasan'],
+                    releaseDate: item['rl_date'] ?? item['created_at']?.toString().split('T')[0],
+                    size: item['size'],
                   );
                 } else {
                   Navigator.pushNamed(context, '/berita');
@@ -893,18 +900,15 @@ class _DataPageState extends State<DataPage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                LoggerService.logActivity(
-                  actionType: 'view_pdf',
-                  sectorCategory: LoggerService.classifySector(title),
-                  itemName: title,
-                  coverUrl: thumbnail,
-                  contentUrl: pdfUrl,
-                );
                 if (pdfUrl.isNotEmpty) {
-                  Navigator.pushNamed(
-                    context,
-                    '/pdf_viewer',
-                    arguments: {'pdfUrl': pdfUrl, 'title': title},
+                  _showPdfConfirmDialog(
+                    context: context,
+                    title: title,
+                    pdfUrl: pdfUrl,
+                    coverUrl: thumbnail,
+                    abstractText: item['abstract'] ?? item['ringkasan'],
+                    releaseDate: item['rl_date'] ?? item['created_at']?.toString().split('T')[0],
+                    size: item['size'],
                   );
                 } else {
                   Navigator.pushNamed(context, '/publikasi_full');
@@ -1074,5 +1078,196 @@ class _DataPageState extends State<DataPage> {
         ),
       ),
     );
+  }
+
+  void _showPdfConfirmDialog({
+    required BuildContext context,
+    required String title,
+    required String pdfUrl,
+    String? contentType,
+    String? coverUrl,
+    String? abstractText,
+    String? releaseDate,
+    String? size,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          title: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: pjsBold16.copyWith(color: dark1),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (abstractText != null && abstractText.isNotEmpty)
+                  Text(
+                    abstractText,
+                    style: TextStyle(fontSize: 13, color: dark1),
+                    textAlign: TextAlign.justify,
+                  )
+                else
+                  Text(
+                    title,
+                    style: TextStyle(fontSize: 13, color: dark1),
+                    textAlign: TextAlign.justify,
+                  ),
+                const SizedBox(height: 8),
+                if (size != null && size.isNotEmpty)
+                  Text(
+                    "Ukuran Berkas: ${size.replaceAll('.', ',')}",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                if (releaseDate != null && releaseDate.isNotEmpty)
+                  Text(
+                    "Tanggal Rilis: $releaseDate",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Tutup"),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _downloadAndOpenPdf(pdfUrl, title, coverUrl);
+                  },
+                  child: const Text("Unduh"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    final resolvedType = contentType ?? (title.toLowerCase().contains('berita resmi') ? 'brs' : 'publikasi');
+                    LoggerService.logActivity(
+                      actionType: 'view_pdf',
+                      contentType: resolvedType,
+                      sectorCategory: LoggerService.classifySector(title),
+                      itemName: title,
+                      coverUrl: coverUrl,
+                      contentUrl: pdfUrl,
+                    );
+                    Navigator.pushNamed(
+                      context,
+                      '/pdf_viewer',
+                      arguments: {'pdfUrl': pdfUrl, 'title': title},
+                    );
+                  },
+                  child: const Text("Buka PDF"),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _downloadAndOpenPdf(String pdfUrl, String fileName, String? coverUrl) async {
+    final cleanSector = LoggerService.classifySector(fileName);
+
+    if (Platform.isIOS) {
+      try {
+        Fluttertoast.showToast(
+          msg: "Menyiapkan berkas...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+
+        final response = await http.get(Uri.parse(pdfUrl));
+        if (response.statusCode == 200) {
+          final dir = await getTemporaryDirectory();
+          final cleanName = fileName.replaceAll(RegExp(r'[^\w\s\-\.]'), '_');
+          final filePath = '${dir.path}/$cleanName.pdf';
+          final file = File(filePath);
+          await file.writeAsBytes(response.bodyBytes);
+
+          LoggerService.logActivity(
+            actionType: 'download_file',
+            sectorCategory: cleanSector,
+            itemName: fileName,
+            coverUrl: coverUrl,
+            contentUrl: pdfUrl,
+          );
+
+          await OpenFile.open(filePath);
+        } else {
+          throw Exception("Gagal mengunduh berkas dari server.");
+        }
+      } catch (error) {
+        Fluttertoast.showToast(
+          msg: "Gagal mengunduh: $error",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+      return;
+    }
+
+    try {
+      Fluttertoast.showToast(
+        msg: "Memulai unduhan...",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.blue,
+        textColor: Colors.white,
+      );
+
+      final cleanName = fileName.replaceAll(RegExp(r'[^\w\s\-\.]'), '_');
+      await FileDownloader.downloadFile(
+        url: pdfUrl,
+        name: cleanName.endsWith('.pdf') ? cleanName : '$cleanName.pdf',
+        onDownloadCompleted: (String path) {
+          LoggerService.logActivity(
+            actionType: 'download_file',
+            sectorCategory: cleanSector,
+            itemName: fileName,
+            coverUrl: coverUrl,
+            contentUrl: pdfUrl,
+          );
+          Fluttertoast.showToast(
+            msg: "Unduhan selesai.",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            backgroundColor: Colors.blue,
+            textColor: Colors.white,
+          );
+        },
+        onDownloadError: (String error) {
+          Fluttertoast.showToast(
+            msg: "Gagal mengunduh: $error",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+          );
+        },
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Gagal mengunduh: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
   }
 }

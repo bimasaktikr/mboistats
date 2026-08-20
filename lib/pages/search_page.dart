@@ -92,7 +92,7 @@ class _SearchPageState extends State<SearchPage> {
       // Query Supabase contents table directly (Full Database of ~740+ items)
       final response = await Supabase.instance.client
           .from('contents')
-          .select()
+          .select('*, contents_has_categories(categories(category))')
           .ilike('item_name', '%$cleanQuery%')
           .order('created_at', ascending: false)
           .limit(100);
@@ -117,26 +117,35 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  /// Helper: Extract category names from contents_has_categories junction data
+  List<String> _extractCategories(Map<String, dynamic> item) {
+    final chc = item['contents_has_categories'];
+    if (chc is List && chc.isNotEmpty) {
+      return chc
+          .where((e) => e is Map && e['categories'] is Map && e['categories']['category'] != null)
+          .map<String>((e) => e['categories']['category'].toString().toLowerCase())
+          .toList();
+    }
+    return [];
+  }
+
   List<Map<String, dynamic>> get _filteredResults {
     final list = _rawResults.where((item) {
       // 1. Sector filter
       if (_selectedSector != 'semua') {
-        final sectors = item['sector_categories'];
-        if (sectors is List) {
-          final matches = sectors.any((s) => s.toString().toLowerCase() == _selectedSector.toLowerCase());
-          if (!matches) return false;
-        } else {
-          return false;
-        }
+        final categories = _extractCategories(item);
+        if (!categories.contains(_selectedSector.toLowerCase())) return false;
       }
 
       // 2. Content type filter
       if (_selectedContentType != 'semua') {
+        final cType = (item['content_type'] ?? '').toString();
         final actionType = (item['action_type'] ?? '').toString();
         if (_selectedContentType == 'infografis') {
-          if (actionType != 'download_file') return false;
+          if (cType != 'infografis' && actionType != 'download_file') return false;
         } else if (_selectedContentType == 'dokumen') {
-          if (actionType != 'view_pdf' &&
+          if (cType != 'brs' && cType != 'publikasi' &&
+              actionType != 'view_pdf' &&
               actionType != 'view_brs_pdf' &&
               actionType != 'view_publikasi_pdf') return false;
         }
@@ -149,9 +158,9 @@ class _SearchPageState extends State<SearchPage> {
     return list;
   }
 
-  String _getSectorLabel(dynamic sectorCategories) {
-    if (sectorCategories is List && sectorCategories.isNotEmpty) {
-      return sectorCategories.map((s) => _capitalize(s.toString())).join(', ');
+  String _getSectorLabel(dynamic itemOrCategories) {
+    if (itemOrCategories is List && itemOrCategories.isNotEmpty) {
+      return itemOrCategories.map((s) => _capitalize(s.toString())).join(', ');
     }
     return 'Statistik';
   }
@@ -161,10 +170,12 @@ class _SearchPageState extends State<SearchPage> {
     return s[0].toUpperCase() + s.substring(1).replaceAll('_', ' ');
   }
 
-  String _getIconForSector(dynamic sectorCategories) {
+  String _getIconForSector(dynamic itemOrSectors) {
     String sector = '';
-    if (sectorCategories is List && sectorCategories.isNotEmpty) {
-      sector = sectorCategories[0].toString().toLowerCase();
+    if (itemOrSectors is Map && itemOrSectors['categories'] is Map && itemOrSectors['categories']['category'] != null) {
+      sector = itemOrSectors['categories']['category'].toString().toLowerCase();
+    } else if (itemOrSectors is List && itemOrSectors.isNotEmpty) {
+      sector = itemOrSectors[0].toString().toLowerCase();
     }
     switch (sector) {
       case 'perekonomian':
@@ -189,14 +200,16 @@ class _SearchPageState extends State<SearchPage> {
   void _onItemTap(Map<String, dynamic> item) {
     final contentUrl = item['content_url'] as String? ?? '';
     final title = item['item_name'] as String? ?? 'Data Statistik';
-    final sectors = item['sector_categories'];
-    final sectorLabel = (sectors is List && sectors.isNotEmpty)
-        ? sectors[0].toString().toUpperCase()
+    final categories = _extractCategories(item);
+    final sectorLabel = categories.isNotEmpty 
+        ? categories[0].toUpperCase()
         : 'STATISTIK';
     final actionType = item['action_type'] as String? ?? 'view_pdf';
+    final contentType = item['content_type'] as String?;
 
     LoggerService.logActivity(
       actionType: actionType,
+      contentType: contentType,
       sectorCategory: sectorLabel,
       itemName: title,
       coverUrl: item['cover_url'] as String? ?? '',
@@ -385,7 +398,7 @@ class _SearchPageState extends State<SearchPage> {
                         itemBuilder: (context, index) {
                           final item = results[index];
                           final title = item['item_name'] as String? ?? '';
-                          final sectors = item['sector_categories'];
+                          final sectors = _extractCategories(item);
                           final coverUrl = item['cover_url'] as String? ?? '';
                           final actionType = item['action_type'] as String? ?? 'view_pdf';
                           final isInfografis = actionType == 'download_file';

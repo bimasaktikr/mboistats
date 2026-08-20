@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:flutter_file_downloader/flutter_file_downloader.dart';
@@ -7,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:mboistats/theme.dart';
+import 'package:mboistats/services/logger_service.dart';
 
 /// Native Flutter PDF Viewer (Varian B)
 /// Menggunakan Syncfusion C++ PDFium Canvas Engine & Local Disk Caching
@@ -27,56 +29,66 @@ class GlobalPDFViewer extends StatefulWidget {
 
 class _GlobalPDFViewerState extends State<GlobalPDFViewer> {
   bool _isDownloading = false;
-  File? _cachedFile;
-  bool _isCheckingCache = true;
+  Uint8List? _pdfBytes;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _checkLocalCache();
+    _loadPdf();
   }
 
-  /// Memeriksa apakah file PDF sudah tersimpan di cache lokal
-  Future<void> _checkLocalCache() async {
+  /// Memeriksa cache lokal atau mengunduh langsung bytes PDF dengan User-Agent BPS
+  Future<void> _loadPdf() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final hashName = 'pdf_cache_${widget.pdfUrl.hashCode}.pdf';
       final file = File('${dir.path}/$hashName');
 
       if (await file.exists() && (await file.length()) > 0) {
+        final bytes = await file.readAsBytes();
         if (mounted) {
           setState(() {
-            _cachedFile = file;
-            _isCheckingCache = false;
+            _pdfBytes = bytes;
+            _isLoading = false;
           });
         }
         return;
       }
 
-      // Unduh & cache file secara latar belakang untuk akses berikutnya
-      _cachePdfInBackground(file);
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isCheckingCache = false);
-      }
-    }
-  }
+      // Unduh dari server dengan User-Agent resmi agar tidak di-block oleh WebAPI BPS
+      final response = await http.get(
+        Uri.parse(widget.pdfUrl),
+        headers: const {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/pdf,*/*',
+        },
+      ).timeout(const Duration(seconds: 25));
 
-  Future<void> _cachePdfInBackground(File file) async {
-    try {
-      final response = await http.get(Uri.parse(widget.pdfUrl)).timeout(const Duration(seconds: 15));
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
         await file.writeAsBytes(response.bodyBytes);
-        if (mounted && _cachedFile == null) {
+        if (mounted) {
           setState(() {
-            _cachedFile = file;
-            _isCheckingCache = false;
+            _pdfBytes = response.bodyBytes;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Gagal memuat dokumen (HTTP ${response.statusCode})';
+            _isLoading = false;
           });
         }
       }
-    } catch (_) {}
-    if (mounted && _isCheckingCache) {
-      setState(() => _isCheckingCache = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Gagal mengunduh berkas: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -84,6 +96,13 @@ class _GlobalPDFViewerState extends State<GlobalPDFViewer> {
     setState(() {
       _isDownloading = true;
     });
+
+    LoggerService.logActivity(
+      actionType: 'download_file',
+      sectorCategory: LoggerService.classifySector(widget.title),
+      itemName: widget.title,
+      contentUrl: widget.pdfUrl,
+    );
 
     String fileName = widget.title.replaceAll(RegExp(r'[^\w\s\-\.]'), '_');
     if (!fileName.toLowerCase().endsWith('.pdf')) {
@@ -214,9 +233,64 @@ class _GlobalPDFViewerState extends State<GlobalPDFViewer> {
                 ),
         ],
       ),
-      body: _cachedFile != null
-          ? SfPdfViewer.file(_cachedFile!)
-          : SfPdfViewer.network(widget.pdfUrl),
+      body: _isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: blueNormal),
+                  SizedBox(height: 16),
+                  Text(
+                    'Memuat dokumen PDF...',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ],
+              ),
+            )
+          : _pdfBytes != null
+              ? SfPdfViewer.memory(
+                  _pdfBytes!,
+                  onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+                    if (mounted) {
+                      setState(() {
+                        _errorMessage = details.description;
+                      });
+                    }
+                  },
+                )
+              : Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 12),
+                        Text(
+                          _errorMessage ?? 'Dokumen tidak dapat dimuat.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: blueNormal,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isLoading = true;
+                              _errorMessage = null;
+                            });
+                            _loadPdf();
+                          },
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
     );
   }
 }

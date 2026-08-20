@@ -93,11 +93,16 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
 
       var query = Supabase.instance.client
           .from('contents')
-          .select()
-          .eq('action_type', 'download_file');
+          .select(_selectedSector != 'semua' ? '*, contents_has_categories!inner(categories_id_category)' : '*')
+          .or('content_type.eq.infografis,action_type.eq.download_file');
 
-      if (_selectedSector != 'semua') {
-        query = query.contains('sector_categories', [_selectedSector]);
+      const sectorToCategoryId = {
+        'perekonomian': 1, 'tenaga_kerja': 2, 'ipm': 3,
+        'kemiskinan': 4, 'kependudukan': 5, 'pertanian': 6, 'kesejahteraan': 7,
+      };
+
+      if (_selectedSector != 'semua' && sectorToCategoryId.containsKey(_selectedSector)) {
+        query = query.eq('contents_has_categories.categories_id_category', sectorToCategoryId[_selectedSector]!);
       }
 
       final response = await query
@@ -114,7 +119,6 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
               'img': item['cover_url'],
               'dl': item['content_url'],
               'created_at': item['created_at'],
-              'sector_categories': item['sector_categories'],
             }));
             _currentPage++;
           }
@@ -280,7 +284,8 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
                             return InkWell(
                               onTap: () {
                                 LoggerService.logActivity(
-                                  actionType: 'view_pdf',
+                                  actionType: 'download_file',
+                                  contentType: 'infografis',
                                   sectorCategory: LoggerService.classifySector(title),
                                   itemName: title,
                                   coverUrl: imgUrl,

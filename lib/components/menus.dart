@@ -37,7 +37,7 @@ class _MenusState extends State<Menus> {
 
   Future<void> _loadDynamicOrder() async {
     try {
-      final sectorScores = await RecommendationService.getSectorScoresForDevice();
+      final sectorScores = await RecommendationService.getSectorScoresForUser();
       if (sectorScores.isEmpty) return;
       
       final sorted = List<Map<String, String>>.from(_allCategories);

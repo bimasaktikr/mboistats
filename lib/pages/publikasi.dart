@@ -232,7 +232,8 @@ class _PublikasiPageState extends State<PublikasiPage> {
                     String fileName = dataPublikasi[index]["title"];
                     LoggerService.logActivity(
                       actionType: 'view_pdf',
-                      sectorCategory: 'publikasi',
+                      contentType: 'publikasi',
+                      sectorCategory: LoggerService.classifySector(fileName),
                       itemName: fileName,
                       coverUrl: dataPublikasi[index]["cover"],
                       contentUrl: pdfUrl,

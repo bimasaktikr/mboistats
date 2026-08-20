@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mboistats/theme.dart';
 import 'package:mboistats/services/recommendation_service.dart';
@@ -19,6 +20,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final List<String> _selectedSectors = [];
   bool _isLoading = false;
   String _majorSearchQuery = '';
+  Timer? _debounceTimer;
 
   // Daftar Jurusan (Single Source of Truth dari RecommendationService / Supabase)
   List<String> _majors = RecommendationService.defaultMajorSectorMapping.keys.toList();
@@ -27,6 +29,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void initState() {
     super.initState();
     _loadMajorsFromSupabase();
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadMajorsFromSupabase() async {
@@ -299,8 +308,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
           // Search Field untuk Jurusan
           TextField(
             onChanged: (val) {
-              setState(() {
-                _majorSearchQuery = val;
+              _debounceTimer?.cancel();
+              _debounceTimer = Timer(const Duration(milliseconds: 250), () {
+                if (mounted) {
+                  setState(() {
+                    _majorSearchQuery = val;
+                  });
+                }
               });
             },
             decoration: InputDecoration(
@@ -311,6 +325,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 18),
                       onPressed: () {
+                        _debounceTimer?.cancel();
                         setState(() {
                           _majorSearchQuery = '';
                         });

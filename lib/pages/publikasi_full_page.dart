@@ -1,5 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:mboistats/services/recommendation_service.dart';
 import 'dart:convert';
 import 'package:mboistats/components/footer.dart';
@@ -93,11 +98,16 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
 
       var query = Supabase.instance.client
           .from('contents')
-          .select()
-          .eq('action_type', 'view_publikasi_pdf');
+          .select(_selectedSector != 'semua' ? '*, contents_has_categories!inner(categories_id_category)' : '*')
+          .or('content_type.eq.publikasi,action_type.eq.view_publikasi_pdf');
 
-      if (_selectedSector != 'semua') {
-        query = query.contains('sector_categories', [_selectedSector]);
+      const sectorToCategoryId = {
+        'perekonomian': 1, 'tenaga_kerja': 2, 'ipm': 3,
+        'kemiskinan': 4, 'kependudukan': 5, 'pertanian': 6, 'kesejahteraan': 7,
+      };
+
+      if (_selectedSector != 'semua' && sectorToCategoryId.containsKey(_selectedSector)) {
+        query = query.eq('contents_has_categories.categories_id_category', sectorToCategoryId[_selectedSector]!);
       }
 
       final response = await query
@@ -114,7 +124,6 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
               'cover': item['cover_url'],
               'pdf': item['content_url'],
               'created_at': item['created_at'],
-              'sector_categories': item['sector_categories'],
             }));
             _currentPage++;
           }
@@ -282,17 +291,14 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
                             return InkWell(
                               onTap: () {
                                 if (pdfUrl.isNotEmpty) {
-                                  LoggerService.logActivity(
-                                    actionType: 'view_pdf',
-                                    sectorCategory: LoggerService.classifySector(title),
-                                    itemName: title,
+                                  _showPublikasiConfirmDialog(
+                                    context: context,
+                                    title: title,
+                                    pdfUrl: pdfUrl,
                                     coverUrl: coverUrl,
-                                    contentUrl: pdfUrl,
-                                  );
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/pdf_viewer',
-                                    arguments: {'pdfUrl': pdfUrl, 'title': title},
+                                    abstractText: item['abstract'] ?? item['ringkasan'],
+                                    releaseDate: item['rl_date'] ?? item['created_at']?.toString().split('T')[0],
+                                    size: item['size'],
                                   );
                                 }
                               },
@@ -352,5 +358,194 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
       ),
       bottomNavigationBar: const Footer(),
     );
+  }
+
+  void _showPublikasiConfirmDialog({
+    required BuildContext context,
+    required String title,
+    required String pdfUrl,
+    String? coverUrl,
+    String? abstractText,
+    String? releaseDate,
+    String? size,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          title: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: pjsBold16.copyWith(color: dark1),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (abstractText != null && abstractText.isNotEmpty)
+                  Text(
+                    abstractText,
+                    style: TextStyle(fontSize: 13, color: dark1),
+                    textAlign: TextAlign.justify,
+                  )
+                else
+                  Text(
+                    title,
+                    style: TextStyle(fontSize: 13, color: dark1),
+                    textAlign: TextAlign.justify,
+                  ),
+                const SizedBox(height: 8),
+                if (size != null && size.isNotEmpty)
+                  Text(
+                    "Ukuran Berkas: ${size.replaceAll('.', ',')}",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                if (releaseDate != null && releaseDate.isNotEmpty)
+                  Text(
+                    "Tanggal Rilis: $releaseDate",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Tutup"),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _downloadAndOpenPdf(pdfUrl, title, coverUrl);
+                  },
+                  child: const Text("Unduh"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    LoggerService.logActivity(
+                      actionType: 'view_pdf',
+                      contentType: 'publikasi',
+                      sectorCategory: LoggerService.classifySector(title),
+                      itemName: title,
+                      coverUrl: coverUrl,
+                      contentUrl: pdfUrl,
+                    );
+                    Navigator.pushNamed(
+                      context,
+                      '/pdf_viewer',
+                      arguments: {'pdfUrl': pdfUrl, 'title': title},
+                    );
+                  },
+                  child: const Text("Buka PDF"),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _downloadAndOpenPdf(String pdfUrl, String fileName, String? coverUrl) async {
+    final cleanSector = LoggerService.classifySector(fileName);
+
+    if (Platform.isIOS) {
+      try {
+        Fluttertoast.showToast(
+          msg: "Menyiapkan berkas...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+
+        final response = await http.get(Uri.parse(pdfUrl));
+        if (response.statusCode == 200) {
+          final dir = await getTemporaryDirectory();
+          final cleanName = fileName.replaceAll(RegExp(r'[^\w\s\-\.]'), '_');
+          final filePath = '${dir.path}/$cleanName.pdf';
+          final file = File(filePath);
+          await file.writeAsBytes(response.bodyBytes);
+
+          LoggerService.logActivity(
+            actionType: 'download_file',
+            sectorCategory: cleanSector,
+            itemName: fileName,
+            coverUrl: coverUrl,
+            contentUrl: pdfUrl,
+          );
+
+          await OpenFile.open(filePath);
+        } else {
+          throw Exception("Gagal mengunduh berkas dari server.");
+        }
+      } catch (error) {
+        Fluttertoast.showToast(
+          msg: "Gagal mengunduh: $error",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+      return;
+    }
+
+    try {
+      Fluttertoast.showToast(
+        msg: "Memulai unduhan...",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.blue,
+        textColor: Colors.white,
+      );
+
+      final cleanName = fileName.replaceAll(RegExp(r'[^\w\s\-\.]'), '_');
+      await FileDownloader.downloadFile(
+        url: pdfUrl,
+        name: cleanName.endsWith('.pdf') ? cleanName : '$cleanName.pdf',
+        onDownloadCompleted: (String path) {
+          LoggerService.logActivity(
+            actionType: 'download_file',
+            sectorCategory: cleanSector,
+            itemName: fileName,
+            coverUrl: coverUrl,
+            contentUrl: pdfUrl,
+          );
+          Fluttertoast.showToast(
+            msg: "Unduhan selesai.",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            backgroundColor: Colors.blue,
+            textColor: Colors.white,
+          );
+        },
+        onDownloadError: (String error) {
+          Fluttertoast.showToast(
+            msg: "Gagal mengunduh: $error",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+          );
+        },
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Gagal mengunduh: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
   }
 }

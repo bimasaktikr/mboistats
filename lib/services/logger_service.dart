@@ -53,15 +53,83 @@ class LoggerService {
     return _deviceId ?? 'unknown_device';
   }
 
+  /// Normalisasi/Sanitasi nama sektor ke 7 standar sektor resmi BPS
+  static String sanitizeSector(String sector) {
+    final s = sector.trim().toLowerCase();
+    if (s.contains('tenaga') || s.contains('kerja') || s.contains('ketenagakerjaan')) {
+      return 'tenaga_kerja';
+    }
+    if (s.contains('ekonomi') || s.contains('perekonomian')) {
+      return 'perekonomian';
+    }
+    if (s.contains('ipm') || s.contains('pembangunan manusia')) {
+      return 'ipm';
+    }
+    if (s.contains('miskin') || s.contains('kemiskinan')) {
+      return 'kemiskinan';
+    }
+    if (s.contains('penduduk') || s.contains('kependudukan')) {
+      return 'kependudukan';
+    }
+    if (s.contains('sejahtera') || s.contains('kesejahteraan')) {
+      return 'kesejahteraan';
+    }
+    if (s.contains('tani') || s.contains('pertanian')) {
+      return 'pertanian';
+    }
+    return s;
+  }
+
+  /// Infer/resolve tipe konten 5 kategori: 'brs', 'publikasi', 'infografis', 'indikator', 'fitur'
+  static String resolveContentType({
+    required String actionType,
+    required String sectorCategory,
+    required String itemName,
+    String? explicitContentType,
+  }) {
+    if (explicitContentType != null && explicitContentType.isNotEmpty) {
+      return explicitContentType.toLowerCase();
+    }
+
+    final act = actionType.toLowerCase();
+    final item = itemName.toLowerCase();
+    final sector = sectorCategory.toLowerCase();
+
+    if (act == 'view_brs_pdf' || (act == 'view_pdf' && item.contains('berita resmi'))) {
+      return 'brs';
+    }
+    if (act == 'view_publikasi_pdf' || (act == 'view_pdf' && !item.contains('berita resmi'))) {
+      return 'publikasi';
+    }
+    if (act == 'download_file') {
+      return 'infografis';
+    }
+    if (act == 'view_page') {
+      const systemItems = {
+        'halaman login', 'halaman profil', 'masuk dengan google',
+        'hapus akun', 'logout', 'kontak', 'temukan brs lainnya',
+        'temukan infografis lainnya', 'temukan publikasi lainnya',
+      };
+      if (systemItems.contains(item) || item.startsWith('halaman')) {
+        return 'fitur';
+      }
+      const officialSectors = {
+        'perekonomian', 'ekonomi', 'tenaga_kerja', 'ketenagakerjaan',
+        'ipm', 'kemiskinan', 'kependudukan', 'pertanian', 'kesejahteraan',
+      };
+      if (officialSectors.contains(sector)) {
+        return 'indikator';
+      }
+    }
+    return 'fitur';
+  }
+
   /// Mengirimkan log aktivitas pengguna ke Supabase secara asinkron (tidak memblokir UI thread).
-  /// [sectorCategory] : nama kategori menu/sektor (contoh: kependudukan, kemiskinan, pertanian).
-  /// [itemName] : sub menu/fitur yang diklik/diakses (contoh: 'Penduduk Menurut JK').
-  /// [actionType] : aksi yang dilakukan (contoh: 'view_page', 'download_pdf').
-  /// [userId] : kolom opsional untuk diisi User ID setelah SSO diintegrasikan (Checkpoint 3).
   static Future<void> logActivity({
     required String sectorCategory,
     required String itemName,
     required String actionType,
+    String? contentType,
     String? userId,
     String? coverUrl,
     String? contentUrl,
@@ -71,9 +139,16 @@ class LoggerService {
     final currentUser = Supabase.instance.client.auth.currentUser;
     final activeUserId = userId ?? currentUser?.email ?? currentUser?.id;
     final accountIdentifier = currentUser?.email ?? currentUser?.id ?? "Anonymous";
+    final cleanSector = sanitizeSector(sectorCategory);
+    final resolvedType = resolveContentType(
+      actionType: actionType,
+      sectorCategory: cleanSector,
+      itemName: itemName,
+      explicitContentType: contentType,
+    );
 
     // Selalu cetak log lokal untuk keperluan debugging pengembang
-    print('Activity Logged -> Platform: $platformName | Account: $accountIdentifier | Device: $deviceId | Sektor: $sectorCategory | Item: $itemName | Aksi: $actionType | Cover: $coverUrl | Content: $contentUrl');
+    print('Activity Logged -> Platform: $platformName | Account: $accountIdentifier | Device: $deviceId | Sektor: $cleanSector | Type: $resolvedType | Item: $itemName | Aksi: $actionType | Cover: $coverUrl | Content: $contentUrl');
 
     if (!_isInitialized) {
       return;
@@ -81,9 +156,9 @@ class LoggerService {
 
     // Eksekusi POST request secara non-blocking
     Supabase.instance.client.from('activity_logs').insert({
-      'device_id': deviceId,
       'action_type': actionType,
-      'sector_category': sectorCategory,
+      'content_type': resolvedType,
+      'sector_category': cleanSector,
       'item_name': itemName,
       'platform': platformName,
       'user_id': activeUserId,

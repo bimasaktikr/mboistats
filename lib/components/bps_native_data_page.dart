@@ -391,46 +391,61 @@ class _BpsNativeDataPageState extends State<BpsNativeDataPage> {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(headerColor),
-          headingTextStyle: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 11,
-          ),
-          dataTextStyle: TextStyle(
-            color: isDark ? Colors.white : const Color(0xFF7F6000),
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
-          ),
-          columnSpacing: 16,
-          columns: [
-            const DataColumn(label: Text('TAHUN')),
-            ...data.series.map((s) => DataColumn(
-                  label: Text(s.label.toUpperCase(), textAlign: TextAlign.center),
-                )),
-          ],
-          rows: List.generate(data.years.length, (rowIdx) {
-            final reverseIdx = data.years.length - 1 - rowIdx;
-            return DataRow(
-              color: WidgetStateProperty.all(
-                rowIdx % 2 == 0 ? rowColor1 : rowColor2,
-              ),
-              cells: [
-                DataCell(Text(data.years[reverseIdx])),
-                ...data.series.map((s) {
-                  final val = s.values[reverseIdx];
-                  return DataCell(Text(
-                    val != null ? _formatValue(val) : '-',
-                    textAlign: TextAlign.center,
-                  ));
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
+                headingRowColor: WidgetStateProperty.all(headerColor),
+                headingTextStyle: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+                dataTextStyle: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF7F6000),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+                columnSpacing: 16,
+                columns: [
+                  const DataColumn(
+                    label: Expanded(
+                      child: Text('TAHUN', textAlign: TextAlign.center),
+                    ),
+                  ),
+                  ...data.series.map((s) => DataColumn(
+                        label: Expanded(
+                          child: Text(s.label.toUpperCase(), textAlign: TextAlign.center),
+                        ),
+                      )),
+                ],
+                rows: List.generate(data.years.length, (rowIdx) {
+                  final reverseIdx = data.years.length - 1 - rowIdx;
+                  return DataRow(
+                    color: WidgetStateProperty.all(
+                      rowIdx % 2 == 0 ? rowColor1 : rowColor2,
+                    ),
+                    cells: [
+                      DataCell(Center(child: Text(data.years[reverseIdx]))),
+                      ...data.series.map((s) {
+                        final val = s.values[reverseIdx];
+                        return DataCell(Center(
+                          child: Text(
+                            val != null ? _formatValue(val) : '-',
+                            textAlign: TextAlign.center,
+                          ),
+                        ));
+                      }),
+                    ],
+                  );
                 }),
-              ],
-            );
-          }),
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

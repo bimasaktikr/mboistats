@@ -93,18 +93,17 @@ class CustomerApiService {
           return CustomerProfileData.fromJson(dataJson);
         }
       }
-      return null;
-    } catch (e) {
-      print("CustomerApiService Error: $e");
-      return null;
+    } catch (_) {
+      // Jika server PHP lokal offline / Connection refused, fallback otomatis ke Supabase
     }
+    return await getCustomerFromSupabase(email);
   }
 
-  /// Mengambil data customer langsung dari Supabase Cloud (tabel users_buku_tamu)
+  /// Mengambil data customer langsung dari Supabase Cloud (tabel user_all)
   static Future<CustomerProfileData?> getCustomerFromSupabase(String email) async {
     try {
       final data = await Supabase.instance.client
-          .from('users_buku_tamu')
+          .from('user_all')
           .select()
           .eq('email', email)
           .maybeSingle();

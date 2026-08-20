@@ -7,6 +7,16 @@ const String supabaseAnonKey = 'sb_publishable_quE-cS4udgmoxFczxJOW9g_FaybcQjW';
 const String bpsApiKey = '9db89e91c3c142df678e65a78c4e547f';
 const String bpsDomain = '3573'; // Kota Malang
 
+const Map<String, int> sectorToCategoryId = {
+  'perekonomian': 1,
+  'tenaga_kerja': 2,
+  'ipm': 3,
+  'kemiskinan': 4,
+  'kependudukan': 5,
+  'pertanian': 6,
+  'kesejahteraan': 7,
+};
+
 List<String> categorizeTitle(String title) {
   final text = title.toLowerCase();
   final sectors = <String>[];
@@ -106,8 +116,15 @@ Future<void> upsertBatchToSupabase(List<Map<String, dynamic>> items) async {
 
   // De-duplicate within the batch itself to prevent PostgreSQL 21000 error
   final uniqueMap = <String, Map<String, dynamic>>{};
+  final categoryMap = <String, int>{};
   for (var item in items) {
-    uniqueMap[item['item_name']] = item;
+    final title = item['item_name'] as String;
+    final catId = item['category_id'] as int?;
+    if (catId != null) {
+      categoryMap[title] = catId;
+    }
+    final contentPayload = Map<String, dynamic>.from(item)..remove('category_id');
+    uniqueMap[title] = contentPayload;
   }
   final uniqueItems = uniqueMap.values.toList();
 
@@ -118,13 +135,42 @@ Future<void> upsertBatchToSupabase(List<Map<String, dynamic>> items) async {
       'apikey': supabaseAnonKey,
       'Authorization': 'Bearer $supabaseAnonKey',
       'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates',
+      'Prefer': 'resolution=merge-duplicates,return=representation',
     },
     body: json.encode(uniqueItems),
   );
 
   if (response.statusCode == 201 || response.statusCode == 200 || response.statusCode == 204) {
     print('  -> Sukses upsert ${uniqueItems.length} item ke Supabase');
+    try {
+      final returned = json.decode(response.body) as List<dynamic>?;
+      if (returned != null && returned.isNotEmpty) {
+        final junctionBatch = <Map<String, dynamic>>[];
+        for (var row in returned) {
+          final title = row['item_name'] as String?;
+          final id = row['id'] as String?;
+          if (title != null && id != null && categoryMap.containsKey(title)) {
+            junctionBatch.add({
+              'contents_id_content': id,
+              'categories_id_category': categoryMap[title],
+            });
+          }
+        }
+        if (junctionBatch.isNotEmpty) {
+          final jUrl = Uri.parse('$supabaseUrl/rest/v1/contents_has_categories?on_conflict=contents_id_content,categories_id_category');
+          await http.post(
+            jUrl,
+            headers: {
+              'apikey': supabaseAnonKey,
+              'Authorization': 'Bearer $supabaseAnonKey',
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates',
+            },
+            body: json.encode(junctionBatch),
+          );
+        }
+      }
+    } catch (_) {}
   } else {
     print('  -> Error upsert batch: ${response.statusCode} - ${response.body}');
   }
@@ -172,10 +218,12 @@ Future<void> syncBrs() async {
             final pdf = (item['pdf'] ?? item['dl'] ?? '').toString();
             final rlDate = item['rl_date']?.toString();
             
+            final sectors = categorizeTitle(title);
             batch.add({
               'item_name': title,
-              'sector_categories': categorizeTitle(title),
-              'action_type': 'view_brs_pdf',
+              'category_id': sectorToCategoryId[sectors.first],
+              'content_type': 'brs',
+              'action_type': 'view_pdf',
               'cover_url': cover,
               'content_url': pdf,
               'created_at': resolveDate(rlDate, title),
@@ -220,10 +268,12 @@ Future<void> syncPublikasi() async {
             final pdf = (item['pdf'] ?? item['dl'] ?? '').toString();
             final rlDate = (item['rl_date'] ?? item['sch_date'])?.toString();
             
+            final sectors = categorizeTitle(title);
             batch.add({
               'item_name': title,
-              'sector_categories': categorizeTitle(title),
-              'action_type': 'view_publikasi_pdf',
+              'category_id': sectorToCategoryId[sectors.first],
+              'content_type': 'publikasi',
+              'action_type': 'view_pdf',
               'cover_url': cover,
               'content_url': pdf,
               'created_at': resolveDate(rlDate, title),
@@ -268,9 +318,11 @@ Future<void> syncInfografis() async {
             final dl = (item['dl'] ?? item['img'] ?? '').toString();
             final date = item['date']?.toString();
             
+            final sectors = categorizeTitle(title);
             batch.add({
               'item_name': title,
-              'sector_categories': categorizeTitle(title),
+              'category_id': sectorToCategoryId[sectors.first],
+              'content_type': 'infografis',
               'action_type': 'download_file',
               'cover_url': img,
               'content_url': dl,

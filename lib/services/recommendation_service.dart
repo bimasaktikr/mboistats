@@ -36,9 +36,9 @@ class RecommendationService {
     try {
       final profileId = await _getProfileIdentifier();
       final data = await _client
-          .from('user_profiles')
-          .select('device_id')
-          .eq('device_id', profileId)
+          .from('user_all')
+          .select('id_user')
+          .eq('email', profileId)
           .maybeSingle();
       return data != null;
     } catch (e) {
@@ -52,12 +52,12 @@ class RecommendationService {
     try {
       final profileId = await _getProfileIdentifier();
       final data = await _client
-          .from('user_profiles')
-          .select('major')
-          .eq('device_id', profileId)
+          .from('user_all')
+          .select('major:major_id_major(major)')
+          .eq('email', profileId)
           .maybeSingle();
       if (data != null && data['major'] != null) {
-        return data['major'] as String;
+        return data['major']['major'] as String;
       }
       return null;
     } catch (e) {
@@ -76,12 +76,56 @@ class RecommendationService {
     try {
       clearLocalCache();
       final profileId = await _getProfileIdentifier();
-      await _client.from('user_profiles').upsert({
-        'device_id': profileId,
-        'major': major,
-        'onboarding_sectors': onboardingSectors,
-      });
-      print("User profile successfully saved: $major");
+      final user = _client.auth.currentUser;
+
+      // 1. Cari major_id dari tabel major
+      final majorData = await _client
+          .from('major')
+          .select('id_major')
+          .eq('major', major)
+          .maybeSingle();
+      final majorId = majorData?['id_major'] as int?;
+
+      // 2. Tentukan type_user ('mahasiswa' atau 'umum')
+      final typeUser = (major == 'Umum') ? 'umum' : 'mahasiswa';
+
+      // 3. Upsert ke user_all
+      await _client.from('user_all').upsert({
+        'email': profileId,
+        'name': user?.userMetadata?['full_name'] ?? user?.userMetadata?['name'],
+        'type_user': typeUser,
+        'major_id_major': majorId,
+      }, onConflict: 'email');
+
+      // 4. Ambil id_user yang baru dibuat/diupdate
+      final userData = await _client
+          .from('user_all')
+          .select('id_user')
+          .eq('email', profileId)
+          .single();
+      final userId = userData['id_user'] as String;
+
+      // 5. Hapus user_interests lama lalu insert baru
+      await _client.from('user_interests').delete().eq('user_id', userId);
+
+      if (onboardingSectors.isNotEmpty) {
+        // Ambil category IDs
+        final List<dynamic> categories = await _client
+            .from('categories')
+            .select('id_category, category')
+            .inFilter('category', onboardingSectors);
+
+        final interests = categories.map((cat) => {
+          'user_id': userId,
+          'category_id': cat['id_category'],
+        }).toList();
+
+        if (interests.isNotEmpty) {
+          await _client.from('user_interests').insert(interests);
+        }
+      }
+
+      print("User profile successfully saved to user_all: $major");
     } catch (e) {
       print("Error saving user profile: $e");
     }
@@ -93,24 +137,22 @@ class RecommendationService {
       final user = _client.auth.currentUser;
       final userEmail = user?.email;
       final userId = user?.id;
-      final deviceId = await LoggerService.getDeviceId();
       final profileId = await _getProfileIdentifier();
 
-      // 1. Hapus profil onboarding dari tabel user_profiles
-      await _client.from('user_profiles').delete().eq('device_id', profileId);
+      // 1. Hapus dari user_all (CASCADE akan menghapus user_interests juga)
+      await _client.from('user_all').delete().eq('email', profileId);
 
-      // 2. Hapus histori aktivitas dari tabel activity_logs (agar fresh saat testing/ganti akun)
+      // 2. Hapus histori aktivitas dari activity_logs
       if (userEmail != null && userEmail.isNotEmpty) {
         await _client.from('activity_logs').delete().eq('user_id', userEmail);
       }
       if (userId != null && userId.isNotEmpty) {
         await _client.from('activity_logs').delete().eq('user_id', userId);
       }
-      await _client.from('activity_logs').delete().eq('device_id', deviceId);
 
-      print("Device profile and activity logs successfully deleted from Supabase");
+      print("User profile and activity logs successfully deleted from Supabase");
     } catch (e) {
-      print("Error deleting device profile and logs: $e");
+      print("Error deleting user profile and logs: $e");
     }
   }
 
@@ -166,7 +208,8 @@ class RecommendationService {
     'Arsitektur': ['perekonomian', 'kependudukan'],
     'Sastra / Bahasa': ['ipm', 'kependudukan'],
     'Seni & Kriya': ['perekonomian', 'kesejahteraan'],
-    'Lainnya': ['perekonomian', 'kependudukan']
+    'Lainnya': ['perekonomian', 'kependudukan'],
+    'Umum': ['perekonomian', 'kependudukan']
   };
 
   // 3. Mengambil daftar mapping seluruh jurusan dan sektor dari Supabase (Single Source of Truth)
@@ -175,22 +218,29 @@ class RecommendationService {
       return _cachedMajorSectorMapping!;
     }
     try {
+      // Query major with their recommended categories via junction table
       final List<dynamic> data = await _client
-          .from('major_sector_mapping')
-          .select('major_name, relevant_sectors')
-          .order('major_name', ascending: true);
+          .from('major')
+          .select('major, major_recommendations(categories(category))')
+          .order('major', ascending: true);
 
       if (data.isNotEmpty) {
         final map = <String, List<String>>{};
         for (final row in data) {
-          final majorName = row['major_name']?.toString() ?? '';
-          final sectors = List<String>.from(row['relevant_sectors'] ?? []);
-          if (majorName.isNotEmpty) {
+          final majorName = row['major']?.toString() ?? '';
+          final recs = row['major_recommendations'] as List<dynamic>? ?? [];
+          final sectors = recs
+              .map((r) => (r['categories']?['category'] ?? '').toString())
+              .where((s) => s.isNotEmpty)
+              .toList();
+          if (majorName.isNotEmpty && sectors.isNotEmpty) {
             map[majorName] = sectors;
           }
         }
-        _cachedMajorSectorMapping = map;
-        return map;
+        if (map.isNotEmpty) {
+          _cachedMajorSectorMapping = map;
+          return map;
+        }
       }
     } catch (e) {
       print("Info: Memakai fallback default mapping jurusan: $e");
@@ -214,12 +264,12 @@ class RecommendationService {
     try {
       final profileId = await _getProfileIdentifier();
       final List<dynamic> response = await _client.rpc(
-        'get_personalized_recommendations_by_device',
+        'get_personalized_recommendations_by_user',
         params: {
-          'input_device_id': profileId,
+          'input_user_id': profileId,
           'rec_limit': limit + 6,
         },
-      ).timeout(const Duration(milliseconds: 2500));
+      ).timeout(const Duration(seconds: 8));
       
       const validSectors = {
         'perekonomian', 'ekonomi',
@@ -257,15 +307,15 @@ class RecommendationService {
     }
   }
 
-  /// Mengambil skor preferensi per sektor untuk akun/perangkat ini.
-  /// Digunakan untuk mengurutkan 7 ikon kategori di beranda secara dinamis.
-  static Future<Map<String, double>> getSectorScoresForDevice() async {
+  /// Mengambil skor preferensi per sektor untuk akun/user ini.
+  /// Digunakan untuk mengurutkan 3 ikon kategori dinamis di beranda.
+  static Future<Map<String, double>> getSectorScoresForUser() async {
     try {
       final profileId = await _getProfileIdentifier();
       final List<dynamic> response = await _client.rpc(
-        'get_sector_scores_for_device',
-        params: {'input_device_id': profileId},
-      ).timeout(const Duration(milliseconds: 2500));
+        'get_sector_scores_for_user',
+        params: {'input_user_id': profileId},
+      ).timeout(const Duration(seconds: 8));
       final map = <String, double>{};
       for (var row in response) {
         map[row['sector_name'] as String] = (row['score'] as num).toDouble();
@@ -279,6 +329,9 @@ class RecommendationService {
       return _cachedSectorScores ?? {};
     }
   }
+
+  // Alias backwards-compatibility
+  static Future<Map<String, double>> getSectorScoresForDevice() => getSectorScoresForUser();
 
   // Helper Mapper Rute & Icon untuk Sektor
   static String _getRouteForSector(String sector, String contentType) {
@@ -366,17 +419,25 @@ class RecommendationService {
       }).take(limit).toList();
 
       if (filteredList.isEmpty) {
-        // Ambil sektor preferensi pengguna dari onboarding
+        // Ambil sektor preferensi pengguna dari user_interests
         final profileId = await _getProfileIdentifier();
         List<String> preferredSectors = [];
         try {
-          final profile = await _client
-              .from('user_profiles')
-              .select('onboarding_sectors')
-              .eq('device_id', profileId)
+          final userData = await _client
+              .from('user_all')
+              .select('id_user')
+              .eq('email', profileId)
               .maybeSingle();
-          if (profile != null && profile['onboarding_sectors'] != null) {
-            preferredSectors = List<String>.from(profile['onboarding_sectors']);
+          if (userData != null) {
+            final userId = userData['id_user'] as String;
+            final List<dynamic> interests = await _client
+                .from('user_interests')
+                .select('categories(category)')
+                .eq('user_id', userId);
+            preferredSectors = interests
+                .map((i) => (i['categories']?['category'] ?? '').toString())
+                .where((s) => s.isNotEmpty)
+                .toList();
           }
         } catch (_) {}
 
@@ -499,10 +560,8 @@ class RecommendationService {
       final user = _client.auth.currentUser;
       final userEmail = user?.email;
       final userId = user?.id;
-      final deviceId = await LoggerService.getDeviceId();
 
-      // Filter terisolasi: Jika pengguna sudah login, HANYA filter berdasarkan user_id / email akun tersebut.
-      // Jangan sertakan device_id di dalam OR agar aktivitas antar-akun pada perangkat yang sama tidak saling tercampur!
+      // Filter terisolasi: Hanya ambil riwayat untuk akun pengguna yang sedang login.
       final filterOr = <String>[];
       if (userEmail != null && userEmail.isNotEmpty) {
         filterOr.add('user_id.eq.$userEmail');
@@ -511,9 +570,9 @@ class RecommendationService {
         filterOr.add('user_id.eq.$userId');
       }
 
-      // Jika belum login (Pengguna Anonim / Guest), baru gunakan device_id
+      // Jika belum login (Pengguna Anonim / Guest), tidak bisa menampilkan riwayat
       if (filterOr.isEmpty) {
-        filterOr.add('device_id.eq.$deviceId');
+        return [];
       }
 
       final filterStr = filterOr.join(',');
@@ -523,10 +582,9 @@ class RecommendationService {
           .select('item_name, sector_category, created_at, action_type, cover_url, content_url')
           .or(filterStr)
           .inFilter('action_type', ['view_pdf', 'view_brs_pdf', 'view_publikasi_pdf', 'download_file', 'view_page'])
-          .not('item_name', 'in', '("Halaman Login","Halaman Profil","Halaman Edit Profil","Halaman Kontak Layanan","Logout Akun","Masuk dengan Google","Login Google Sukses","Temukan BRS lainnya","Temukan Infografis lainnya","Temukan Publikasi lainnya","Pertanian","Perekonomian","Tenaga Kerja","IPM","Kemiskinan","Kependudukan","Kesejahteraan")')
           .order('created_at', ascending: false)
           .limit(limit * 4)
-          .timeout(const Duration(milliseconds: 2500));
+          .timeout(const Duration(seconds: 8));
 
       const validSectors = {
         'perekonomian', 'ekonomi',

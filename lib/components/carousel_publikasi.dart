@@ -208,7 +208,8 @@ class _CarouselPublikasiState extends State<CarouselPublikasi> {
                     final coverUrl = item['cover'] as String?;
                     LoggerService.logActivity(
                       actionType: 'view_pdf',
-                      sectorCategory: 'publikasi',
+                      contentType: 'publikasi',
+                      sectorCategory: LoggerService.classifySector(judul),
                       itemName: judul,
                       coverUrl: coverUrl,
                       contentUrl: tautan,

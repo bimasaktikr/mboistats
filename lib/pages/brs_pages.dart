@@ -95,11 +95,16 @@ class _BeritaPageState extends State<BeritaPages> {
 
       var query = Supabase.instance.client
           .from('contents')
-          .select()
-          .eq('action_type', 'view_brs_pdf');
+          .select(_selectedSector != 'semua' ? '*, contents_has_categories!inner(categories_id_category)' : '*')
+          .or('content_type.eq.brs,action_type.eq.view_brs_pdf');
 
-      if (_selectedSector != 'semua') {
-        query = query.contains('sector_categories', [_selectedSector]);
+      const sectorToCategoryId = {
+        'perekonomian': 1, 'tenaga_kerja': 2, 'ipm': 3,
+        'kemiskinan': 4, 'kependudukan': 5, 'pertanian': 6, 'kesejahteraan': 7,
+      };
+
+      if (_selectedSector != 'semua' && sectorToCategoryId.containsKey(_selectedSector)) {
+        query = query.eq('contents_has_categories.categories_id_category', sectorToCategoryId[_selectedSector]!);
       }
 
       final response = await query
@@ -116,7 +121,6 @@ class _BeritaPageState extends State<BeritaPages> {
               'thumbnail': item['cover_url'],
               'pdf': item['content_url'],
               'created_at': item['created_at'],
-              'sector_categories': item['sector_categories'],
             }));
             currentPage++;
           }
@@ -411,6 +415,7 @@ class _BeritaPageState extends State<BeritaPages> {
                     String fileName = dataBRS[index]["title"];
                     LoggerService.logActivity(
                       actionType: 'view_pdf',
+                      contentType: 'brs',
                       sectorCategory: LoggerService.classifySector(fileName),
                       itemName: fileName,
                       coverUrl: dataBRS[index]["thumbnail"],

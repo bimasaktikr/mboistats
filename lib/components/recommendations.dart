@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/theme.dart';
 
@@ -73,26 +74,62 @@ class _RecommendationSectionState extends State<RecommendationSection> {
                   child: InkWell(
                     onTap: () {
                       final contentUrl = item.contentUrl;
+                      final coverUrl = item.coverUrl;
+                      final title = item.title;
+
                       if (contentUrl != null && contentUrl.isNotEmpty) {
-                        if (contentUrl.toLowerCase().contains('.pdf') ||
+                        final urlLower = contentUrl.toLowerCase();
+                        final isBrs = item.route == '/berita' || urlLower.contains('pressrelease') || title.toLowerCase().contains('berita resmi');
+                        final isInfografis = item.route == '/infografis' || urlLower.contains('infographic');
+                        final inferredType = isBrs ? 'brs' : (isInfografis ? 'infografis' : 'publikasi');
+
+                        if (urlLower.contains('.pdf') ||
+                            urlLower.contains('download.php') ||
+                            urlLower.contains('publication') ||
                             item.route == '/berita' ||
                             item.route == '/publikasi') {
+                          LoggerService.logActivity(
+                            actionType: isInfografis ? 'download_file' : 'view_pdf',
+                            contentType: inferredType,
+                            sectorCategory: LoggerService.classifySector(title),
+                            itemName: title,
+                            coverUrl: coverUrl,
+                            contentUrl: contentUrl,
+                          );
                           Navigator.of(context).pushNamed(
                             '/pdf_viewer',
                             arguments: {
                               'pdfUrl': contentUrl,
-                              'title': item.title,
+                              'title': title,
                             },
                           );
-                        } else if (contentUrl.toLowerCase().contains('.jpg') ||
-                            contentUrl.toLowerCase().contains('.png') ||
-                            contentUrl.toLowerCase().contains('.jpeg') ||
+                        } else if (urlLower.contains('.jpg') ||
+                            urlLower.contains('.png') ||
+                            urlLower.contains('.jpeg') ||
+                            urlLower.contains('cover.php') ||
                             item.route == '/infografis') {
-                          Navigator.of(context).pushNamed('/image_viewer', arguments: {'imageUrl': contentUrl, 'title': item.title});
+                          LoggerService.logActivity(
+                            actionType: 'download_file',
+                            sectorCategory: LoggerService.classifySector(title),
+                            itemName: title,
+                            coverUrl: coverUrl,
+                            contentUrl: contentUrl,
+                          );
+                          Navigator.of(context).pushNamed('/image_viewer', arguments: {'imageUrl': contentUrl, 'title': title});
                         } else {
+                          LoggerService.logActivity(
+                            actionType: 'view_page',
+                            sectorCategory: LoggerService.classifySector(title),
+                            itemName: title,
+                          );
                           Navigator.of(context).pushNamed(item.route);
                         }
                       } else {
+                        LoggerService.logActivity(
+                          actionType: 'view_page',
+                          sectorCategory: LoggerService.classifySector(title),
+                          itemName: title,
+                        );
                         Navigator.of(context).pushNamed(item.route);
                       }
                     },

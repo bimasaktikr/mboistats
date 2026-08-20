@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mboistats/services/logger_service.dart';
 import 'package:mboistats/services/recommendation_service.dart';
 import 'package:mboistats/theme.dart';
-
 import 'package:mboistats/main.dart';
 
 class RecentlyViewedSection extends StatefulWidget {
@@ -40,6 +40,33 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
     setState(() {
       _recentlyViewedFuture = RecommendationService.getRecentlyViewed(limit: 2);
     });
+  }
+
+  String _resolveRoute(String title, String sector) {
+    final titleLower = title.toLowerCase();
+    if (titleLower.contains('pengangguran') || titleLower.contains('tpt')) return '/TingkatPengangguran';
+    if (titleLower.contains('angkatan kerja') || titleLower.contains('tpak')) return '/AngkatanKerja';
+    if (titleLower.contains('garis kemiskinan')) return '/GarisKemiskinan';
+    if (titleLower.contains('kedalaman')) return '/IndeksKedalaman';
+    if (titleLower.contains('keparahan')) return '/IndeksKeparahan';
+    if (titleLower.contains('kemiskinan')) return '/TingkatKemiskinan';
+    if (titleLower.contains('kecamatan')) return '/PendudukKec';
+    if (titleLower.contains('jenis kelamin')) return '/PendudukJK';
+    if (titleLower.contains('pertumbuhan penduduk')) return '/LajuPertumbuhanPenduduk';
+    if (titleLower.contains('kepadatan')) return '/KepadatanPenduduk';
+    if (titleLower.contains('laju pertumbuhan') || titleLower.contains('lpe')) return '/LajuPertumbuhan';
+    if (titleLower.contains('pdrb')) return '/Pdrb';
+    if (titleLower.contains('inflasi')) return '/Inflasi';
+    if (titleLower.contains('harapan hidup') || titleLower.contains('ahh')) return '/AngkaHarapanHidup';
+    if (titleLower.contains('harapan lama sekolah') || titleLower.contains('hls')) return '/HarapanLamaSekolah';
+    if (titleLower.contains('rata-rata lama') || titleLower.contains('rls')) return '/RataLamaSekolah';
+    if (titleLower.contains('pengeluaran riil') || titleLower.contains('daya beli')) return '/PengeluaranRiil';
+    if (titleLower.contains('ipm')) return '/Ipm';
+    if (titleLower.contains('gini')) return '/GiniRasio';
+    if (titleLower.contains('perkapita')) return '/PengeluaranPerkapita';
+    if (titleLower.contains('padi')) return '/ProduksiPadi';
+    if (titleLower.contains('panen')) return '/LuasPanen';
+    return _getRouteForSector(sector);
   }
 
   // Helper Mapper Rute & Icon untuk Sektor
@@ -126,18 +153,36 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
               itemBuilder: (context, index) {
                 final item = items[index];
                 final title = item['item_name'] as String? ?? 'Berkas Data';
-                final sector = item['sector_category'] as String? ?? 'umum';
                 final description = item['item_name'] as String? ?? '';
+                final sector = item['sector_category'] as String? ?? 'umum';
+                final coverUrl = item['cover_url'] as String?;
+                final contentUrl = item['content_url'] as String?;
+                final actionType = item['action_type'] as String? ?? '';
                 final iconName = _getIconForSector(sector);
-                final targetRoute = _getRouteForSector(sector);
+                final targetRoute = _resolveRoute(title, sector);
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10.0),
                   child: InkWell(
                     onTap: () {
-                      final contentUrl = item['content_url'] as String?;
                       if (contentUrl != null && contentUrl.isNotEmpty) {
-                        if (contentUrl.toLowerCase().contains('.pdf') || sector.toLowerCase() == 'berita' || sector.toLowerCase() == 'publikasi') {
+                        final urlLower = contentUrl.toLowerCase();
+                        if (actionType == 'view_pdf' ||
+                            actionType == 'download_file' ||
+                            actionType == 'view_brs_pdf' ||
+                            actionType == 'view_publikasi_pdf' ||
+                            urlLower.contains('.pdf') ||
+                            urlLower.contains('download.php') ||
+                            urlLower.contains('publication') ||
+                            sector.toLowerCase() == 'berita' ||
+                            sector.toLowerCase() == 'publikasi') {
+                          LoggerService.logActivity(
+                            actionType: 'view_pdf',
+                            sectorCategory: LoggerService.classifySector(title),
+                            itemName: title,
+                            coverUrl: coverUrl,
+                            contentUrl: contentUrl,
+                          );
                           Navigator.of(context).pushNamed(
                             '/pdf_viewer',
                             arguments: {
@@ -145,12 +190,34 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
                               'title': title,
                             },
                           );
-                        } else if (contentUrl.toLowerCase().contains('.jpg') || contentUrl.toLowerCase().contains('.png') || contentUrl.toLowerCase().contains('.jpeg') || sector.toLowerCase() == 'infografis') {
+                        } else if (actionType == 'infografis' ||
+                            urlLower.contains('.jpg') ||
+                            urlLower.contains('.png') ||
+                            urlLower.contains('.jpeg') ||
+                            urlLower.contains('cover.php') ||
+                            sector.toLowerCase() == 'infografis') {
+                          LoggerService.logActivity(
+                            actionType: 'download_file',
+                            sectorCategory: LoggerService.classifySector(title),
+                            itemName: title,
+                            coverUrl: coverUrl,
+                            contentUrl: contentUrl,
+                          );
                           Navigator.of(context).pushNamed('/image_viewer', arguments: {'imageUrl': contentUrl, 'title': title});
                         } else {
+                          LoggerService.logActivity(
+                            actionType: 'view_page',
+                            sectorCategory: LoggerService.classifySector(title),
+                            itemName: title,
+                          );
                           Navigator.of(context).pushNamed(targetRoute);
                         }
                       } else {
+                        LoggerService.logActivity(
+                          actionType: 'view_page',
+                          sectorCategory: LoggerService.classifySector(title),
+                          itemName: title,
+                        );
                         Navigator.of(context).pushNamed(targetRoute);
                       }
                     },
