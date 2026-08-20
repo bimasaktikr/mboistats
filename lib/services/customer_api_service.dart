@@ -125,14 +125,14 @@ class CustomerApiService {
     return await getCustomerFromSupabase(user.email!);
   }
 
-  /// Memperbarui data pengguna di tabel users_buku_tamu berdasarkan email
+  /// Memperbarui data pengguna di tabel user_all berdasarkan email
   static Future<bool> updateCustomerInSupabase({
     required String email,
     required Map<String, dynamic> updateData,
   }) async {
     try {
       await Supabase.instance.client
-          .from('users_buku_tamu')
+          .from('user_all')
           .update(updateData)
           .eq('email', email);
       return true;

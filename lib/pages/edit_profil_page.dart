@@ -76,7 +76,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
         ),
       );
 
-      // 2. Sinkronkan perubahan ke tabel users_buku_tamu
+      // 2. Sinkronkan perubahan ke tabel user_all
       if (email.isNotEmpty) {
         await CustomerApiService.updateCustomerInSupabase(
           email: email,
