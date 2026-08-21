@@ -118,7 +118,7 @@ Future<void> upsertBatchToSupabase(List<Map<String, dynamic>> items) async {
   final uniqueMap = <String, Map<String, dynamic>>{};
   final categoryMap = <String, int>{};
   for (var item in items) {
-    final title = item['item_name'] as String;
+    final title = item['title'] as String;
     final catId = item['category_id'] as int?;
     if (catId != null) {
       categoryMap[title] = catId;
@@ -128,7 +128,7 @@ Future<void> upsertBatchToSupabase(List<Map<String, dynamic>> items) async {
   }
   final uniqueItems = uniqueMap.values.toList();
 
-  final url = Uri.parse('$supabaseUrl/rest/v1/contents?on_conflict=item_name');
+  final url = Uri.parse('$supabaseUrl/rest/v1/contents?on_conflict=title');
   final response = await http.post(
     url,
     headers: {
@@ -147,7 +147,7 @@ Future<void> upsertBatchToSupabase(List<Map<String, dynamic>> items) async {
       if (returned != null && returned.isNotEmpty) {
         final junctionBatch = <Map<String, dynamic>>[];
         for (var row in returned) {
-          final title = row['item_name'] as String?;
+          final title = row['title'] as String?;
           final id = row['id'] as String?;
           if (title != null && id != null && categoryMap.containsKey(title)) {
             junctionBatch.add({
@@ -220,7 +220,7 @@ Future<void> syncBrs() async {
             
             final sectors = categorizeTitle(title);
             batch.add({
-              'item_name': title,
+              'title': title,
               'category_id': sectorToCategoryId[sectors.first],
               'content_type': 'brs',
               'action_type': 'view_pdf',
@@ -270,7 +270,7 @@ Future<void> syncPublikasi() async {
             
             final sectors = categorizeTitle(title);
             batch.add({
-              'item_name': title,
+              'title': title,
               'category_id': sectorToCategoryId[sectors.first],
               'content_type': 'publikasi',
               'action_type': 'view_pdf',
@@ -320,7 +320,7 @@ Future<void> syncInfografis() async {
             
             final sectors = categorizeTitle(title);
             batch.add({
-              'item_name': title,
+              'title': title,
               'category_id': sectorToCategoryId[sectors.first],
               'content_type': 'infografis',
               'action_type': 'download_file',

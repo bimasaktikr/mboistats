@@ -150,6 +150,18 @@ class LoggerService {
     // Selalu cetak log lokal untuk keperluan debugging pengembang
     print('Activity Logged -> Platform: $platformName | Account: $accountIdentifier | Device: $deviceId | Sektor: $cleanSector | Type: $resolvedType | Item: $itemName | Aksi: $actionType | Cover: $coverUrl | Content: $contentUrl');
 
+    const sectorToCategoryId = {
+      'perekonomian': 1,
+      'tenaga_kerja': 2,
+      'ipm': 3,
+      'kemiskinan': 4,
+      'kependudukan': 5,
+      'pertanian': 6,
+      'kesejahteraan': 7,
+    };
+    final catId = sectorToCategoryId[cleanSector.toLowerCase()];
+    final moduleName = catId == null ? (cleanSector.isNotEmpty ? cleanSector.toLowerCase() : 'fitur') : 'fitur';
+
     if (!_isInitialized) {
       return;
     }
@@ -157,13 +169,11 @@ class LoggerService {
     // Eksekusi POST request secara non-blocking
     Supabase.instance.client.from('activity_logs').insert({
       'action_type': actionType,
-      'content_type': resolvedType,
-      'sector_category': cleanSector,
-      'item_name': itemName,
+      'category_id': catId,
+      'module_name': moduleName,
+      'title': itemName,
       'platform': platformName,
       'user_id': activeUserId,
-      'cover_url': coverUrl,
-      'content_url': contentUrl,
     }).then((_) {
       print('Activity successfully synced with Supabase.');
     }).catchError((error) {

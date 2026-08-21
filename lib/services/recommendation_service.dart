@@ -579,10 +579,10 @@ class RecommendationService {
 
       final List<dynamic> response = await _client
           .from('activity_logs')
-          .select('item_name, sector_category, created_at, action_type, cover_url, content_url')
+          .select('title, category_id, module_name, timestamp, action_type, contents_id_content, categories(category)')
           .or(filterStr)
           .inFilter('action_type', ['view_pdf', 'view_brs_pdf', 'view_publikasi_pdf', 'download_file', 'view_page'])
-          .order('created_at', ascending: false)
+          .order('timestamp', ascending: false)
           .limit(limit * 4)
           .timeout(const Duration(seconds: 8));
 
@@ -600,9 +600,9 @@ class RecommendationService {
       final seen = <String>{};
       final uniqueList = <Map<String, dynamic>>[];
       for (var item in response) {
-        final name = (item['item_name'] as String? ?? '').trim();
+        final name = (item['title'] as String? ?? '').trim();
         final nameLower = name.toLowerCase();
-        final sector = (item['sector_category'] as String? ?? '').toLowerCase();
+        final sector = (item['categories']?['category'] ?? item['module_name'] ?? '').toString().toLowerCase();
 
         if (name.isEmpty) continue;
         if (!validSectors.contains(sector)) continue;

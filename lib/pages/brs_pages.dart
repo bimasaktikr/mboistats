@@ -117,7 +117,7 @@ class _BeritaPageState extends State<BeritaPages> {
         setState(() {
           if (list.isNotEmpty) {
             dataBRS.addAll(list.map((item) => {
-              'title': item['item_name'],
+              'title': item['title'] ?? item['item_name'],
               'thumbnail': item['cover_url'],
               'pdf': item['content_url'],
               'created_at': item['created_at'],

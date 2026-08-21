@@ -120,7 +120,7 @@ class _PublikasiFullPageState extends State<PublikasiFullPage> {
         setState(() {
           if (list.isNotEmpty) {
             _dataPublikasi.addAll(list.map((item) => {
-              'title': item['item_name'],
+              'title': item['title'] ?? item['item_name'],
               'cover': item['cover_url'],
               'pdf': item['content_url'],
               'created_at': item['created_at'],

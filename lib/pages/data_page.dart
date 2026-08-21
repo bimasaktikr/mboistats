@@ -86,8 +86,8 @@ class _DataPageState extends State<DataPage> {
     final comp = dateB.compareTo(dateA);
     if (comp != 0) return comp;
 
-    final yearA = _extractYear((a['item_name'] ?? a['title'] ?? '').toString());
-    final yearB = _extractYear((b['item_name'] ?? b['title'] ?? '').toString());
+    final yearA = _extractYear((a['title'] ?? a['item_name'] ?? '').toString());
+    final yearB = _extractYear((b['title'] ?? b['item_name'] ?? '').toString());
     return yearB.compareTo(yearA);
   }
 
@@ -122,7 +122,7 @@ class _DataPageState extends State<DataPage> {
       final response = await Supabase.instance.client
           .from('contents')
           .select()
-          .ilike('item_name', '%$query%')
+          .ilike('title', '%$query%')
           .order('created_at', ascending: false)
           .limit(60);
 
@@ -679,7 +679,7 @@ class _DataPageState extends State<DataPage> {
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          final title = item['item_name'] ?? item['title'] ?? item['judul'] ?? 'BRS Item';
+          final title = item['title'] ?? item['item_name'] ?? item['judul'] ?? 'BRS Item';
           final thumbnail = item['cover_url'] ?? item['thumbnail'] ?? item['img'] ?? item['cover'] ?? '';
           final pdfUrl = item['content_url'] ?? item['pdf'] ?? item['dl'] ?? '';
 
@@ -779,7 +779,7 @@ class _DataPageState extends State<DataPage> {
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          final title = item['item_name'] ?? item['title'] ?? item['judul'] ?? 'Infografis Item';
+          final title = item['title'] ?? item['item_name'] ?? item['judul'] ?? 'Infografis Item';
           final imgUrl = item['cover_url'] ?? item['img'] ?? item['thumbnail'] ?? item['cover'] ?? '';
           final contentUrl = item['content_url'] ?? item['dl'] ?? item['img'] ?? '';
 
@@ -878,7 +878,7 @@ class _DataPageState extends State<DataPage> {
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          final title = item['item_name'] ?? item['title'] ?? item['judul'] ?? 'Publikasi Item';
+          final title = item['title'] ?? item['item_name'] ?? item['judul'] ?? 'Publikasi Item';
           final thumbnail = item['cover_url'] ?? item['cover'] ?? item['img'] ?? item['thumbnail'] ?? '';
           final pdfUrl = item['content_url'] ?? item['pdf'] ?? item['dl'] ?? '';
 

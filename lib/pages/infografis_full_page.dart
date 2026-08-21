@@ -115,7 +115,7 @@ class _InfografisFullPageState extends State<InfografisFullPage> {
         setState(() {
           if (list.isNotEmpty) {
             _dataInfografis.addAll(list.map((item) => {
-              'title': item['item_name'],
+              'title': item['title'] ?? item['item_name'],
               'img': item['cover_url'],
               'dl': item['content_url'],
               'created_at': item['created_at'],

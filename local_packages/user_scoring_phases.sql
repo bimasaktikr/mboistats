@@ -102,7 +102,7 @@ BEGIN
     FROM get_sector_scores_for_user(input_user_id) rs_inner
   ),
   recent_logs AS (
-    SELECT DISTINCT LOWER(TRIM(a.item_name)) AS item_name, a.content_url
+    SELECT DISTINCT LOWER(TRIM(a.title)) AS item_name, a.content_url
     FROM public.activity_logs a
     WHERE a.user_id = input_user_id
       AND a.action_type IN ('view_pdf', 'download_file', 'view_page', 'view_brs_pdf', 'view_publikasi_pdf')
@@ -221,7 +221,7 @@ BEGIN
         WHERE a.created_at >= NOW() - INTERVAL '30 days'
           AND LOWER(a.sector_category) IN ('tenaga_kerja', 'ketenagakerjaan', 'ipm', 'perekonomian', 'ekonomi', 'kemiskinan', 'kependudukan', 'pertanian', 'kesejahteraan')
           AND a.action_type NOT IN ('login_success', 'click_login_google', 'delete_account', 'logout')
-          AND a.item_name NOT IN ('Halaman Login', 'Halaman Profil', 'Masuk dengan Google', 'Masuk dengan Google (Native)', 'Login Google Sukses', 'Login Google Native Sukses', 'Hapus Akun', 'Logout')
+          AND a.title NOT IN ('Halaman Login', 'Halaman Profil', 'Masuk dengan Google', 'Masuk dengan Google (Native)', 'Login Google Sukses', 'Login Google Native Sukses', 'Hapus Akun', 'Logout')
       ) AS interactions_30d,
       COALESCE(MAX(a.created_at), du.first_seen) AS last_activity,
       COALESCE(MAX(a.platform), 'Android') AS platform

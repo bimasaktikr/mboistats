@@ -67,8 +67,8 @@ class _SearchPageState extends State<SearchPage> {
     final comp = dateB.compareTo(dateA);
     if (comp != 0) return comp;
 
-    final yearA = _extractYear((a['item_name'] ?? a['title'] ?? '').toString());
-    final yearB = _extractYear((b['item_name'] ?? b['title'] ?? '').toString());
+    final yearA = _extractYear((a['title'] ?? a['item_name'] ?? '').toString());
+    final yearB = _extractYear((b['title'] ?? b['item_name'] ?? '').toString());
     return yearB.compareTo(yearA);
   }
 
@@ -93,7 +93,7 @@ class _SearchPageState extends State<SearchPage> {
       final response = await Supabase.instance.client
           .from('contents')
           .select('*, contents_has_categories(categories(category))')
-          .ilike('item_name', '%$cleanQuery%')
+          .ilike('title', '%$cleanQuery%')
           .order('created_at', ascending: false)
           .limit(100);
 
@@ -199,7 +199,7 @@ class _SearchPageState extends State<SearchPage> {
 
   void _onItemTap(Map<String, dynamic> item) {
     final contentUrl = item['content_url'] as String? ?? '';
-    final title = item['item_name'] as String? ?? 'Data Statistik';
+    final title = item['title'] as String? ?? item['item_name'] as String? ?? 'Data Statistik';
     final categories = _extractCategories(item);
     final sectorLabel = categories.isNotEmpty 
         ? categories[0].toUpperCase()
@@ -397,7 +397,7 @@ class _SearchPageState extends State<SearchPage> {
                         itemCount: results.length,
                         itemBuilder: (context, index) {
                           final item = results[index];
-                          final title = item['item_name'] as String? ?? '';
+                          final title = item['title'] as String? ?? item['item_name'] as String? ?? '';
                           final sectors = _extractCategories(item);
                           final coverUrl = item['cover_url'] as String? ?? '';
                           final actionType = item['action_type'] as String? ?? 'view_pdf';

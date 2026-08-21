@@ -152,11 +152,9 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final item = items[index];
-                final title = item['item_name'] as String? ?? 'Berkas Data';
-                final description = item['item_name'] as String? ?? '';
-                final sector = item['sector_category'] as String? ?? 'umum';
-                final coverUrl = item['cover_url'] as String?;
-                final contentUrl = item['content_url'] as String?;
+                final title = item['title'] as String? ?? 'Berkas Data';
+                final description = item['title'] as String? ?? '';
+                final sector = (item['categories']?['category'] ?? item['module_name'] ?? 'umum') as String;
                 final actionType = item['action_type'] as String? ?? '';
                 final iconName = _getIconForSector(sector);
                 final targetRoute = _resolveRoute(title, sector);
@@ -165,61 +163,12 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
                   padding: const EdgeInsets.only(bottom: 10.0),
                   child: InkWell(
                     onTap: () {
-                      if (contentUrl != null && contentUrl.isNotEmpty) {
-                        final urlLower = contentUrl.toLowerCase();
-                        if (actionType == 'view_pdf' ||
-                            actionType == 'download_file' ||
-                            actionType == 'view_brs_pdf' ||
-                            actionType == 'view_publikasi_pdf' ||
-                            urlLower.contains('.pdf') ||
-                            urlLower.contains('download.php') ||
-                            urlLower.contains('publication') ||
-                            sector.toLowerCase() == 'berita' ||
-                            sector.toLowerCase() == 'publikasi') {
-                          LoggerService.logActivity(
-                            actionType: 'view_pdf',
-                            sectorCategory: LoggerService.classifySector(title),
-                            itemName: title,
-                            coverUrl: coverUrl,
-                            contentUrl: contentUrl,
-                          );
-                          Navigator.of(context).pushNamed(
-                            '/pdf_viewer',
-                            arguments: {
-                              'pdfUrl': contentUrl,
-                              'title': title,
-                            },
-                          );
-                        } else if (actionType == 'infografis' ||
-                            urlLower.contains('.jpg') ||
-                            urlLower.contains('.png') ||
-                            urlLower.contains('.jpeg') ||
-                            urlLower.contains('cover.php') ||
-                            sector.toLowerCase() == 'infografis') {
-                          LoggerService.logActivity(
-                            actionType: 'download_file',
-                            sectorCategory: LoggerService.classifySector(title),
-                            itemName: title,
-                            coverUrl: coverUrl,
-                            contentUrl: contentUrl,
-                          );
-                          Navigator.of(context).pushNamed('/image_viewer', arguments: {'imageUrl': contentUrl, 'title': title});
-                        } else {
-                          LoggerService.logActivity(
-                            actionType: 'view_page',
-                            sectorCategory: LoggerService.classifySector(title),
-                            itemName: title,
-                          );
-                          Navigator.of(context).pushNamed(targetRoute);
-                        }
-                      } else {
-                        LoggerService.logActivity(
-                          actionType: 'view_page',
-                          sectorCategory: LoggerService.classifySector(title),
-                          itemName: title,
-                        );
-                        Navigator.of(context).pushNamed(targetRoute);
-                      }
+                      LoggerService.logActivity(
+                        actionType: 'view_page',
+                        sectorCategory: LoggerService.classifySector(title),
+                        itemName: title,
+                      );
+                      Navigator.of(context).pushNamed(targetRoute);
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -249,13 +198,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> with Rout
                               color: Colors.blue.shade50,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: item['cover_url'] != null && (item['cover_url'] as String).isNotEmpty
-                                ? Image.network(
-                                    item['cover_url'],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Image.asset('assets/icons/$iconName'),
-                                  )
-                                : Image.asset(
+                            child: Image.asset(
                                     'assets/icons/$iconName',
                                     errorBuilder: (context, error, stackTrace) {
                                       return const Icon(Icons.description, color: Colors.blue, size: 20);
