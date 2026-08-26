@@ -41,6 +41,47 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+		<key>UIAppFonts</key>
+		<array>
+			<string>SF-Pro-Display-Regular.otf</string>
+			<string>SF-Pro-Display-Semibold.otf</string>
+			<string>SF-Pro-Display-Bold.otf</string>
+		</array>
+		<key>LSSupportsOpeningDocumentsInPlace</key>
+		<true/>
+		<key>UIFileSharingEnabled</key>
+		<true/>
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsLocalNetworking</key>
+			<true/>
+			<key>NSAllowsArbitraryLoadsInWebContent</key>
+			<true/>
+		</dict>
+		<key>GIDClientID</key>
+		<string>514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15.apps.googleusercontent.com</string>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.514445291536-o9oot6ilqj8fm0380f160obe4o0vhh15</string>
+					<string>io.supabase.mboistats</string>
+				</array>
+			</dict>
+		</array>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>https</string>
+			<string>http</string>
+			<string>io.supabase.mboistats</string>
+		</array>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Aplikasi memerlukan akses galeri untuk menyimpan gambar infografis.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Aplikasi memerlukan akses galeri untuk menambahkan gambar infografis yang diunduh.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>

@@ -1,66 +1,112 @@
-import 'dart:convert';
-import 'dart:developer';
-import 'package:mboistats/models/youtube_video.dart';
-import 'package:intl/intl.dart'; 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-// --- IMPORT BARU UNTUK SUPABASE ---
-import 'package:mboistats/main.dart'; // Untuk client 'supabase' global
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Service untuk membaca data YouTube dari tabel Supabase `youtube_streams`.
+/// Tidak ada panggilan langsung ke YouTube API dari Flutter.
+/// Semua data YouTube disinkronkan otomatis oleh Supabase pg_cron.
+class YouTubeService {
+  static final _client = Supabase.instance.client;
 
-class YoutubeService {
-  final String _tableName = 'youtube_links';
-  Future<YoutubeVideoResult> getVideos({
-    int page = 1,
-    DateTime? publishedAfter,
-    DateTime? publishedBefore,
-  }) async {
-    const int pageSize = 10; 
-    final int from = (page - 1) * pageSize;
-    final int to = from + pageSize - 1;
-
-    log("Memanggil Supabase tabel '$_tableName': Halaman $page (baris $from-$to)", name: "YoutubeService");
-
+  /// Mengambil data live stream yang sedang aktif.
+  /// Mengembalikan null jika tidak ada siaran langsung.
+  static Future<Map<String, dynamic>?> getLiveStream() async {
     try {
-      dynamic query = supabase
-          .from(_tableName)
-          .select('*');
-      query = query.not('title', 'ilike', '%[Private video]%');
-      if (publishedAfter != null) {
-        query = query.gte('created_at', publishedAfter.toIso8601String());
-      }
-      if (publishedBefore != null) {
-        query = query.lte('created_at', publishedBefore.toIso8601String());
-      }
-      query = query.order('created_at', ascending: false);
-      query = query.range(from, to);
-      final response = await query.count(CountOption.exact);
-      final int totalResults = response.count ?? 0; 
-      final List<dynamic> data = response.data;
-      final List<YoutubeVideo> videos = data
-          .map((item) => YoutubeVideo.fromSupabase(item as Map<String, dynamic>))
-          .toList();
-      int totalPages = 1;
-      if (totalResults > 0) {
-        totalPages = (totalResults / pageSize).ceil();
-      }
-      return YoutubeVideoResult(
-        videos: videos,
-        currentPage: page,
-        totalPages: totalPages,
-        totalResults: totalResults,
-      );
-
+      final response = await _client
+          .from('youtube_streams')
+          .select()
+          .eq('is_live', true)
+          .order('updated_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return response;
     } catch (e) {
-      log("Error koneksi ke Supabase: $e", name: "YoutubeService");
-      if (e is PostgrestException) {
-        log("Error Supabase Detail: ${e.message}", name: "YoutubeService");
-        throw Exception(
-            "Gagal mengambil data dari Supabase: ${e.message}. (Cek RLS/Nama Tabel?)");
+      print('Error fetching live stream: $e');
+      return null;
+    }
+  }
+
+  /// Mengambil daftar rekaman siaran pers (arsip video) dari Supabase.
+  /// Filter opsional berdasarkan bulan dan tahun.
+  static Future<List<Map<String, dynamic>>> getArchivedStreams({
+    int? month,
+    int? year,
+  }) async {
+    try {
+      var query = _client
+          .from('youtube_streams')
+          .select()
+          .eq('is_live', false)
+          .order('published_at', ascending: false);
+
+      final List<dynamic> response = await query;
+
+      // Filter bulan & tahun di Dart karena Supabase PostgREST filter
+      // untuk EXTRACT(MONTH FROM ...) tidak trivial
+      List<Map<String, dynamic>> results =
+          response.map((e) => Map<String, dynamic>.from(e)).toList();
+
+      if (year != null) {
+        results = results.where((item) {
+          final publishedAt = item['published_at'];
+          if (publishedAt == null) return false;
+          final date = DateTime.tryParse(publishedAt.toString());
+          return date != null && date.year == year;
+        }).toList();
       }
-      throw Exception(
-          "Gagal terhubung ke Server. Periksa koneksi internet Anda.");
+
+      if (month != null) {
+        results = results.where((item) {
+          final publishedAt = item['published_at'];
+          if (publishedAt == null) return false;
+          final date = DateTime.tryParse(publishedAt.toString());
+          return date != null && date.month == month;
+        }).toList();
+      }
+
+      return results;
+    } catch (e) {
+      print('Error fetching archived streams: $e');
+      return [];
+    }
+  }
+
+  /// Mengambil beberapa video terbaru untuk section di Data Page.
+  static Future<List<Map<String, dynamic>>> getRecentStreams({int limit = 2}) async {
+    try {
+      final List<dynamic> response = await _client
+          .from('youtube_streams')
+          .select()
+          .eq('is_live', false)
+          .order('published_at', ascending: false)
+          .limit(limit);
+
+      return response.map((e) => Map<String, dynamic>.from(e)).toList();
+    } catch (e) {
+      print('Error fetching recent streams: $e');
+      return [];
+    }
+  }
+
+  /// Mengambil daftar tahun unik yang tersedia di arsip.
+  static Future<List<int>> getAvailableYears() async {
+    try {
+      final List<dynamic> response = await _client
+          .from('youtube_streams')
+          .select('published_at')
+          .eq('is_live', false)
+          .order('published_at', ascending: false);
+
+      final years = <int>{};
+      for (final item in response) {
+        final publishedAt = item['published_at'];
+        if (publishedAt != null) {
+          final date = DateTime.tryParse(publishedAt.toString());
+          if (date != null) years.add(date.year);
+        }
+      }
+      return years.toList()..sort((a, b) => b.compareTo(a));
+    } catch (e) {
+      print('Error fetching available years: $e');
+      return [DateTime.now().year];
     }
   }
 }

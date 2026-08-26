@@ -3,6 +3,7 @@ import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:mboistats/components/footer.dart';
+import 'package:mboistats/components/global_pdf_viewer.dart';
 import 'package:mboistats/theme.dart';
 import 'package:saf/saf.dart';
 import 'dart:convert';
@@ -11,10 +12,12 @@ import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:mboistats/services/supabase_db_service.dart';
-import 'package:mboistats/services/supabase_auth_service.dart';
-import 'package:provider/provider.dart';
-import 'package:mboistats/components/auth_guard.dialog.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:mboistats/services/logger_service.dart';
+import 'package:mboistats/services/recommendation_service.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BeritaPages extends StatefulWidget {
   const BeritaPages({Key? key}) : super(key: key);
@@ -30,20 +33,29 @@ class _BeritaPageState extends State<BeritaPages> {
   bool isLoading = false;
   bool hasMore = true;
   final ScrollController _scrollController = ScrollController();
-  
+
+  String _selectedSector = 'semua';
+
+  final List<Map<String, String>> _sectorFilters = const [
+    {'key': 'semua', 'label': 'Semua Sektor'},
+    {'key': 'pertanian', 'label': 'Pertanian'},
+    {'key': 'perekonomian', 'label': 'Perekonomian'},
+    {'key': 'tenaga_kerja', 'label': 'Tenaga Kerja'},
+    {'key': 'ipm', 'label': 'IPM'},
+    {'key': 'kemiskinan', 'label': 'Kemiskinan'},
+    {'key': 'kependudukan', 'label': 'Kependudukan'},
+    {'key': 'kesejahteraan', 'label': 'Kesejahteraan'},
+  ];
+
   @override
   void initState() {
     super.initState();
-    saf = Saf("mboistats_saf");
+    fetchDataBRS();
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-              _scrollController.position.maxScrollExtent - 200 &&
-          !isLoading &&
-          hasMore) {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !isLoading && hasMore) {
         fetchDataBRS();
       }
     });
-    fetchDataBRS();
   }
 
   @override
@@ -51,398 +63,424 @@ class _BeritaPageState extends State<BeritaPages> {
     _scrollController.dispose();
     super.dispose();
   }
-  Future<void> _handleRefresh() async {
-    if (mounted) {
-      setState(() {
-        isLoading = true; // Set isLoading agar 'fetchDataBRS' tidak dijalankan ganda
-        hasMore = true;
-        currentPage = 1;
-        dataBRS.clear();
-      });
+
+  int _extractYear(String title) {
+    final matches = RegExp(r'\b(20\d{2}|19\d{2})\b').allMatches(title);
+    if (matches.isNotEmpty) {
+      return int.tryParse(matches.last.group(0) ?? '') ?? 0;
     }
-    await fetchDataBRS();
+    return 0;
+  }
+
+  int _compareByNewest(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final dateA = (a['rl_date'] ?? a['created_at'] ?? '').toString();
+    final dateB = (b['rl_date'] ?? b['created_at'] ?? '').toString();
+    final comp = dateB.compareTo(dateA);
+    if (comp != 0) return comp;
+
+    final yearA = _extractYear((a['title'] ?? '').toString());
+    final yearB = _extractYear((b['title'] ?? '').toString());
+    return yearB.compareTo(yearA);
   }
 
   Future<void> fetchDataBRS() async {
-    if (!hasMore || (isLoading && currentPage > 1)) return;
-    
-    if (mounted) {
-      setState(() {
-        isLoading = true;
-      });
-    }
-
-    final String apiUrl =
-        "http://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/$currentPage/key/9db89e91c3c142df678e65a78c4e547f";
+    if (isLoading) return;
+    setState(() {
+      isLoading = true;
+    });
 
     try {
-      final response = await http.get(Uri.parse(apiUrl));
+      final from = (currentPage - 1) * 20;
+      final to = from + 19;
+
+      var query = Supabase.instance.client
+          .from('contents')
+          .select(_selectedSector != 'semua' ? '*, contents_has_categories!inner(categories_id_category)' : '*')
+          .or('content_type.eq.brs,action_type.eq.view_brs_pdf');
+
+      const sectorToCategoryId = {
+        'perekonomian': 1, 'tenaga_kerja': 2, 'ipm': 3,
+        'kemiskinan': 4, 'kependudukan': 5, 'pertanian': 6, 'kesejahteraan': 7,
+      };
+
+      if (_selectedSector != 'semua' && sectorToCategoryId.containsKey(_selectedSector)) {
+        query = query.eq('contents_has_categories.categories_id_category', sectorToCategoryId[_selectedSector]!);
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(from, to);
+
+      final list = List<Map<String, dynamic>>.from(response);
+
+      if (mounted) {
+        setState(() {
+          if (list.isNotEmpty) {
+            dataBRS.addAll(list.map((item) => {
+              'title': item['title'] ?? item['item_name'],
+              'thumbnail': item['cover_url'],
+              'pdf': item['content_url'],
+              'created_at': item['created_at'],
+            }));
+            currentPage++;
+          }
+          if (list.length < 20) {
+            hasMore = false;
+          }
+          isLoading = false;
+        });
+      }
+      return;
+    } catch (e) {
+      print("Error fetching BRS from Supabase: $e");
+    }
+
+    // Fallback to BPS API if Supabase fails
+    try {
+      final String apiUrl = "https://webapi.bps.go.id/v1/api/list/model/pressrelease/lang/ind/domain/3573/page/$currentPage/key/9db89e91c3c142df678e65a78c4e547f";
+      final response = await http.get(Uri.parse(apiUrl), headers: {'User-Agent': 'Mozilla/5.0'});
+
       if (response.statusCode == 200) {
         final parsedResponse = json.decode(response.body);
-        if (parsedResponse != null &&
-            parsedResponse['data'] != null &&
-            parsedResponse['data'].length > 1 &&
-            parsedResponse['data'][1] is List) {
-          final brs =
-              List<Map<String, dynamic>>.from(parsedResponse["data"][1]);
-          if (mounted) {
-            setState(() {
-              if (brs.isNotEmpty) {
-                dataBRS.addAll(brs);
-                currentPage++;
-              } else {
-                hasMore = false;
-              }
-              isLoading = false;
-            });
-          }
-        } else {
-          if (mounted) setState(() => {isLoading = false, hasMore = false});
+        final brs = List<Map<String, dynamic>>.from(parsedResponse["data"][1]);
+
+        if (mounted) {
+          setState(() {
+            if (brs.isNotEmpty) {
+              dataBRS.addAll(brs);
+              dataBRS.sort(_compareByNewest);
+              currentPage++;
+            } else {
+              hasMore = false;
+            }
+            isLoading = false;
+          });
         }
       } else {
         if (mounted) setState(() => isLoading = false);
-        Fluttertoast.showToast(msg: "Gagal memuat data BRS.");
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) setState(() => isLoading = false);
-      Fluttertoast.showToast(msg: "Gagal memuat data: $e");
     }
+  }
+
+  String truncateText(String text, int maxLength) {
+    if (text.length > maxLength) {
+      return '${text.substring(0, maxLength)}...';
+    }
+    return text;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final displayList = dataBRS;
+
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        toolbarHeight: 50,
-        automaticallyImplyLeading: false,
-        leading: null, 
-        centerTitle: false, 
-        title: Row(
-          mainAxisSize: MainAxisSize.min, 
+      backgroundColor: isDark ? const Color(0xFF121212) : bgColor,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset(
-              'assets/images/Mbois-stat Logo_Fix Putih.png',
-              width: 40, 
-              height: 40,
+            // Custom header matching mockup: back arrow + title text
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Image.asset(
+                      'assets_v2/icons/back_arrow.png',
+                      width: 24,
+                      height: 24,
+                      color: isDark ? blueLighter : blueHover,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Berita Resmi Statistik',
+                    style: pjsBold20.copyWith(
+                      color: isDark ? blueLighter : blueHover,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8), 
-            const Text(
-              'MBOIStatS+',
-              style: TextStyle(color: Colors.black),
+
+            // Horizontal Sector Filter Chips
+            Container(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: _sectorFilters.map((sector) {
+                    final isSelected = _selectedSector == sector['key'];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          sector['label']!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : dark1),
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: blueNormal,
+                        backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: isSelected ? blueNormal : dark4,
+                            width: 1,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedSector = sector['key']!;
+                            dataBRS.clear();
+                            currentPage = 1;
+                            hasMore = true;
+                          });
+                          fetchDataBRS();
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+
+            // Grid content
+            Expanded(
+              child: displayList.isEmpty && isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : displayList.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Tidak ada BRS di sektor ini.',
+                            style: pjsRegular14.copyWith(color: dark3),
+                          ),
+                        )
+                      : GridView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 20,
+                            childAspectRatio: 0.58,
+                          ),
+                          itemCount: displayList.length + (hasMore && _selectedSector == 'semua' ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == displayList.length) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            final item = displayList[index];
+                            final title = (item["title"] ?? '').toString();
+                            final thumbnail = (item['thumbnail'] ?? '').toString();
+                            final pdfUrl = (item["pdf"] ?? '').toString();
+
+                            return InkWell(
+                              onTap: () => showDownloadDialog(context, pdfUrl, index),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      clipBehavior: Clip.hardEdge,
+                                      child: thumbnail.isNotEmpty
+                                          ? Image.network(
+                                              thumbnail,
+                                              headers: const {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  Center(
+                                                child: Icon(
+                                                  Icons.newspaper,
+                                                  color: dark3,
+                                                  size: 40,
+                                                ),
+                                              ),
+                                            )
+                                          : Center(
+                                              child: Icon(
+                                                Icons.newspaper,
+                                                color: dark3,
+                                                size: 40,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    title,
+                                    style: pjsRegular14.copyWith(
+                                      color: isDark ? Colors.white : dark1,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),
       ),
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            onRefresh: _handleRefresh,
-            color: blue1, // Warna indikator
-            child: isLoading && dataBRS.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : dataBRS.isEmpty && !isLoading
-                    ? Center(
-                        child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: const [
-                             SizedBox(height: 200), // Beri jarak dari atas
-                             Center(child: Text("Tidak ada BRS tersedia."))
-                          ],
-                        ),
-                      )
-                    : GridView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(), 
-                        controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.75,
-                        ),
-                        itemCount: dataBRS.length + (hasMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == dataBRS.length) {
-                            return hasMore
-                                ? const Center(child: CircularProgressIndicator())
-                                : const SizedBox.shrink();
-                          }
-                          
-                          final item = dataBRS[index];
-                          final String title = item['title'] ?? 'BRS Tanpa Judul $index';
-
-                          return Consumer<SupabaseDbService>(
-                            builder: (consumerContext, dbService, child) {
-
-                              final String favoriteKey = dbService.generateItemId('brs', title);
-                              final bool isFavorited = dbService.favoriteIds.contains(favoriteKey);
-
-                              return GestureDetector(
-                                onTap: () {
-                                  showDownloadDialog(
-                                    context, 
-                                    item,
-                                  );
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12.0),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
-                                        blurRadius: 10.0,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12.0),
-                                    child: Stack(
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                                          children: [
-                                            Expanded(
-                                              child: Image.network(
-                                                item['thumbnail'] ?? '',
-                                                width: double.infinity,
-                                                fit: BoxFit.fill,
-                                                loadingBuilder: (context, child, loadingProgress) {
-                                                  if (loadingProgress == null) return child;
-                                                  return const Center(
-                                                      child: CircularProgressIndicator());
-                                                },
-                                                errorBuilder: (context, error, stackTrace) =>
-                                                    Container(
-                                                        color: Colors.grey[200],
-                                                        child: Icon(Icons.broken_image,
-                                                            color: Colors.grey[400])),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    title,
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: dark1,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                    maxLines: 5,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        if (isFavorited)
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                shape: BoxShape.circle,
-                                                border:
-                                                    Border.all(color: Colors.grey.shade300, width: 1),
-                                              ),
-                                              child: const Icon(
-                                                Icons.favorite,
-                                                color: Colors.red,
-                                                size: 18,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-          ),
-          const Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Footer(),
-          ),
-        ],
-      ),
+      bottomNavigationBar: const Footer(),
     );
   }
-  void showDownloadDialog(
-      BuildContext context,
-      Map<String, dynamic> item,
-  ) {
-    
-    final String title = item["title"] ?? "Tanpa Judul";
-    final String postType = 'brs'; 
-    final String pdfUrl = item["pdf"] ?? "";
-    final String abstract = item["abstract"] ?? "";
-    final String size = item["size"] ?? "N/A";
-    final String rlDate = item["rl_date"] ?? "N/A";
 
-    final String favoriteKey = context.read<SupabaseDbService>().generateItemId(postType, title);
-
+  void showDownloadDialog(BuildContext context, String pdfUrl, int index) {
     showDialog(
       context: context,
-      builder: (BuildContext dialogContextInner) {
-        return Consumer<SupabaseDbService>(
-          builder: (dialogConsumerContext, dbService, child) {
-
-            final authService = dialogConsumerContext.read<SupabaseAuthService>();
-            final bool isCurrentlyFavorited = dbService.favoriteIds.contains(favoriteKey);
-
-            void toggleFavorite() async {
-              bool isLoggedIn = authService.isLoggedIn();
-              if (!isLoggedIn) {
-                final navigator = Navigator.of(dialogConsumerContext);
-                navigator.pop();
-                showDialog(
-                  context: context,
-                  builder: (context) => const AuthGuardDialog(),
-                );
-                return;
-              }
-
-              try {
-                if (isCurrentlyFavorited) {
-                  await dbService.removeFavorite(postType, title);
-                } else {
-                  item['type'] = postType; 
-                  await dbService.addFavorite(item);
-                }
-              } catch (e) {
-                print("Error toggling favorite: $e");
-              }
-            }
-            
-            List<Widget> mainButtons = [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContextInner),
-                child: const Text("Tutup"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(dialogContextInner);
-                  String fileName = title;
-                  await downloadAndShowConfirmation(context, pdfUrl, fileName);
-                },
-                child: const Text("Unduh"),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContextInner);
-                  openPdfDirectly(context, pdfUrl);
-                },
-                child: const Text("Buka PDF"),
-              ),
-            ];
-
-            Widget favoriteButton = TextButton(
-              onPressed: toggleFavorite,
-              child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isCurrentlyFavorited
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: isCurrentlyFavorited
-                              ? Colors.red
-                              : Colors.grey[600],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isCurrentlyFavorited ? 'Favorit' : 'Favoritkan',
-                          style: TextStyle(
-                              color: isCurrentlyFavorited
-                                  ? Colors.red
-                                  : Colors.grey[700]),
-                        ),
-                      ],
-                    ),
-            );
-
-            return AlertDialog(
-              title: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: bold16.copyWith(color: dark1),
-              ),
-              content: SingleChildScrollView(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            parse(HtmlUnescape().convert(abstract))
-                                    .body
-                                    ?.text ??
-                                '',
-                            style: TextStyle(fontSize: 13, color: dark1),
-                            textAlign: TextAlign.justify,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Ukuran Berkas: ${size.replaceAll('.', ',')}",
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
-                          ),
-                          Text(
-                            "Tanggal Rilis: $rlDate",
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            dataBRS[index]["title"],
+            textAlign: TextAlign.center,
+            style: bold16.copyWith(color: dark1),
+          ),
+          content: SingleChildScrollView(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dataBRS[index]["abstract"] != null && (dataBRS[index]["abstract"] as String).isNotEmpty
+                            ? (parse(HtmlUnescape().convert(dataBRS[index]["abstract"])).body?.text ?? '')
+                            : (dataBRS[index]["title"] ?? ''),
+                        style: TextStyle(fontSize: 13, color: dark1),
+                        textAlign: TextAlign.justify,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      if (dataBRS[index]["size"] != null)
+                        Text(
+                          "Ukuran Berkas: ${(dataBRS[index]["size"] as String).replaceAll('.', ',')}",
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey
+                          ),
+                        ),
+                      if (dataBRS[index]["rl_date"] != null || dataBRS[index]["created_at"] != null)
+                        Text(
+                          "Tanggal Rilis: ${dataBRS[index]["rl_date"] ?? dataBRS[index]["created_at"]?.toString().split('T')[0] ?? ''}",
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              actionsPadding:
-                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-              actions: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: mainButtons,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [favoriteButton],
-                    )
-                  ],
-                )
               ],
-            );
-          },
+            ),
+          ),
+          actions: [
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Tutup"),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    String fileName = dataBRS[index]["title"];
+                    await downloadAndShowConfirmation(context, pdfUrl, fileName);
+                  },
+                  child: const Text("Unduh"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    String fileName = dataBRS[index]["title"];
+                    LoggerService.logActivity(
+                      actionType: 'view_pdf',
+                      contentType: 'brs',
+                      sectorCategory: LoggerService.classifySector(fileName),
+                      itemName: fileName,
+                      coverUrl: dataBRS[index]["thumbnail"],
+                      contentUrl: pdfUrl,
+                    );
+                    openPdfDirectly(context, pdfUrl, fileName);
+                  },
+                  child: const Text("Buka PDF"),
+                ),
+              ],
+            ),
+          ],
         );
       },
     );
   }
-  Future<void> downloadAndShowConfirmation(
-      BuildContext context, String pdfUrl, String fileName) async {
+
+  Future<void> downloadAndShowConfirmation(BuildContext context, String pdfUrl, String fileName) async {
+    final item = dataBRS.firstWhere((x) => x['pdf'] == pdfUrl, orElse: () => {});
+    final coverUrl = item['thumbnail'] as String?;
+
+    if (Platform.isIOS) {
+      try {
+        Fluttertoast.showToast(
+          msg: "Menyiapkan berkas BRS...",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+
+        final response = await http.get(Uri.parse(pdfUrl));
+        if (response.statusCode == 200) {
+          final dir = await getTemporaryDirectory();
+          final cleanName = fileName.replaceAll(RegExp(r'[^\w\s\-\.]'), '_');
+          final filePath = '${dir.path}/$cleanName.pdf';
+          final file = File(filePath);
+          await file.writeAsBytes(response.bodyBytes);
+
+          LoggerService.logActivity(
+            actionType: 'download_file',
+            sectorCategory: LoggerService.classifySector(fileName),
+            itemName: fileName,
+            coverUrl: coverUrl,
+            contentUrl: pdfUrl,
+          );
+
+          await OpenFile.open(filePath);
+        } else {
+          throw Exception("Gagal mengunduh berkas dari server.");
+        }
+      } catch (error) {
+        Fluttertoast.showToast(
+          msg: "Gagal mengunduh: $error",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+      return;
+    }
+
     if (await _checkPermission()) {
       try {
         Fluttertoast.showToast(
@@ -453,22 +491,50 @@ class _BeritaPageState extends State<BeritaPages> {
           textColor: Colors.white,
           fontSize: 16.0,
         );
-        String safeFileName =
-            fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+
+        String cleanFileName = fileName;
+        if (!cleanFileName.toLowerCase().endsWith('.pdf')) {
+          cleanFileName = '$cleanFileName.pdf';
+        }
+
         FileDownloader.downloadFile(
           url: pdfUrl,
-          name: "$safeFileName.pdf",
+          name: cleanFileName,
           downloadDestination: DownloadDestinations.publicDownloads,
           onProgress: (fileName, double progress) {},
           onDownloadCompleted: (String path) {
-            if (path.toLowerCase().endsWith('.php')) {
-              File downloadedFile = File(path);
-              String newPath = path.replaceAll('.php', '.pdf');
-              downloadedFile.renameSync(newPath);
+            // Fallback rename jika file terunduh dengan ekstensi .php karena redirect server BPS
+            final decodedPath = Uri.decodeFull(path);
+            if (decodedPath.endsWith('.php')) {
+              try {
+                final file = File(decodedPath);
+                final newPath = decodedPath.replaceAll('.php', '.pdf');
+                if (file.existsSync()) {
+                  file.renameSync(newPath);
+                } else {
+                  // Coba gunakan path mentah jika file disimpan dengan %20 literal
+                  final rawFile = File(path);
+                  final rawNewPath = path.replaceAll('.php', '.pdf');
+                  if (rawFile.existsSync()) {
+                    rawFile.renameSync(rawNewPath);
+                  }
+                }
+              } catch (e) {
+                print("Gagal me-rename file: $e");
+              }
             }
+
+            // Catat log aktivitas ke Supabase
+            LoggerService.logActivity(
+              actionType: 'download_file',
+              sectorCategory: LoggerService.classifySector(fileName),
+              itemName: fileName,
+              coverUrl: coverUrl,
+              contentUrl: pdfUrl,
+            );
+
             Fluttertoast.showToast(
-              msg:
-                  'BRS "$safeFileName.pdf" telah disimpan dalam Folder Download.',
+              msg: 'Berita Resmi Statistik (BRS) "$fileName" telah disimpan.',
               toastLength: Toast.LENGTH_LONG,
               gravity: ToastGravity.CENTER,
               backgroundColor: Colors.blue,
@@ -481,7 +547,7 @@ class _BeritaPageState extends State<BeritaPages> {
               msg: "Gagal mengunduh berkas.",
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.CENTER,
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.blue,
               textColor: Colors.white,
               fontSize: 16.0,
             );
@@ -489,10 +555,10 @@ class _BeritaPageState extends State<BeritaPages> {
         );
       } catch (error) {
         Fluttertoast.showToast(
-          msg: "Terjadi kesalahan saat mengunduh. $error",
+          msg: "Terjadi kesalahan saat mengunduh. \$error",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
-          backgroundColor: Colors.red,
+          backgroundColor: Colors.blue,
           textColor: Colors.white,
           fontSize: 16.0,
         );
@@ -502,7 +568,7 @@ class _BeritaPageState extends State<BeritaPages> {
         msg: "Aplikasi belum diizinkan untuk mengakses penyimpanan.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.orange,
+        backgroundColor: Colors.blue,
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -510,30 +576,26 @@ class _BeritaPageState extends State<BeritaPages> {
   }
 
   Future<bool> _checkPermission() async {
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (Platform.isAndroid) {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      if (androidInfo.version.sdkInt >= 33) {
+        return true;
+      }
       var permissionStatus = await Permission.storage.status;
       if (permissionStatus.isDenied) {
         permissionStatus = await Permission.storage.request();
-        try {
-          await saf.getDirectoryPermission(isDynamic: true);
-        } catch (e) {
-          print("Error minta izin SAF (mungkin tidak disupport): $e");
-        }
       }
       return permissionStatus.isGranted;
     }
     return true;
   }
 
-  void openPdfDirectly(BuildContext context, String pdfUrl) {
-    if (pdfUrl.isEmpty) {
-      Fluttertoast.showToast(msg: "URL PDF tidak valid.");
-      return;
-    }
+  void openPdfDirectly(BuildContext context, String pdfUrl, String title) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PDFViewer(pdfUrl: pdfUrl),
+        builder: (context) => GlobalPDFViewer(pdfUrl: pdfUrl, title: title),
       ),
     );
   }
@@ -541,25 +603,16 @@ class _BeritaPageState extends State<BeritaPages> {
 
 class PDFViewer extends StatelessWidget {
   final String pdfUrl;
+
   const PDFViewer({Key? key, required this.pdfUrl}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('PDF Viewer'),
-        leading: IconButton(
-          icon: Image.asset('assets/icons/left-arrow.png', height: 25),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
       ),
-      body: SfPdfViewer.network(
-        pdfUrl,
-        onDocumentLoadFailed: (details) {
-          print("PDF Load Failed: ${details.description}");
-          Fluttertoast.showToast(
-              msg: "Gagal memuat PDF: ${details.description}");
-        },
-      ),
+      body: SfPdfViewer.network(pdfUrl),
     );
   }
 }

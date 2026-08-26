@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mboistats/theme.dart'; // <-- Impor tema untuk warna
+import 'package:mboistats/theme.dart';
 
 class Footer extends StatefulWidget {
   const Footer({Key? key}) : super(key: key);
@@ -9,100 +9,150 @@ class Footer extends StatefulWidget {
 }
 
 class _FooterState extends State<Footer> {
-  int _selectedIndex = 0; // Indeks awal (Beranda)
+  int _selectedIndex = 0;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final currentRoute = ModalRoute.of(context)!.settings.name;
-    if (currentRoute == '/berita') {
+    final currentRoute = ModalRoute.of(context)?.settings.name;
+
+    if (currentRoute == '/data' ||
+        currentRoute == '/berita' ||
+        currentRoute == '/infografis_full' ||
+        currentRoute == '/publikasi_full' ||
+        currentRoute == '/infografis' ||
+        currentRoute == '/publikasi') {
       _selectedIndex = 1;
     } else if (currentRoute == '/contact') {
       _selectedIndex = 2;
+    } else if (currentRoute == '/profil' || currentRoute == '/edit_profil') {
+      _selectedIndex = 3;
     } else {
-      _selectedIndex = 0;
+      _selectedIndex = 0; // Beranda default
     }
   }
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
-    setState(() {
-      _selectedIndex = index;
-    });
+
     switch (index) {
       case 0:
-        Navigator.of(context).pushReplacementNamed('/main');
+        Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
         break;
       case 1:
-        Navigator.of(context).pushReplacementNamed('/berita');
+        if (_selectedIndex != 0) {
+          Navigator.of(context).pushReplacementNamed('/data');
+        } else {
+          Navigator.of(context).pushNamed('/data');
+        }
         break;
       case 2:
-        Navigator.of(context).pushReplacementNamed('/contact');
+        if (_selectedIndex != 0) {
+          Navigator.of(context).pushReplacementNamed('/contact');
+        } else {
+          Navigator.of(context).pushNamed('/contact');
+        }
+        break;
+      case 3:
+        if (_selectedIndex != 0) {
+          Navigator.of(context).pushReplacementNamed('/profil');
+        } else {
+          Navigator.of(context).pushNamed('/profil');
+        }
         break;
     }
-  }
-  Widget _buildGradientIcon(IconData iconData) {
-    return ShaderMask(
-      shaderCallback: (Rect bounds) {
-        return LinearGradient(
-          colors: [blue1, blue2],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ).createShader(bounds);
-      },
-      blendMode: BlendMode.srcIn,
-      child: Icon(iconData, color: Colors.white),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return WillPopScope(
+      onWillPop: () async {
+        if (_selectedIndex != 0) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/main', (route) => false);
+          return false;
+        }
+        return true;
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
         decoration: BoxDecoration(
-          color: Colors.white, // Latar belakang putih solid
-          borderRadius:
-              BorderRadius.circular(20.0), // Sudut yang membulat
-          boxShadow: [
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1), // Shadow abu-abu
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Color(0x14000000),
+              blurRadius: 12,
+              offset: Offset(0, -3),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20.0),
+        padding: const EdgeInsets.only(top: 4, bottom: 2),
+        child: SafeArea(
+          top: false,
           child: BottomNavigationBar(
-            backgroundColor: Colors.transparent, // WAJIB, agar tembus ke Container
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
-            selectedItemColor: blue1, 
-            unselectedItemColor: dark2, 
-
             type: BottomNavigationBarType.fixed,
-            showSelectedLabels: true,
-            showUnselectedLabels: true,
-            elevation: 0, // WAJIB, hapus bayangan/latar belakang bawaan
-            selectedFontSize: 12.0,
-            unselectedFontSize: 12.0,
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            selectedItemColor: blueNormal,
+            unselectedItemColor: const Color(0xFF8E8E93),
+            selectedFontSize: 11,
+            unselectedFontSize: 11,
+            selectedLabelStyle: pjsSemiBold14,
+            unselectedLabelStyle: pjsMedium12,
             items: [
               BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: _buildGradientIcon(Icons.home),
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2.0),
+                  child: Image.asset(
+                    _selectedIndex == 0
+                        ? 'assets_v2/navbar/beranda_on.png'
+                        : 'assets_v2/navbar/beranda_off.png',
+                    width: 22,
+                    height: 22,
+                  ),
+                ),
                 label: 'Beranda',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.newspaper_outlined),
-                activeIcon: _buildGradientIcon(Icons.newspaper),
-                label: 'BRS',
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2.0),
+                  child: Image.asset(
+                    _selectedIndex == 1
+                        ? 'assets_v2/navbar/data_on.png'
+                        : 'assets_v2/navbar/data_off.png',
+                    width: 22,
+                    height: 22,
+                  ),
+                ),
+                label: 'Data',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.contacts_outlined),
-                activeIcon: _buildGradientIcon(Icons.contacts),
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2.0),
+                  child: Image.asset(
+                    _selectedIndex == 2
+                        ? 'assets_v2/navbar/kontak_on.png'
+                        : 'assets_v2/navbar/kontak_off.png',
+                    width: 22,
+                    height: 22,
+                  ),
+                ),
                 label: 'Kontak',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(bottom: 2.0),
+                  child: Image.asset(
+                    _selectedIndex == 3
+                        ? 'assets_v2/navbar/profil_on.png'
+                        : 'assets_v2/navbar/profil_off.png',
+                    width: 22,
+                    height: 22,
+                  ),
+                ),
+                label: 'Profil',
               ),
             ],
           ),

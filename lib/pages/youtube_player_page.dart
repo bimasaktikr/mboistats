@@ -1,56 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mboistats/models/youtube_video.dart';
-import 'package:mboistats/theme.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:mboistats/theme.dart';
 
-class YoutubePlayerPage extends StatefulWidget {
-  const YoutubePlayerPage({Key? key}) : super(key: key);
+class YouTubePlayerPage extends StatefulWidget {
+  final String videoId;
+  final String title;
+
+  const YouTubePlayerPage({
+    Key? key,
+    required this.videoId,
+    required this.title,
+  }) : super(key: key);
 
   @override
-  _YoutubePlayerPageState createState() => _YoutubePlayerPageState();
+  State<YouTubePlayerPage> createState() => _YouTubePlayerPageState();
 }
 
-class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
+class _YouTubePlayerPageState extends State<YouTubePlayerPage> {
   late YoutubePlayerController _controller;
-  late YoutubeVideo _video; // Simpan seluruh objek video
-  bool _isPlayerReady = false;
-  final DateFormat _dateFormatter = DateFormat('dd MMMM yyyy');
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final video = ModalRoute.of(context)!.settings.arguments as YoutubeVideo?;
-
-    if (video == null) {
-      Navigator.of(context).pop();
-      return;
-    }
-
-    _video = video; // Simpan video
-
+  void initState() {
+    super.initState();
     _controller = YoutubePlayerController(
-      initialVideoId: _video.id,
+      initialVideoId: widget.videoId,
       flags: const YoutubePlayerFlags(
         autoPlay: true,
         mute: false,
-        controlsVisibleAtStart: true, 
+        enableCaption: true,
       ),
-    )..addListener(listener);
-  }
-
-  void listener() {
-    if (_isPlayerReady && mounted && !_controller.value.isFullScreen) {
-      setState(() {
-      });
-    }
-  }
-
-  @override
-  void deactivate() {
-    _controller.pause();
-    super.deactivate();
+    );
   }
 
   @override
@@ -62,104 +43,105 @@ class _YoutubePlayerPageState extends State<YoutubePlayerPage> {
     super.dispose();
   }
 
+  void _openInYouTube() async {
+    final url = Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    String formattedDate = '';
-    try {
-      final DateTime publishedDate = DateTime.parse(_video.publishedAt);
-      formattedDate = _dateFormatter.format(publishedDate);
-    } catch (e) {
-      formattedDate = 'Tanggal tidak diketahui';
-    }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return YoutubePlayerBuilder(
-      onEnterFullScreen: () {
-        SystemChrome.setPreferredOrientations([
-          DeviceOrientation.landscapeLeft,
-          DeviceOrientation.landscapeRight,
-        ]);
-      },
       onExitFullScreen: () {
-        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+        ]);
       },
       player: YoutubePlayer(
         controller: _controller,
         showVideoProgressIndicator: true,
-        progressIndicatorColor: blue1,
-        onReady: () {
-          _isPlayerReady = true;
-        },
+        progressIndicatorColor: blueNormal,
+        progressColors: const ProgressBarColors(
+          playedColor: blueNormal,
+          handleColor: blueActive,
+        ),
       ),
       builder: (context, player) {
         return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF121212) : bgColor,
           appBar: AppBar(
-            title: Text(
-              _video.isLive ? 'Siaran Langsung' : 'Putar Video',
-              style: bold16.copyWith(color: dark1, fontSize: 16),
-            ),
+            backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            elevation: 0.5,
             leading: IconButton(
-              icon: Image.asset('assets/icons/left-arrow.png', height: 25),
-              onPressed: () => Navigator.of(context).pop(),
+              icon: Icon(
+                Icons.arrow_back_ios_new,
+                color: isDark ? Colors.white : dark1,
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
             ),
+            title: Text(
+              'Live Youtube',
+              style: pjsBold18.copyWith(
+                color: isDark ? Colors.white : dark1,
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  Icons.open_in_new_rounded,
+                  color: blueNormal,
+                  size: 22,
+                ),
+                tooltip: 'Buka di YouTube',
+                onPressed: _openInYouTube,
+              ),
+            ],
           ),
           body: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16), // Jarak dari AppBar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12.0),
-                    child: player, // 'player' dari YoutubePlayerBuilder
-                  ),
-                ),
+                // YouTube Player
+                player,
+
                 const SizedBox(height: 16),
+
+                // Judul Video
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _video.title,
-                        style: bold18.copyWith(color: dark1),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline, color: dark3, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            _video.channelTitle,
-                            style: regular14.copyWith(color: dark2),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(Icons.calendar_today_outlined,
-                              color: dark3, size: 15),
-                          const SizedBox(width: 6),
-                          Text(
-                            formattedDate,
-                            style: regular14.copyWith(color: dark2),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Divider(color: Colors.grey[300]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Deskripsi',
-                        style: bold16.copyWith(color: dark1),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _video.description.isEmpty
-                            ? 'Tidak ada deskripsi.'
-                            : _video.description,
-                        style: regular14.copyWith(color: dark2, height: 1.5),
-                      ),
-                      const SizedBox(height: 32), // Padding di bawah
-                    ],
+                  child: Text(
+                    widget.title,
+                    style: pjsBold18.copyWith(
+                      color: isDark ? Colors.white : dark1,
+                    ),
                   ),
                 ),
+
+                const SizedBox(height: 12),
+
+                // Tombol Buka di YouTube
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: OutlinedButton.icon(
+                    onPressed: _openInYouTube,
+                    icon: const Icon(Icons.play_circle_outline, size: 20),
+                    label: const Text('Buka di Aplikasi YouTube'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
               ],
             ),
           ),

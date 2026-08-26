@@ -1,7 +1,8 @@
-package com.bps.mboistats // Pastikan package name ini sesuai dengan proyek Anda
+package com.bps.mboistats
+import io.flutter.embedding.android.FlutterActivity
 
-import io.flutter.embedding.android.FlutterActivity // Import yang benar
+class MainActivity: FlutterActivity()
 
-class MainActivity: FlutterActivity() { // Mewarisi dari FlutterActivity
-    // Anda bisa menambahkan kode spesifik Android di sini jika perlu nanti
+open class FlutterActivity {
+
 }

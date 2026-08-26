@@ -7,8 +7,6 @@ class TentangPages extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tentangItem = tentang[0];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tentang BPS Kota Malang'),
@@ -24,62 +22,71 @@ class TentangPages extends StatelessWidget {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0), // Padding untuk seluruh konten
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(
               height: 24,
             ),
             Center(
               child: Container(
-                width: 200, 
+                width: 200, // Lebar container sesuai dengan lebar ikon telepon
                 height:
-                    200, 
+                    200, // Tinggi container sesuai dengan tinggi ikon telepon
                 decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage(
-                        'assets/icons/office.png'), 
-                    fit: BoxFit.contain, // Gunakan .contain agar tidak terpotong
+                        'assets/icons/office.png'), // Path ikon telepon
+                    fit: BoxFit.cover, // Sesuaikan dengan tata letak gambar
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 24), // Beri jarak lebih
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 10.0,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+            const SizedBox(
+                height:
+                    10), // Tambahkan SizedBox dengan ketinggian yang diinginkan
+            const Center(
               child: Padding(
-                padding: const EdgeInsets.all(20.0), // Padding lebih besar
-                child: Column(
-                  children: [
-                    Text(
-                      tentangItem.title,
-                      style: bold18.copyWith(color: dark1), // Judul lebih besar
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Divider(color: Colors.grey[300]), // Pemisah visual
-                    const SizedBox(height: 16),
-                    Text(
-                      tentangItem.description,
-                      style: regular14.copyWith(color: dark2, height: 1.5), // Beri line-height
-                      textAlign: TextAlign.justify, // Ratakan paragraf
-                    ),
-                  ],
-                ),
+                padding:
+                    EdgeInsets.only(bottom: 16.0), // Jarak di bawah judul
+                child: Column(),
               ),
             ),
-            const SizedBox(height: 24), // Jarak di bawah
+            ...tentang.map((item) => Padding(
+                  padding:
+                      const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+                  child: Container(
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: dark4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withAlpha((0.2 * 255).round()),
+                          spreadRadius: 2,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      title: Center(
+                        child: Text(
+                          item.title,
+                          style: bold16.copyWith(color: dark1),
+                        ),
+                      ),
+                      subtitle: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Text(
+                          item.description,
+                          style: regular14.copyWith(color: dark2),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                )),
           ],
         ),
       ),

@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:mboistats/components/app_drawer.dart';
-import 'package:mboistats/components/buttonSection.dart';
-import 'package:mboistats/components/carousel_infografis.dart';
-import 'package:mboistats/components/carousel_publikasi.dart';
+import 'package:flutter/services.dart';
 import 'package:mboistats/components/footer.dart';
 import 'package:mboistats/components/menus.dart';
-import 'package:mboistats/theme.dart';
-import 'package:flutter/services.dart';
+import 'package:mboistats/components/recommendations.dart';
+import 'package:mboistats/components/recently_viewed.dart';
 import 'package:mboistats/services/youtube_service.dart';
-import 'package:mboistats/models/youtube_video.dart';
-import 'dart:async';
-import 'package:mboistats/services/supabase_auth_service.dart';
+import 'package:mboistats/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
-
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -22,90 +17,64 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-// Tambahkan 'WidgetsBindingObserver' untuk mendeteksi app resume
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  final YoutubeService _youtubeService = YoutubeService();
-  bool _isLive = false;
-  bool _isLoadingLiveStatus = true;
-
-  late AnimationController _animationController;
-  late Timer _timer;
-  
-  final GlobalKey<CarouselPublikasiState> _publikasiKey = GlobalKey<CarouselPublikasiState>();
-  final GlobalKey<CarouselInfografisState> _infografisKey = GlobalKey<CarouselInfografisState>();
+class _HomePageState extends State<HomePage> {
+  Map<String, dynamic>? _liveStream;
+  YoutubePlayerController? _youtubeController;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-
-    _checkLiveStatus();
-
-    _timer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      _checkLiveStatus();
-    });
+    _checkLiveStream();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-
-    _animationController.dispose();
-    _timer.cancel();
+    _youtubeController?.dispose();
     super.dispose();
   }
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      print("DEBUG: App resumed. Checking live status...");
-      _checkLiveStatus();
-    }
-  }
 
-  Future<void> _checkLiveStatus() async {
-    if (!_isLoadingLiveStatus && mounted) {
-      setState(() {
-        _isLoadingLiveStatus = true;
-      });
-    }
-
-    try {
-      final result = await _youtubeService.getVideos(page: 1);
-      bool liveStatus = result.videos.any((video) => video.isLive == true);
-
-      if (mounted) {
+  Future<void> _checkLiveStream() async {
+    final live = await YouTubeService.getLiveStream();
+    if (mounted && live != null) {
+      final videoId = live['video_id'] as String? ?? '';
+      if (videoId.isNotEmpty) {
         setState(() {
-          _isLive = liveStatus;
-          _isLoadingLiveStatus = false;
-          if (_isLive) {
-            _animationController.repeat(reverse: true);
-          } else {
-            _animationController.stop();
-          }
-        });
-      }
-    } catch (e) {
-      print("Error cek status live di HomePage: $e");
-      if (mounted) {
-        setState(() {
-          _isLoadingLiveStatus = false;
-          _isLive = false;
+          _liveStream = live;
+          _youtubeController = YoutubePlayerController(
+            initialVideoId: videoId,
+            flags: const YoutubePlayerFlags(
+              autoPlay: false,
+              mute: false,
+              showLiveFullscreenButton: true,
+              isLive: true,
+            ),
+          );
         });
       }
     }
   }
 
-  Future<void> _handleRefresh() async {
-    await _checkLiveStatus();
-    await _publikasiKey.currentState?.fetchData();
-    await _infografisKey.currentState?.fetchData();
+  String _getUserName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final metadata = user.userMetadata;
+      if (metadata != null && metadata.containsKey('full_name')) {
+        final name = metadata['full_name'].toString();
+        if (name.isNotEmpty) {
+          return name.split(' ').first;
+        }
+      }
+      return 'Pengguna';
+    }
+    return 'Tamu';
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Selamat pagi';
+    if (hour < 15) return 'Selamat siang';
+    if (hour < 18) return 'Selamat sore';
+    return 'Selamat malam';
   }
 
   Future<bool> _onWillPop() async {
@@ -114,7 +83,7 @@ class _HomePageState extends State<HomePage>
       builder: (context) => AlertDialog(
         title: const Text(
           'Konfirmasi Keluar',
-          style: TextStyle(color: Colors.blue),
+          style: TextStyle(color: blueActive),
           textAlign: TextAlign.center,
         ),
         content: const Text(
@@ -130,10 +99,10 @@ class _HomePageState extends State<HomePage>
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blue),
+                    side: const BorderSide(color: blueNormal),
                   ),
                   child:
-                      const Text('Tidak', style: TextStyle(color: Colors.blue)),
+                      const Text('Tidak', style: TextStyle(color: blueNormal)),
                 ),
               ),
               const SizedBox(width: 16),
@@ -142,9 +111,9 @@ class _HomePageState extends State<HomePage>
                 child: OutlinedButton(
                   onPressed: () => SystemNavigator.pop(),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blue),
+                    side: const BorderSide(color: blueNormal),
                   ),
-                  child: const Text('Ya', style: TextStyle(color: Colors.blue)),
+                  child: const Text('Ya', style: TextStyle(color: blueNormal)),
                 ),
               ),
             ],
@@ -154,250 +123,223 @@ class _HomePageState extends State<HomePage>
     );
     return shouldExit ?? false;
   }
-  Widget _buildYoutubeBanner(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFE62117), Color(0xFF333333)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.3),
-            blurRadius: 12.0,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () async { 
-          await Navigator.pushNamed(context, '/youtube_list');
-          if (mounted) { 
-            _checkLiveStatus();
-          }
-        },
-        borderRadius: BorderRadius.circular(16.0),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10.0),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      )
-                    ]),
-                child: const Icon(
-                  Icons.play_arrow,
-                  color: Color(0xFFE62117),
-                  size: 32.0,
-                ),
-              ),
-              const SizedBox(width: 16.0),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'BPS KOTA MALANG',
-                      style: semibold12_5.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4.0),
-                    Text(
-                      'Video Pers & Live',
-                      style: bold16.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2.0),
-                    Text(
-                      'Klik untuk menonton',
-                      style: regular12_5.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_isLoadingLiveStatus)
-                Container(
-                  width: 24,
-                  height: 24,
-                  margin: const EdgeInsets.only(left: 8),
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2.0,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
-                  ),
-                )
-              else if (_isLive)
-                FadeTransition(
-                  opacity: _animationController,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6.0),
-                    ),
-                    child: Text(
-                      'LIVE',
-                      style: bold16.copyWith(
-                        color: const Color(0xFFE62117),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 16.0,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
+  Widget _buildLiveYouTubeBanner(bool isDark) {
+    if (_liveStream == null || _youtubeController == null) {
+      return const SizedBox.shrink();
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final authService = context.watch<SupabaseAuthService>();
+    final title = _liveStream!['title'] ?? 'Siaran Pers BPS Kota Malang';
 
-    return StreamBuilder<AuthState>(
-      stream: authService.authStateChanges,
-      builder: (context, snapshot) {
-        
-        final User? user = snapshot.data?.session?.user ?? authService.currentUser;
-
-        return WillPopScope(
-          onWillPop: _onWillPop,
-          child: Scaffold(
-            backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-            appBar: AppBar(
-              backgroundColor: Colors.white,
-              elevation: 0,
-              toolbarHeight: 50,
-              centerTitle: false,
-              titleSpacing: user != null ? 0.0 : 16.0,
-              title: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    'assets/images/Mbois-stat Logo_Fix Putih.png',
-                    width: 40,
-                    height: 40,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'MBOIStatS+',
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ],
-              ),
-              actions: [
-                if (user == null)
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(right: 12.0, top: 8, bottom: 8),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [blue1, blue2],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: () {
-                            Navigator.of(context).pushNamed('/login');
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Center(
-                              child: Text(
-                                'Login',
-                                style: semibold14.copyWith(color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            drawer: user != null
-                ? const AppDrawer()
-                : null,
-            body: Stack(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          // Container Player
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
               children: [
-                RefreshIndicator(
-                  onRefresh: _handleRefresh,
-                  color: blue1, 
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(), 
-                    padding: const EdgeInsets.only(bottom: 100.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
-                          child: _buildYoutubeBanner(context),
+                YoutubePlayer(
+                  controller: _youtubeController!,
+                  showVideoProgressIndicator: true,
+                  progressIndicatorColor: Colors.red,
+                  progressColors: const ProgressBarColors(
+                    playedColor: Colors.red,
+                    handleColor: Colors.redAccent,
+                  ),
+                ),
+                // Badge LIVE
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Yuk lebih dekat dengan BPS Kota Malang',
-                                  style: bold16.copyWith(color: dark1)),
-                              const SizedBox(height: 8.0),
-                              Text('Mau cari data apa???',
-                                  style: regular14.copyWith(color: dark2)),
-                            ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                        const Menus(),
-                        ButtonSection(),
-                        
-                        CarouselPublikasi(key: _publikasiKey),
-                        CarouselInfografis(key: _infografisKey),
-                        
+                        const SizedBox(width: 6),
+                        Text(
+                          'LIVE',
+                          style: pjsBold14.copyWith(
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-                const Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Footer(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Judul & Link YouTube
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: pjsSemiBold14.copyWith(
+                    color: isDark ? Colors.white : dark1,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () async {
+                  final videoId = _liveStream!['video_id'] ?? '';
+                  final url = Uri.parse('https://www.youtube.com/watch?v=$videoId');
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.open_in_new, size: 14, color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        'YouTube',
+                        style: pjsSemiBold12.copyWith(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Teal gradient header
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 20,
+                    left: 20,
+                    right: 20,
+                    bottom: 50,
+                  ),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF1F7BA4), Color(0xFF2AA9E1)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(28),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 6),
+                            Text(
+                              '${_getGreeting()}, ${_getUserName()}',
+                              style: pjsBold20.copyWith(color: Colors.white),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Kamu mau cari data apa hari ini?',
+                              style: pjsRegular14.copyWith(
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Transform.translate(
+                        offset: const Offset(6, 22),
+                        child: Image.asset(
+                          'assets_v2/icons/ikon_beranda.png',
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Image.asset(
+                            'assets/images/Mbois-stat Logo_Fix Putih.png',
+                            width: 90,
+                            height: 90,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Body content shifted up by 35px to overlap header bottom smoothly
+                Transform.translate(
+                  offset: const Offset(0, -35),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Menus(),
+                      // Live YouTube Banner (kondisional - hanya muncul saat live)
+                      _buildLiveYouTubeBanner(isDark),
+                      const SizedBox(height: 12),
+                      RecommendationSection(),
+                      const SizedBox(height: 8),
+                      RecentlyViewedSection(),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        );
-      },
+        ),
+        bottomNavigationBar: const Footer(),
+      ),
     );
   }
 }

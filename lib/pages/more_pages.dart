@@ -22,47 +22,60 @@ class MorePages extends StatelessWidget {
           },
         ),
       ),
-      body: ListView( // Ganti Column ke ListView
-        padding: const EdgeInsets.only(top: 24.0),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...more.map((item) => Container(
-                margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 10.0,
-                      offset: const Offset(0, 4),
+          const SizedBox(
+            height: 24,
+          ),
+          // News
+          ...more.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+                child: InkWell(
+                  onTap: () {
+                    if (item.title == 'Galeri InovaZI') {
+                      launchUrlString('https://s.bps.go.id/mboistats_galeri_inovazi');
+                    } else if (item.title == 'PENGADUAN') {
+                      launchUrlString('https://s.bps.go.id/mboistats_lapor3573');
+                    }else if (item.title == 'Feedback') {
+                      launchUrlString('https://s.bps.go.id/mboistats_feedback');
+                    }
+                  },
+                  child: Container(
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: dark4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withAlpha((0.2 * 255).round()),
+                          spreadRadius: 2,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12.0),
-                  child: InkWell(
-                    onTap: () {
-                      if (item.title == 'Galeri InovaZI') {
-                        launchUrlString('https://s.bps.go.id/mboistats_galeri_inovazi');
-                      } else if (item.title == 'PENGADUAN') {
-                        launchUrlString('https://s.bps.go.id/mboistats_lapor3573');
-                      }else if (item.title == 'Feedback') {
-                        launchUrlString('https://s.bps.go.id/mboistats_feedback');
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Image.asset('assets/icons/${item.icons}'),
-                        title: Text(
-                          item.title,
-                          style: bold16.copyWith(color: dark1, fontSize: 14),
-                        ),
-                        trailing: Image.asset(
-                          'assets/icons/right-arrow.png',
-                          height: 16,
-                        ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      leading: Image.asset('assets/icons/${item.icons}'),
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              item.title,
+                              style: bold16.copyWith(color: dark1),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.center,
+                            child: Image.asset(
+                              'assets/icons/right-arrow.png',
+                              height: 16,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

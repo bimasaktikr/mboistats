@@ -1,91 +1,84 @@
 import 'package:flutter/material.dart';
 import 'package:mboistats/route-manager.dart';
+// import 'package:connectivity/connectivity.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-// HAPUS: 'package:webview_flutter_plus/webview_flutter_plus.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:webview_flutter_plus/webview_flutter_plus.dart';
+import 'package:mboistats/services/logger_service.dart';
+import 'package:mboistats/services/activity_observer.dart';
+import 'package:mboistats/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:mboistats/config/supabase_config.dart';
 
-// --- TAMBAHAN BARU UNTUK STATE MANAGEMENT ---
-import 'package:provider/provider.dart';
-import 'package:mboistats/services/supabase_auth_service.dart';
-import 'package:mboistats/services/supabase_db_service.dart';
+LocalhostServer localhostServer = LocalhostServer();
 
-// --- TAMBAHAN BARU UNTUK ARSITEKTUR JANGKA PANJANG ---
-import 'package:mboistats/services/local_server_service.dart';
-import 'package:mboistats/services/bps_api_service.dart';
-
-
-// HAPUS: Variabel global. Ini sekarang dikelola oleh LocalServerService.
-// LocalhostServer localhostServer = LocalhostServer();
+// Global theme notifier for dark mode
+final AppThemeNotifier appThemeNotifier = AppThemeNotifier();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+  await LoggerService.init();
+
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
   );
 
-  // --- PERUBAHAN ---
-  // 1. Buat instance service server lokal
-  final localServerService = LocalServerService();
-  // 2. Mulai server
-  await localServerService.start(); 
-  // 3. Buat instance BpsApiService
-  final bpsApiService = BpsApiService();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        // --- TAMBAHAN BARU UNTUK SERVICE ---
-        // Sediakan service sebagai nilai (value) karena sudah diinisialisasi
-        Provider<LocalServerService>.value(
-          value: localServerService,
-        ),
-        // Sediakan service yang dibuat langsung (create)
-        Provider<BpsApiService>(
-          create: (_) => bpsApiService,
-        ),
-        
-        // Service yang sudah ada sebelumnya
-        Provider<SupabaseAuthService>(
-          create: (_) => SupabaseAuthService(),
-        ),
-        ChangeNotifierProvider<SupabaseDbService>(
-          create: (context) => SupabaseDbService(
-            context.read<SupabaseAuthService>(),
-          ),
-        ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  await localhostServer.start(port: 0);
+  runApp(const MyApp());
 }
-
-final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
+
+  static final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      initialRoute: '/splash',
-      routes: RouteManager.routes,
-      builder: (context, child) {
-        return ConnectivityWrapper(
-          child: child!,
+    return ListenableBuilder(
+      listenable: appThemeNotifier,
+      builder: (context, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: appThemeNotifier.currentTheme,
+          initialRoute: '/splash',
+          onGenerateRoute: (settings) {
+            final builder = RouteManager.routes[settings.name];
+            if (builder != null) {
+              return PageRouteBuilder(
+                settings: settings,
+                pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 200),
+              );
+            }
+            return null;
+          },
+          navigatorObservers: [
+            ActivityLoggingObserver(),
+            routeObserver,
+          ],
+          builder: (context, child) {
+            return ConnectivityWrapper(
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
         );
       },
     );
   }
 }
 
-// ... (Kelas ConnectivityWrapper tidak berubah) ...
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
+
   const ConnectivityWrapper({Key? key, required this.child}) : super(key: key);
+
   @override
   _ConnectivityWrapperState createState() => _ConnectivityWrapperState();
 }
@@ -93,38 +86,42 @@ class ConnectivityWrapper extends StatefulWidget {
 class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   var connectivityResult;
   bool showConnectivityBanner = false;
+
   @override
   void initState() {
     super.initState();
+    // Langsung panggil fungsi untuk memeriksa status koneksi saat widget diinisialisasi
     checkConnectivity();
+    // Langsung lakukan pemantauan koneksi
     Connectivity().onConnectivityChanged.listen((result) {
-      if (!mounted) return;
       setState(() {
         connectivityResult = result;
         showConnectivityBanner = false;
-        showToastMessage();
+        showToastMessage(); // Tampilkan pesan toast berdasarkan status koneksi
+        // Menutup banner setelah beberapa detik (misalnya, 3 detik)
         Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            setState(() {
-              showConnectivityBanner = false;
-            });
-          }
+          setState(() {
+            showConnectivityBanner = false;
+          });
         });
       });
     });
   }
+
+  // Fungsi untuk memeriksa status koneksi
   Future<void> checkConnectivity() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
-    if (mounted) {
-      setState(() {
-        this.connectivityResult = connectivityResult;
-      });
-    }
+    setState(() {
+      this.connectivityResult = connectivityResult;
+    });
   }
+
+  // Fungsi untuk menampilkan pesan toast berdasarkan status koneksi
   void showToastMessage() {
     String message = connectivityResult == ConnectivityResult.none
         ? "Tidak terhubung ke internet"
         : "Terkoneksi ke internet";
+
     Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_SHORT,
@@ -137,6 +134,8 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
       fontSize: 16.0,
     );
   }
+
+
   Widget buildConnectivityBanner() {
     return Container(
       height: 40,
@@ -173,6 +172,7 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
